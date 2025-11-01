@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Авторизация - FiReMQ</title>
+  <link rel="icon" href="favicon.ico" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+
+<body>
+  <div class="auth-container">
+    <h2>Войти в <span class="fi">Fi</span><span class="re">Re</span><span class="mq">MQ</span></h2>
+    <form id="authForm" action="/auth" method="POST">
+      <input type="text" id="auth_login" name="auth_login" placeholder="Логин" autocomplete="username" required />
+      <input type="password" id="auth_password" name="auth_password" placeholder="Пароль" autocomplete="current-password" required />
+      <div id="captcha-container" class="{{if .CaptchaRequired}}captcha-visible{{else}}captcha-hidden{{end}}">
+        <img id="captcha-image" src="{{.CaptchaImage}}" alt="Капча" />
+        <input type="text" id="captcha_answer" name="captcha_answer" placeholder="Введите капчу" {{if .CaptchaRequired}}required{{end}} />
+        <input type="hidden" id="captcha_id" name="captcha_id" value="{{.CaptchaID}}" />
+      </div>
+      <button type="submit">Войти</button>
+    </form>
+    <footer>
+      <p>Система авторизации</p>
+    </footer>
+  </div>
+  <div id="error-message" class="error-message {{if .ErrorMessage}}visible{{end}}">{{.ErrorMessage | html}}</div>
+
+  <script src="/js/auth.js" defer></script>
+</body>
+
+</html>

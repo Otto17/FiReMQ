@@ -1,0 +1,142 @@
+/* СТИЛИ ДЛЯ СТРАНИЦЫ АВТОРИЗАЦИИ */
+
+/* Фон */
+body {
+  font-family: Arial, Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  background-color: #181818;
+  color: #e0e0e0;
+  overflow-x: hidden;
+}
+
+.auth-container {
+  background-color: #292929;
+  padding: 25px 25px 15px;
+  border-radius: 12px;
+  width: 350px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.auth-container h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+h2 .fi {
+  color: #ff4d4d; /* Красный для Fi */
+}
+
+h2 .re {
+  color: #4da6ff; /* Синий для Re */
+}
+
+h2 .mq {
+  color: #4dff88; /* Зелёный для MQ */
+}
+
+/* Поля ввода (за исключением скрытых) */
+input:not([type="hidden"]) {
+  width: 100%;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #555;
+  background-color: #333;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+input:not([type="hidden"]):focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* Контейнер капчи */
+#captcha-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px 0;
+  gap: 10px;
+}
+
+/* Изображение капчи */
+#captcha-image {
+  max-width: 100%;
+  height: 60px; /* Фиксированная высота для consistency с генерацией капчи */
+  border: 1px solid #555;
+  border-radius: 5px;
+  background-color: #fff; /* Белый фон для изображения */
+}
+
+/* Скрыть, если картинки нет */
+#captcha-image:not([src]),
+#captcha-image[src=""] {
+  display: none !important;
+}
+
+/* Классы для управления видимостью */
+.captcha-hidden {
+  display: none !important;
+}
+
+.captcha-visible {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px 0;
+  gap: 10px;
+}
+
+/* Кнопка */
+button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Сообщение об ошибке */
+.error-message {
+  position: fixed;
+  top: -50px; /* Начальная позиция */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff4d4d;
+  color: white;
+  padding: 15px 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  z-index: 1000;
+  transition: opacity 0.6s ease, top 0.6s ease;
+}
+
+.error-message.visible {
+  top: 20px; /* Конечная позиция */
+  opacity: 1;
+}
+
+/* Подвал */
+footer {
+  margin-top: 25px; /* Сдвигаем чуть ниже */
+  font-size: 14px;
+  color: #999; /* Темно-серый для гармонии с темной темой */
+  text-align: center;
+}

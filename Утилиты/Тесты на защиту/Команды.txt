@@ -1,0 +1,197 @@
+Обновлять правила "OWASP CRS" с гитхаб отсюда: https://github.com/coreruleset/coreruleset/releases/latest
+Удалить с папки "rules" проекта "FireMQ" всё содержимое и скопировать в неё обновлённые правила с архива.
+
+Тестировал на правилах версии: v4.10.0
+
+
+Онлайн тесты:
+https://securityheaders.com/
+https://websniffer.com/
+
+
+1. GET-запросы
+
+SQL-инъекция:
+curl.exe -k -u "admin:admin" -X GET "https://localhost:8443/auth"
+curl.exe -k -i -u "admin:admin" -X GET "https://localhost:8443/search?query=%27%20OR%20%271%27%3D%271"
+curl.exe -k -u "admin:admin" -X GET "https://localhost:8443/search?query=%27%20OR%20%271%27%3D%271"
+
+
+XSS (межсайтовый скриптинг):
+curl.exe -k -X GET "https://localhost:8443/search?query=<script>alert('XSS')</script>"
+curl.exe -k -X GET "https://localhost:8443/search?query=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E"
+
+Path Traversal:
+curl.exe -k -X GET "https://localhost:8443/../../etc/passwd"
+
+
+
+2. POST-запросы
+
+SQL-инъекция:
+curl.exe -k -X POST "https://localhost:8443/login" -d "username=admin'--&password=1234"
+curl.exe -k -X POST "https://localhost:8443/login" -d "username=admin%27--&password=1234"
+
+XSS (межсайтовый скриптинг):
+curl.exe -k -X POST "https://localhost:8443/comment" -d "comment=<script>alert('XSS')</script>"
+curl.exe -k -X POST "https://localhost:8443/comment" -d "comment=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E"
+
+Path Traversal:
+curl.exe -k -X POST "https://localhost:8443/execute" -d "command=ls; rm -rf /"
+curl.exe -k -X POST "https://localhost:8443/execute" -d "command=ls%3B%20rm%20-rf%20%2F"
+
+
+
+3. POST NoSQL-инъекции (целенаправлена на BadgerDB)
+
+А) NoSQL-подобные инъекции (Логическая инъекция):
+curl.exe -k -X POST "https://localhost:8443/login" -H "Content-Type: application/json" -d "{\"username\": {\"$ne\": null}, \"password\": {\"$ne\": null}}"
+
+Инъекция с использованием оператора $where:
+curl.exe -k -X POST "https://localhost:8443/query" -H "Content-Type: application/json" -d "{\"$where\": \"true\"}"
+
+
+Б) Инъекции в ключи или значения (Внедрение специальных символов):
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"../../etc/passwd\", \"value\": \"malicious_data\"}"
+
+Внедрение JSON-объекта:
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"user\", \"value\": {\"role\": \"admin\"}}"
+
+
+В) Атаки на логику приложения (Переполнение ключа):
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"a\".repeat(10000), \"value\": \"malicious_data\"}"
+
+Внедрение null-байта:
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"user\0\", \"value\": \"malicious_data\"}"
+
+
+Г) Тестирование на уязвимости к десериализации (Внедрение вредоносного объекта):
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"user\", \"value\": {\"$type\": \"malicious\", \"data\": \"exploit\"}}"
+
+
+Д) Тестирование на переполнение буфера (Очень большое значение):
+curl.exe -k -X POST "https://localhost:8443/save" -H "Content-Type: application/json" -d "{\"key\": \"user\", \"value\": \"a\".repeat(1000000)}"
+
+
+Е) Тестирование на уязвимости к инъекциям команд (Инъекция команды):
+curl.exe -k -X POST "https://localhost:8443/execute" -H "Content-Type: application/json" -d "{\"command\": \"ls; rm -rf /\"}"
+
+
+
+4. PUT-запросы
+
+Загрузка вредоносного файла:
+curl.exe -k -X PUT "https://localhost:8443/upload/malicious.php" -H "Content-Type: text/php" --data-binary "@malicious.php"
+
+Где "malicious.php" — это файл с содержимым:
+<?php echo shell_exec($_GET['cmd']); ?>
+
+Перезапись конфигурационного файла:
+curl.exe -k -X PUT "https://localhost:8443/config" -H "Content-Type: application/json" -d "{\"admin\": \"true\"}"
+
+
+
+5. DELETE-запросы
+
+Удаление критического файла:
+curl.exe -k -X DELETE "https://localhost:8443/importantfile.txt"
+
+Удаление пользователя:
+curl.exe -k -X DELETE "https://localhost:8443/users/1"
+
+
+
+6. PATCH-запросы
+
+Изменение прав доступа:
+curl.exe -k -X PATCH "https://localhost:8443/users/1" -H "Content-Type: application/json" -d "{\"role\": \"admin\"}"
+
+Изменение конфигурации:
+curl.exe -k -X PATCH "https://localhost:8443/config" -H "Content-Type: application/json" -d "{\"debug\": \"true\"}"
+
+
+
+7. OPTIONS-запросы
+
+Сбор информации о сервере:
+curl.exe -k -X OPTIONS "https://localhost:8443/"
+
+Проверка поддержки нестандартных методов:
+curl.exe -k -X OPTIONS "https://localhost:8443/" -H "Allow: GET, POST, PUT, DELETE, PATCH, OPTIONS, TRACE, CONNECT"
+
+
+
+8. Другие зловредные запросы
+
+HTTP Request Smuggling:
+curl.exe -k --http1.1 -X POST "https://localhost:8443/" -H "Content-Type: application/x-www-form-urlencoded" -H "Content-Length: 13" -H "Transfer-Encoding: chunked" --data-binary "0\r\n\r\nGET /admin HTTP/1.1\r\nHost: localhost:8443\r\n\r\n"
+
+XML External Entity (XXE) Injection:
+curl.exe -k -X POST "https://localhost:8443/xml" -H "Content-Type: application/xml" --data-binary "<?xml version=\"1.0\"?><!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///etc/passwd\"> ]><foo>&xxe;</foo>"
+
+XXE Injection:
+curl.exe -k --max-time 10 -X POST "https://localhost:8443/xml" -H "Content-Type: application/xml" --data-binary "<?xml version=\"1.0\"?><!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///etc/passwd\"> ]><foo>&xxe;</foo>"
+
+Тесты с некорректными заголовками:
+curl.exe -k -X POST https://localhost:8443 -H "X-Custom-Header: invalid|header|value"
+curl.exe -k -X POST https://localhost:8443 -H "User-Agent: python-requests/2.28"
+
+
+
+9. DoS-атаки
+Использовал программу "hey" версии 0.1.4 (офиц. сайт: https://github.com/rakyll/hey)
+
+Тест с постепенным увеличением нагрузки:
+hey.exe -n 1000 -c 10 -q 4 https://localhost:8443
+
+Параметры:
+-n 1000: 1000 запросов.
+-c 10: 10 одновременных соединений.
+-q 4: Ограничение скорости — 4 запроса в секунду.
+
+Ожидаемый результат:
+Большинство запросов должны быть успешными (статус 200), так как скорость запросов не превышает лимит.
+
+
+Тест с длительной нагрузкой:
+hey -z 30s -c 50 https://localhost:8443/
+
+Параметры:
+-z 30s: Тест длится 30 секунд.
+-c 50: 50 одновременных соединений.
+
+Ожидаемый результат:
+После превышения лимита запросов сервер должен начать возвращать статус 429.
+
+
+Тест с разными IP-адресами:
+hey -n 1000 -c 10 -H "X-Forwarded-For: 1.2.3.4" https://localhost:8443/
+
+Параметры:
+-H "X-Forwarded-For: 1.2.3.4": Заголовок, имитирующий запросы от разных IP-адресов.
+
+Ожидаемый результат:
+Лимитер должен учитывать IP-адреса, и запросы от разных IP-адресов не должны влиять друг на друга.
+
+
+Тест с отключением keep-alive:
+hey -n 1000 -c 50 -disable-keepalive https://localhost:8443/
+
+Параметры:
+-disable-keepalive: Отключает повторное использование TCP-соединений.
+
+Ожидаемый результат:
+Сервер должен корректно обрабатывать запросы, даже если каждое соединение устанавливается заново.
+
+
+Тест с большим количеством одновременных соединений:
+hey -n 10000 -c 500 https://localhost:8443/
+
+Параметры:
+-n 10000: 10 000 запросов.
+-c 500: 500 одновременных соединений.
+
+Ожидаемый результат:
+Сервер должен корректно отклонять запросы после превышения лимита.
+
+
