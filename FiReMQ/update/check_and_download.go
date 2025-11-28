@@ -31,6 +31,10 @@ type CheckResult struct {
 	ExpectedSHA   string // sha256 в hex
 }
 
+// Sentinel-ошибки для сигнализации отсутствия обновлений/ассета
+var ErrNoMatchingAsset = errors.New("подходящего обновления не найдено")
+var ErrNoReleases = errors.New("обновлений нет")
+
 // exeDir возвращает директорию, в которой находится исполняемый файл
 func exeDir() (string, error) {
 	exe, err := os.Executable()
@@ -140,7 +144,7 @@ func findAssetGitHub(rel *githubRelease) (githubAsset, string, error) {
 			return a, m[1], nil // Группа 1 в шаблоне содержит версию
 		}
 	}
-	return githubAsset{}, "", fmt.Errorf("ассет по шаблону %q не найден", assetPattern)
+	return githubAsset{}, "", fmt.Errorf("%w: %q", ErrNoMatchingAsset, assetPattern)
 }
 
 // checkLatestFromGitHub проверяет наличие последнего релиза на GitHub
@@ -252,7 +256,7 @@ func fetchGitFlicReleases() (*gitflicReleases, error) {
 // findLatestGitFlicRelease находит самый новый стабильный релиз с валидной версией
 func findLatestGitFlicRelease(rels *gitflicReleases) (*gitflicRelease, error) {
 	if len(rels.Embedded.ReleaseTagModelList) == 0 {
-		return nil, errors.New("релизы не найдены в ответе API")
+		return nil, ErrNoReleases
 	}
 
 	var latest *gitflicRelease
@@ -274,7 +278,7 @@ func findLatestGitFlicRelease(rels *gitflicReleases) (*gitflicRelease, error) {
 		}
 	}
 	if latest == nil {
-		return nil, errors.New("не найдено релизов с валидной версией в tagName (без pre-release)")
+		return nil, ErrNoReleases
 	}
 	return latest, nil
 }
@@ -287,7 +291,7 @@ func findGitFlicAsset(rel *gitflicRelease) (gitflicAsset, string, error) {
 			return a, m[1], nil // Группа 1 в шаблоне содержит версию
 		}
 	}
-	return gitflicAsset{}, "", fmt.Errorf("ассет по шаблону %q не найден", assetPattern)
+	return gitflicAsset{}, "", fmt.Errorf("%w: %q", ErrNoMatchingAsset, assetPattern)
 }
 
 // checkLatestFromGitFlic проверяет наличие последнего релиза на GitFlic

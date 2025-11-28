@@ -60,7 +60,7 @@ window.addEventListener("load", function() {
 
 // Функция для валидации ввода (без знака пробела, либо с ним и доп. символами)
 function validateInput(input, allowSpace = false) {
-  const regex = allowSpace ? /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%.\?\-\*+=,:|()"'@–—]+$/ : /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%.?-]+$/;
+  const regex = allowSpace ? /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%.\/?\-\*+=,:|()"'@–—]+$/ : /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%.\/?-]+$/;
   return regex.test(input);
 }
 
@@ -3141,19 +3141,41 @@ document.addEventListener("DOMContentLoaded", function() {
 		const data = await resp.json().catch(() => ({}));
 
 		if (!resp.ok) {
-		  const errMsg = data?.error || `HTTP ${resp.status}`;
+		  // Если сервер всё же прислал JSON с текущей версией — покажем её
+		  if (data && data.CurrentVersion) {
+			elFiCurrent.textContent = data.CurrentVersion;
+			elFiNew.textContent = "—";
+		  }
+		  const errMsg = data?.error || data?.Description || `HTTP ${resp.status}`;
 		  throw new Error(errMsg);
 		}
 
-    const current = data?.CurrentVersion ?? "—";
-    const latest = data?.NewVersion ?? "—";
-    const backup = data?.BackupVersion ?? null;
+		// Служебный заголовок от сервера "X-FiReMQ-Repo-State", сообщает состояние релиза в репозитории относительно текущей версии:
+		//   ok    — релиз равен текущей или новее
+		//   older — релиз в репозитории старее
+		//   none  — релизов или подходящих ассетов нет вовсе
+		const repoState = resp.headers.get("X-FiReMQ-Repo-State");
+		
+		const current = data?.CurrentVersion ?? "—";
+		const latest = data?.NewVersion ?? null;
+		const backup = data?.BackupVersion ?? null;
 
-    elFiCurrent.textContent = current;
-    elFiNew.textContent = latest;
+		elFiCurrent.textContent = current;
 
-    const canUpdate = compareVersions(latest, current) > 0;
-    setFiUpdateEnabled(canUpdate);
+		if (latest && String(latest).trim()) {
+			// Пришла равная ил�� более новая версия
+			elFiNew.textContent = latest;
+			setFiUpdateEnabled(compareVersions(latest, current) > 0);
+		} else {
+			// Нет новой версии для показа (старее или релизов нет)
+			elFiNew.textContent = "—";
+			setFiUpdateEnabled(false);
+
+			// Розовый PUSH — только когда репозиторий старее
+			if (repoState === "older") {
+				showPush(`В репозитории доступна более старая версия, чем установлена (${current}).`, "#ff4081");
+			}
+		}
 
     // Динамический tooltip с версией из бэкапа (если есть); иначе — дефолт
     if (btnFiRollback) {

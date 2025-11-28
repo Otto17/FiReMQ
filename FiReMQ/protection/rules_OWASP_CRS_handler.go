@@ -285,7 +285,7 @@ func performUpdate(downloadURL string) error {
 		fmt.Sprintf("bak_%s_OWASP_CRS_%s.7z",
 			time.Now().Format("02.01.06(в_15.04.05)"), currentVersion))
 
-	// Создает директорию для бэкапов, если она не существует
+	// Создаёт директорию для бэкапов, если она не существует
 	if err := pathsOS.EnsureDir(pathsOS.Path_Backup); err != nil {
 		return fmt.Errorf("ошибка создания директории бэкапов: %v", err)
 	}

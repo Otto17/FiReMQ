@@ -19,7 +19,7 @@ var (
 
 func init() {
 	// Добавляет логирование для отслеживания инициализации
-	log.Println("DEBUG: permissions_linux.go init() стартовал.")
+	// log.Println("DEBUG: permissions_linux.go init() стартовал.")
 
 	u, err := user.Lookup("firemq")
 	if err != nil {
@@ -41,9 +41,10 @@ func init() {
 
 	firemqUID = uid
 	firemqGID = gid
-	log.Printf("Пользователь 'firemq' найден (uid=%d, gid=%d). Права будут применены.", firemqUID, firemqGID)
+	// log.Printf("Пользователь 'firemq' найден (uid=%d, gid=%d). Права будут применены.", firemqUID, firemqGID)
+
 	// Добавляет логирование для отслеживания завершения инициализации
-	log.Println("DEBUG: permissions_linux.go init() завершен.")
+	// log.Println("DEBUG: permissions_linux.go init() завершен.")
 }
 
 // SetOwnerAndPerms устанавливает владельца firemq:firemq и права доступа для пути
@@ -73,4 +74,9 @@ func ensureDirAllAndSetOwner(path string, perm os.FileMode) error {
 	}
 	setOwnerAndPerms(path, perm)
 	return nil
+}
+
+// scheduleSelfUpdate - заглушка для Linux (обновление происходит атомарно сразу)
+func scheduleSelfUpdate(newExe, oldExe string) {
+	// Ничего не делает
 }

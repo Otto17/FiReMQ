@@ -37,16 +37,33 @@ var resendLimiter = struct {
 }{last: make(map[string]time.Time)}
 
 func main() {
-	// Показывает версию FiReMQ
 	args := os.Args
+
+	// Показывает справку
+	if len(args) >= 2 && (args[1] == "?" || strings.EqualFold(args[1], "-h") || strings.EqualFold(args[1], "--help")) {
+		printHelp()
+		return
+	}
+
+	// Показывает версию FiReMQ
 	if len(args) >= 2 && strings.EqualFold(args[1], "--version") {
 		fmt.Printf("Версия \"FiReMQ\": %s\n", update.CurrentVersion)
 		return
 	}
 
+	// Проверяет, что все переданные аргументы являются допустимыми флагами
+	for _, arg := range os.Args[1:] {
+		if !strings.EqualFold(arg, "--RestoreDB") && !strings.EqualFold(arg, "--PasswdDB") {
+			fmt.Printf(db.ColorBrightRed+"Ошибка: Неизвестный ключ запуска \"%s\""+db.ColorReset+"\n", arg)
+			printHelp()
+			os.Exit(1)
+		}
+	}
+
 	// Умеренный вызов сборщика мусора
 	debug.SetGCPercent(80)
 
+	// Проверка запуска FiReMQ от суперпользователя в Linux
 	if runtime.GOOS == "linux" && os.Geteuid() == 0 {
 		log.Println("FiReMQ запущен от root. Коррекция прав будет выполнена при завершении.")
 		defer func() {
@@ -77,6 +94,20 @@ func main() {
 	// Проверка и загрузка главного конфига
 	if err := pathsOS.Init(); err != nil {
 		log.Fatalf("Ошибка инициализации главной конфигурации \"server.conf\": %v", err)
+	}
+
+	// Режима смены пароля WEB админки (выбор админа через интерактивное меню)
+	if len(args) >= 2 && strings.EqualFold(args[1], "--PasswdDB") {
+		// Запускает режим смены пароля конкретного админа в БД
+		db.PerformPasswordReset()
+		return
+	}
+
+	// Режим восстановления БД (аварийный режим с интерактивным меню)
+	if len(args) >= 2 && strings.EqualFold(args[1], "--RestoreDB") {
+		// Запускает режим восстановления БД BadgerDB
+		db.PerformRestoreMode()
+		return
 	}
 
 	// Определение режима (интерактив/служба) для проверки и создания mTLS сертификатов
@@ -111,6 +142,10 @@ func main() {
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
+
+	// Запуск планировщика бэкапов БД
+	db.StartAutoBackup()
+
 	defer func() { // Завершение работы с BadgerDB при завершении основной программы
 		if err := db.Close(); err != nil {
 			log.Printf("Ошибка закрытия БД: %v", err)
@@ -331,4 +366,17 @@ func allowResend(clientID string, window time.Duration) (bool, time.Duration) {
 	}
 	resendLimiter.last[clientID] = now
 	return true, 0
+}
+
+// printHelp выводит справку по доступным ключам запуска
+func printHelp() {
+	// Ярко-синий цвет ключей, для контрастности
+	blue := db.ColorBrightBlue
+	reset := db.ColorReset
+
+	fmt.Println("Доступные ключи запуска FiReMQ:")
+	fmt.Printf("    %s?%s, %s-h%s, %s--help%s          — Вызов справки.\n", blue, reset, blue, reset, blue, reset)
+	fmt.Printf("    %s--version%s              — Узнать версию FiReMQ.\n", blue, reset)
+	fmt.Printf("    %s--RestoreDB%s            — Режим восстановления БД из бэкапа (интерактивный режим), запускать от root и остановленной службой firemq.\n", blue, reset)
+	fmt.Printf("    %s--PasswdDB%s             — Режим смены пароля WEB админки (интерактивный режим), запускать от root и остановленной службой firemq.\n", blue, reset)
 }

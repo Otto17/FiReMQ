@@ -28,7 +28,7 @@ func InitDB() error {
 	// Настройка параметров BadgerDB для оптимизации работы
 	opts := badger.DefaultOptions(pathsOS.Path_DB).
 		WithLoggingLevel(badger.WARNING). // Уровень логирования
-		WithValueLogFileSize(64 << 20).   // Уменьшает размер value log файла до 64МБ
+		WithValueLogFileSize(64 << 20).   // Устанавливает размер value log файла в 64МБ
 		WithMemTableSize(1 << 30).        // Устанавливает размер memtable в 1ГБ
 		WithNumGoroutines(4)              // Использует 4 фоновых потока
 

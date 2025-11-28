@@ -4,7 +4,7 @@
 package update
 
 // Текущая версия FiReMQ в формате: "дд.мм.гг"
-const CurrentVersion = "01.11.25"
+const CurrentVersion = "26.11.25"
 
 // Формат версии для time.Parse ("дд.мм.гг")
 const versionLayout = "02.01.06"

@@ -281,7 +281,12 @@
 			<div class="cheat-row">
 			  <button type="button" class="cheat-insert-btn">⮕</button>
 			  <div class="cheat-cmd"><code>shutdown /r /t [время_в_секундах]</code></div>
-			  <div class="cheat-desc">Перезагружает компьютер через N-секунд, для отмены - "shutdown /a".</div>
+			  <div class="cheat-desc">Перезагружает компьютер через N-секунд (0 - перезагрузка выполнится сразу), принудительная перезагрузка "shutdown /r /f", для отмены - "shutdown /a".</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>shutdown /s /t 0</code></div>
+			  <div class="cheat-desc">Выключить компьютер через N-секунд.</div>
 			</div>
 			<div class="cheat-row">
 			  <button type="button" class="cheat-insert-btn">⮕</button>
@@ -416,7 +421,12 @@
 				<div class="cheat-row">
 				  <button type="button" class="cheat-insert-btn">⮕</button>
 				  <div class="cheat-cmd"><code>Restart-Computer -Force</code></div>
-				  <div class="cheat-desc">Принудительно перезагружает компьютер, для выключения компьютера использовать - "Stop-Computer".</div>
+				  <div class="cheat-desc">Принудительно перезагружает компьютер.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Stop-Computer -Force</code></div>
+				  <div class="cheat-desc">Принудительно выключает компьютер.</div>
 				</div>
 				<div class="cheat-row">
 				  <button type="button" class="cheat-insert-btn">⮕</button>

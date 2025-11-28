@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -24,23 +25,7 @@ type PlanOp struct {
 	SrcInZip  string // путь внутри архива FiReMQ/
 	DestAbs   string // абсолютный путь назначения
 	ConfKey   string // ключ конфигурации (если применимо)
-	SkipApply bool   // указывает, что эту операцию следует пропустить, например, при защите от удаления апдейтера
-}
-
-// BackupEntry описывает одну запись в манифесте бэкапа
-type BackupEntry struct {
-	Action  Action `json:"action"`   // что было сделано
-	DestAbs string `json:"dest_abs"` // абсолютный путь назначения после операции
-	Existed bool   `json:"existed"`  // существовал ли файл до операции
-}
-
-// BackupManifest описывает общую информацию о созданном бэкапе
-type BackupManifest struct {
-	CreatedAt   string        `json:"created_at"`
-	FromVersion string        `json:"from_version"`
-	ToVersion   string        `json:"to_version"`
-	Entries     []BackupEntry `json:"entries"`
-	Note        string        `json:"note,omitempty"`
+	SkipApply bool   // указывает, что эту операцию следует пропустить
 }
 
 // --- Универсальная обёртка над архивом (.zip | .tar.gz) ---
@@ -182,12 +167,7 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 				needReplaceExe = true
 			}
 		}
-
-		// Обеспечивает защиту от самоуничтожения апдейтера
-		if strings.EqualFold(filepath.Clean(dest), filepath.Join(exeDir, updaterName())) {
-			log.Printf("Пропуск операции над %s (action=%s) — файл занят апдейтером", updaterName(), it.Action)
-			op.SkipApply = true
-		}
+		// Убрана блокировка обновления самого апдейтера, теперь это обрабатывается в applyPlan
 
 		ops = append(ops, op)
 	}
@@ -200,6 +180,15 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 			dest = v
 			if !filepath.IsAbs(dest) {
 				dest = filepath.Join(exeDir, dest)
+			}
+			// Если путь указывает на директорию, добавляем относительный путь из Src
+			if info, err := os.Stat(dest); err == nil && info.IsDir() {
+				parts := strings.SplitN(filepath.ToSlash(it.Src), "/", 2)
+				if len(parts) == 2 {
+					dest = filepath.Join(dest, filepath.FromSlash(parts[1]))
+				} else {
+					dest = filepath.Join(dest, filepath.Base(it.Src))
+				}
 			}
 			// Если путь не найден в server.conf, использует "DestDefault" из манифеста
 		} else if it.DestDefault != "" {
@@ -232,12 +221,6 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 			SrcInZip: strings.TrimPrefix(path.Clean(it.Src), "/"),
 			DestAbs:  filepath.Clean(dest),
 			ConfKey:  it.Key,
-		}
-
-		// Защита от попыток трогать сам ServerUpdater
-		if strings.EqualFold(op.DestAbs, filepath.Join(exeDir, updaterName())) {
-			log.Printf("Пропуск операции над %s из config[%s]", updaterName(), it.Key)
-			op.SkipApply = true
 		}
 
 		ops = append(ops, op)
@@ -363,7 +346,7 @@ func extractFromArchiveToTemp(a *Archive, srcInZip, tempDest string) (os.FileMod
 					return 0, err
 				}
 
-				mode := os.FileMode(hdr.Mode)
+				mode := hdr.FileInfo().Mode()
 				out, err := os.OpenFile(tempDest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 				if err != nil {
 					return 0, err
@@ -394,46 +377,96 @@ func atomicReplace(dest, tempFile string) error {
 	return os.Rename(tempFile, dest)
 }
 
-// applyPlan выполняет список операций PlanOp
-func applyPlan(a *Archive, ops []PlanOp) error {
+// applyPlan выполняет список операций PlanOp. Возвращает bool=true, если требуется отложенное самообновление (Windows)
+func applyPlan(a *Archive, ops []PlanOp) (bool, error) {
+	myExePath, _ := os.Executable()
+	selfUpdatePending := false
+
 	for _, op := range ops {
 		if op.SkipApply {
 			log.Printf("ПРОПУСК: %s %s -> %s", ruAction(op.Action), op.SrcInZip, op.DestAbs)
 			continue
 		}
+
+		// Проверка на обновление самого апдейтера
+		isSelfUpdate := false
+		if myExePath != "" && strings.EqualFold(filepath.Clean(op.DestAbs), filepath.Clean(myExePath)) {
+			isSelfUpdate = true
+		}
+
 		switch op.Action {
 		case ActDelete:
-			// Игнорирует ошибку, если файл уже не существует
+			// Если пытаемся удалить сами себя на Windows — это может вызвать ошибку, но в рамках апдейтера это редкий кейс
+			// Для надежности можно пропустить
+			if isSelfUpdate && runtime.GOOS == "windows" {
+				log.Printf("ПРОПУСК удаления апдейтера (Windows restriction): %s", op.DestAbs)
+				continue
+			}
 			if err := os.Remove(op.DestAbs); err != nil && !os.IsNotExist(err) {
-				return fmt.Errorf("delete %s: %w", op.DestAbs, err)
+				return false, fmt.Errorf("delete %s: %w", op.DestAbs, err)
 			}
 			log.Printf("УДАЛЕНИЕ: %s", op.DestAbs)
 
 		case ActUpdate:
+			// Если это самообновление на Windows — распаковываем в _new.exe и не делаем atomicReplace сейчас
+			if isSelfUpdate && runtime.GOOS == "windows" {
+				// Распаковываем в <Name>_new.exe
+				newName := strings.TrimSuffix(op.DestAbs, ".exe") + "_new.exe"
+
+				// Удаляем старый _new если остался
+				_ = os.Remove(newName)
+
+				mode, err := extractFromArchiveToTemp(a, op.SrcInZip, newName)
+				if err != nil {
+					return false, fmt.Errorf("self-update extract failed: %w", err)
+				}
+				setOwnerAndPerms(newName, mode)
+
+				log.Printf("САМООБНОВЛЕНИЕ (Windows): новая версия сохранена как %s. Будет применена при выходе.", newName)
+				selfUpdatePending = true
+				continue
+			}
+
+			// Стандартная логика (Linux или другие файлы)
 			temp := op.DestAbs + ".tmp"
 
 			// Извлекает файл из архива во временную директорию
 			mode, err := extractFromArchiveToTemp(a, op.SrcInZip, temp)
 			if err != nil {
-				return err
+				return selfUpdatePending, err
 			}
 
 			// Создает родительскую директорию с правильными правами, если она не существует
 			if err := ensureDirAllAndSetOwner(filepath.Dir(op.DestAbs), 0755); err != nil {
 				_ = os.Remove(temp)
-				return err
+				return selfUpdatePending, err
 			}
 
 			if err := atomicReplace(op.DestAbs, temp); err != nil {
 				_ = os.Remove(temp)
-				return fmt.Errorf("replace %s: %w", op.DestAbs, err)
+				return selfUpdatePending, fmt.Errorf("replace %s: %w", op.DestAbs, err)
+			}
+
+			// Нормализация прав для Linux
+			if runtime.GOOS == "linux" {
+				ext := strings.ToLower(filepath.Ext(op.DestAbs))
+				// Исполняемые файлы (без расширения или .sh)
+				if ext == "" || ext == ".sh" || ext == ".bin" {
+					mode = 0755 // Права на исполняемые файлы (FiReMQ, ServerUpdater)
+				} else {
+					mode = 0644 // Права на обычные файлы (index.html, modal.js, конфиги .json, .conf, .pem и т.д.)
+				}
 			}
 
 			// Устанавливает владельца и права доступа на финальный файл
 			setOwnerAndPerms(op.DestAbs, mode)
 
-			log.Printf("ОБНОВЛЕНИЕ: %s (права=%o)", op.DestAbs, mode)
+			if isSelfUpdate {
+				log.Printf("САМООБНОВЛЕНИЕ: %s успешно заменён (активно при следующем запуске).", op.DestAbs)
+			} else {
+				log.Printf("ОБНОВЛЕНИЕ: %s (права=%o)", op.DestAbs, mode)
+			}
 		}
 	}
-	return nil
+	return selfUpdatePending, nil
 }

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	version = "01.11.25" // Текущая версия ServerUpdater в формате "дд.мм.гг"
+	version = "26.11.25" // Текущая версия ServerUpdater в формате "дд.мм.гг"
 
 	backupTimestampLayout = "02.01.06(в_15.04.05)" // Формат метки времени для резервной копии "дд.мм.гг(в_ЧЧ.ММ.СС)""
 	backupPatternPrefix   = "bak_"                 // Префикс
@@ -71,7 +71,7 @@ func main() {
 
 		log.Println("Замена из локального архива завершена успешно.")
 		LogSpacer(2) // Два пустых абзаца-разделителя
-		return // Завершает работу после успешного обновления
+		return       // Завершает работу после успешного обновления
 	}
 
 	log.Println("Использование:")
@@ -111,7 +111,7 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	// Полный путь к основному исполняемому файлу
 	exeFull := filepath.Join(dir, exeName())
 
-	// 1) Ждёт полного завершения FiReMQ по PID (если PID передан)
+	// Ждёт полного завершения FiReMQ по PID (если PID передан)
 	if pidStr != "" {
 		if err := waitPIDExit(pidStr, waitShutdownTimeout); err != nil {
 			return fmt.Errorf("FiReMQ не завершился за %s: %w", waitShutdownTimeout, err)
@@ -120,17 +120,17 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 		log.Printf("PID не передан — пропускаем точное ожидание процесса, продолжаем по тайм-аутам.")
 	}
 
-	// 2) Пауза, чтобы БД и файлы успели закрыться
+	// Пауза, чтобы БД и файлы успели закрыться
 	time.Sleep(1 * time.Second) // Пауза для закрытия файлов и соединений с БД
 
-	// 3) Полный бэкап
+	// Полный бэкап
 	bakPath, err := CreateFullBackup(dir, currentVersion, confMap, confPath)
 	if err != nil {
 		return fmt.Errorf("не удалось создать полный бэкап перед обновлением: %w", err)
 	}
 	log.Printf("Полный бэкап создан: %s", bakPath)
 
-	// 4) Замена файлов
+	// Замена файлов
 	if needReplaceExe {
 		if err := waitFiReMQExit(exeFull); err != nil {
 			return err
@@ -139,7 +139,9 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 		time.Sleep(2 * time.Second) // Пауза если исполняемый файл не подлежит замене
 	}
 
-	if err := applyPlan(arch, ops); err != nil {
+	// Применяет план, возвращает true, если на Windows был отложен апдейт самого себя
+	selfUpdatePending, err := applyPlan(arch, ops)
+	if err != nil {
 		return fmt.Errorf("ошибка применения плана: %w", err)
 	}
 
@@ -158,8 +160,18 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 		}
 	}
 
-	// 5) Запускает FiReMQ (на Linux предварительно устанавливаются права +x и владелец)
-	return startFiReMQ(exeFull)
+	// Запускает FiReMQ (на Linux предварительно устанавливаются права +x и владелец)
+	startErr := startFiReMQ(exeFull)
+
+	// Если было запланировано самообновление (Windows)
+	if selfUpdatePending {
+		myExe, _ := os.Executable()
+		newExe := strings.TrimSuffix(myExe, ".exe") + "_new.exe"
+		log.Println("Запуск планировщика самообновления (замена ServerUpdater.exe после выхода)...")
+		scheduleSelfUpdate(newExe, myExe)
+	}
+
+	return startErr
 }
 
 // exeDir возвращает абсолютный путь к директории, где расположен апдейтер

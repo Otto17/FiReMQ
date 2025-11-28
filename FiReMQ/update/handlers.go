@@ -8,6 +8,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -82,7 +83,38 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meta, err := CheckLatest()
-	if err != nil {
+
+	// RepoState для клиента в заголовке: ok | older | none
+	repoState := "none"
+	var newPtr *string
+
+	switch {
+	case err == nil:
+		v := strings.TrimSpace(meta.RemoteVersion)
+		if v != "" {
+			if strings.TrimSpace(v) == strings.TrimSpace(CurrentVersion) {
+				// Релиз равен текущей версии — показывает его
+				newPtr = &v
+				repoState = "ok"
+			} else {
+				need, cmpErr := isRemoteNewer(CurrentVersion, v)
+				if cmpErr != nil {
+					http.Error(w, fmt.Errorf("ошибка сравнения версий: %w", cmpErr).Error(), http.StatusBadGateway)
+					return
+				}
+				if need {
+					// Релиз новее — показывает
+					newPtr = &v
+					repoState = "ok"
+				} else {
+					// Релиз в репозитории старее — не показывает
+					repoState = "older"
+				}
+			}
+		}
+	case errors.Is(err, ErrNoMatchingAsset) || errors.Is(err, ErrNoReleases):
+		repoState = "none" // Релизов нет/ассетов нет
+	default:
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
@@ -100,10 +132,14 @@ func CheckHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	// Добавляет служебный заголовок для фронта
+	w.Header().Set("X-FiReMQ-Repo-State", repoState)
+
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"CurrentVersion": CurrentVersion,
-		"NewVersion":     meta.RemoteVersion,
-		"BackupVersion":  bkpPtr, // null, если бэкапа нет или не удалось определить версию
+		"NewVersion":     newPtr, // Равная или новее; null — если старее или релизов нет
+		"BackupVersion":  bkpPtr,
 	})
 }
 

@@ -62,6 +62,8 @@ var (
 	Path_Server_QUIC_Key        string // Ключ QUIC сервера
 	Key_ChaCha20_Poly1305       string // Ключ шифрования
 	Path_Backup                 string // Путь бэкапов
+	DB_Backup_Interval          string // Интервал создания бэкапов БД
+	DB_Backup_Retention_Count   string // Кол-во хранимых бэкапов БД
 	Path_Logs                   string // Путь к директории логов
 	Update_PrimaryRepo          string // Выбор основного репозитория: "github" или "gitflic"
 	Update_GitHubReleasesURL    string // URL релизов GitHub
@@ -136,14 +138,14 @@ func entries() []configEntry {
 		{"Path_Web_Key", "SSL ключ для WEB админки", &Path_Web_Key, filepath.Join(certsDir, "server-key.pem")},
 
 		{"MQTT_Host", "Хост MQTT сервера, (0.0.0.0 для доступа из любой сети) или конкретный IP (например, 127.0.0.1) только для локальных подключений", &MQTT_Host, "0.0.0.0"},
-		{"MQTT_Port", "Порт TCP MQTT сервера", &MQTT_Port, "8883"},
+		{"MQTT_Port", "Порт TCP MQTT сервера", &MQTT_Port, "8783"},
 		{"Path_Config_MQTT", "Конфиг MQTT сервера", &Path_Config_MQTT, filepath.Join(configDir, "mqtt_config.json")},
 		{"Path_Server_MQTT_CA", "MQTT CA сертификат", &Path_Server_MQTT_CA, filepath.Join(certsDir, "server-cacert.pem")},
 		{"Path_Server_MQTT_Cert", "MQTT сертификат сервера", &Path_Server_MQTT_Cert, filepath.Join(certsDir, "server-cert.pem")},
 		{"Path_Server_MQTT_Key", "MQTT ключ сервера", &Path_Server_MQTT_Key, filepath.Join(certsDir, "server-key.pem")},
 
 		{"MQTT_Client_Host", "Хост брокера для локального клиента AutoPaho", &MQTT_Client_Host, "localhost"},
-		{"MQTT_Client_Port", "Порт TCP брокера MQTT для локального клиента AutoPaho", &MQTT_Client_Port, "8883"},
+		{"MQTT_Client_Port", "Порт TCP брокера MQTT для локального клиента AutoPaho", &MQTT_Client_Port, "8783"},
 		{"Path_Client_MQTT_CA", "MQTT CA клиент", &Path_Client_MQTT_CA, filepath.Join(certsDir, "client-cacert.pem")},
 		{"Path_Client_MQTT_Cert", "MQTT сертификат клиента", &Path_Client_MQTT_Cert, filepath.Join(certsDir, "client-cert.pem")},
 		{"Path_Client_MQTT_Key", "MQTT ключ клиента", &Path_Client_MQTT_Key, filepath.Join(certsDir, "client-key.pem")},
@@ -158,6 +160,8 @@ func entries() []configEntry {
 		{"Key_ChaCha20_Poly1305", "Файл ключа ChaCha20-Poly1305, для шифрования/дешифрования логина авторизованного админа в куках браузера", &Key_ChaCha20_Poly1305, filepath.Join(configDir, "chacha20_key")},
 
 		{"Path_Backup", "Путь до директории с бэкапами FiReMQ", &Path_Backup, backupDir},
+		{"DB_Backup_Interval", "Интервал создания полных бэкапов БД в часах (0 - отключено)", &DB_Backup_Interval, "12"},
+		{"DB_Backup_Retention_Count", "Количество хранимых бэкапов БД (при достижении лимита, новый бэкап заменяет самый старый)", &DB_Backup_Retention_Count, "15"},
 		{"Path_Logs", "Путь до директории с логами", &Path_Logs, logsDir},
 
 		{"Update_PrimaryRepo", "Выбор основного репозитория: \"gitflic\" или \"github\" для обновления FiReMQ (резервный задействуется автоматически при проблемах с основным репозиторием)", &Update_PrimaryRepo, "gitflic"},

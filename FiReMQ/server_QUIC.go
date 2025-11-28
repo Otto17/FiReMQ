@@ -527,11 +527,12 @@ func (m *quicAccessManager) run(ctx context.Context) {
 	} else if ready {
 		m.open("startup: есть невыполненные задачи и онлайн-клиенты")
 	} else {
-		if has, _ := hasPendingQUICTasks(); has {
-			//log.Printf("QUIC: доступ закрыт (startup) — есть задачи, но все целевые клиенты офлайн")
-		} else {
-			//log.Printf("QUIC: доступ закрыт (startup) — нет активных задач")
-		}
+		_, _ = hasPendingQUICTasks()
+		// if has, _ := hasPendingQUICTasks(); has {
+		// 	log.Printf("QUIC: доступ закрыт (startup) — есть задачи, но все целевые клиенты офлайн")
+		// } else {
+		// 	log.Printf("QUIC: доступ закрыт (startup) — нет активных задач")
+		// }
 	}
 	<-ctx.Done()
 	m.close("shutdown")
