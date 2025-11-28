@@ -1,0 +1,90 @@
+/* ГРУППЫ */
+
+.groups {
+  width: 240px;
+  min-width: 240px;
+  padding: 15px;
+  background-color: #202020;
+  border-radius: 8px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.groups h2 {
+  text-align: center;
+  font-size: 24px;
+  color: #f1f1f1;
+  margin-top: 5px;
+}
+
+.group-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: #2d2d2d;
+  border-radius: 5px;
+  text-align: left;
+  font-size: 14px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.4s;
+  word-break: break-all; /* Перенос слов */
+}
+
+.group-item:hover {
+  background-color: #777; /* Цвет при наведении */
+  transform: scale(1.03); /* Увеличение при наведении */
+  border-left: 5px solid #2196f3; /* Пунктирная линия слева при наведении */
+}
+
+/* Разворачивание подгрупп в группе */
+
+.expand-icon {
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.subgroups {
+  margin-left: 20px;
+}
+
+.subgroup-list {
+  margin-left: 20px;
+}
+
+.subgroup-item {
+  padding: 8px;
+  margin-bottom: 5px;
+  background-color: #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 13px;
+  transition: background-color 0.4s;
+  cursor: pointer;
+  word-break: break-all; /* Перенос слов */
+}
+
+.subgroup-item:hover {
+  background-color: #444;
+  transform: scale(1.02);
+  border-left: 5px solid #ff4081;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Кнопка "Все клиенты" */
+.group-item span.all_clients {
+  margin-left: 20px;
+}
+
+/* Постоянное выделение выбранных группы/подгруппы */
+.group-item.selected {
+  background-color: #777;            /* как при :hover у группы */
+  border-left: 5px solid #2196f3;    /* как при :hover у группы */
+}
+
+.subgroup-item.selected {
+  background-color: #444;            /* как при :hover у подгруппы */
+  border-left: 5px solid #ff4081;    /* как при :hover у подгруппы */
+}

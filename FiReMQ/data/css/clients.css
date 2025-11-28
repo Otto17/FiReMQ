@@ -1,0 +1,173 @@
+/* КЛИЕНТЫ */
+
+/* Таблица клиентов */
+table {
+  width: 100%;
+  background-color: #333333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 9px;
+  text-align: center;
+  font-size: 14px;
+  color: #e0e0e0;
+  border: 1px solid #444;
+}
+
+th {
+  background-color: #444;
+  font-weight: bold;
+}
+
+/* Уменьшаем отступы только в ячейке со статусом */
+td[data-field="status"] {
+  padding: 6px; /* Установка меньших отступов */
+}
+
+/* Перенос целого текста в ячейках "Имя" */
+td[data-field="name"] {
+  overflow-wrap: break-word; /* Перенос слов */
+  max-width: 35ch; /* Максимальная ширина в символах */
+}
+
+.status-image {
+  width: 24px;
+  height: 24px;
+  display: block; /* Чтобы изображение занимало всю ширину ячейки */
+  margin: auto; /* Центрируем изображение, если нужно */
+  vertical-align: middle; /* Выровнять по центру по вертикали */
+}
+
+/* Подсветка строки клиента при наведении */
+table tr:hover {
+  background-color: #5a5a5a;
+}
+
+/* Фон и выравнивание */
+.clients {
+  flex-grow: 1;
+  padding: 15px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.clients h2 {
+  text-align: center;
+  font-size: 24px;
+  color: #f1f1f1;
+  margin-top: 5px;
+}
+
+.actions {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* столбик "Все" */
+.actions button {
+  padding: 4px 8px;
+  font-size: 13px;
+  color: #ffffff;
+  background-color: #4a90e2;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.actions button:hover {
+  background-color: #357ab8;
+}
+
+/* Стили для контекстного меню */
+.context-menu {
+  position: absolute;
+  background-color: #444;
+  border: 1px solid #666;
+  border-radius: 4px;
+  display: none;
+  z-index: 10;
+}
+
+.context-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 5px 0;
+}
+
+.context-menu li {
+  padding: 8px 12px;
+  color: #f1f1f1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.context-menu li:hover {
+  background-color: #666;
+}
+
+/* Стили для иконок в контекстном меню */
+.context-menu-icon {
+width: 16px; /* Подберите размер по своему усмотрению */
+height: 16px;
+vertical-align: middle; /* Выравнивание по середине строки */
+margin-right: 8px; /* Отступ справа от иконки до текста */
+margin-left: -4px; /* Отступ от левого края до иконки */
+}
+
+/* Иконка и текст находятся в одной строке */
+.context-menu-item {
+display: flex;
+align-items: center; /* Выравнивание по центру по вертикали */
+}
+
+.context-menu-item span {
+flex-grow: 1; /* Текст занимает оставшееся пространство */
+}
+
+/* Постоянное выделение строки при открытом контекстном меню */
+tr.selected-context {
+background-color: #777777 !important;
+}
+
+/* Стили стрелок сортировки */
+.sort-indicator {
+  margin-left: 3px;
+  font-size: 10px;
+  visibility: hidden; /* Изначально стрелки не видны */
+}
+
+.sort-indicator.active {
+  visibility: visible; /* Показываем стрелку на активной сортировке */
+}
+
+/* Меню и клиенты */
+.hidden {
+  display: none !important;
+}
+
+.name-input {
+  display: none;
+}
+
+.status-text.hidden {
+  display: none;
+}
+
+.context-menu-item.hidden {
+  display: none;
+}
+
+/* Запрет выделения текста в заголовках колонок клиентской таблицы */
+.clients table th {
+    user-select: none;         /* стандарт */
+    -webkit-user-select: none; /* Safari/Chrome */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* старый IE/Edge */
+    cursor: pointer;           /* визуально показать, что это кликабельно */
+}

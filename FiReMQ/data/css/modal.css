@@ -1,0 +1,2138 @@
+/* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ КЛИЕНТА */
+
+.modal-window {
+  display: none; /* Скрыто по умолчанию */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.7); /* Затемнение заднего фона */
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-window-content {
+  background-color: #2a2a2a; /* Цвет фона модального окна */
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: #e0e0e0;
+  position: relative;
+}
+
+.modal-window-content.delete-client {
+  width: 300px; /* Ширина для удаления одного клиента */
+}
+
+.modal-window-content.delete-check {
+  width: 340px; /* Увеличенная ширина для массового удаления */
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: white;
+}
+
+h2 {
+  font-size: 26px; /* Размер шрифта заголовка */
+  margin-bottom: 26px; /* Отступ для заголовка */
+}
+
+p {
+  font-size: 16px;
+  margin-bottom: 26px; /* Отступ имени от кнопки */
+  overflow-wrap: break-word; /* Перенос длинных слов */
+}
+
+input[type="text"] {
+  width: calc(100% - 20px); /* Увеличена ширина поля ввода */
+  padding: 10px; /* Увеличен внутренний отступ */
+  border: 1px solid #555; /* Цвет рамки */
+  border-radius: 4px; /* Скругление углов поля ввода */
+  background-color: #3e3e3e; /* Цвет фона для темной темы */
+  color: white; /* Цвет текста */
+  font-size: 16px; /* Увеличен размер шрифта */
+}
+
+input[type="text"]::placeholder {
+  color: #888; /* Цвет плейсхолдера */
+}
+
+.save-buttonModal {
+  background-color: #d9534f; /* Красный цвет кнопки */
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.save-buttonModal:hover {
+  background-color: #c9302c; /* Более тёмный красный */
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО МАССОВОГО УДАЛЕНИЯ КЛИЕНТОВ */
+
+/* Поле ввода подтверждения */
+#deleteConfirmationInput {
+  width: calc(100% - 20px); /* Увеличенная ширина */
+  padding: 10px; /* Внутренний отступ */
+  border: 1px solid #555; /* Цвет рамки */
+  border-radius: 4px; /* Скругленные углы */
+  background-color: #3e3e3e; /* Цвет фона */
+  color: white; /* Цвет текста */
+  font-size: 16px; /* Размер шрифта */
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+#deleteConfirmationInput:focus {
+  outline: none;
+  border-color: #d9534f; /* Красная рамка при фокусе */
+}
+
+/* Кнопка удаления (деактивирована) */
+.save-buttonModal:disabled {
+  background-color: #444; /* Серый цвет для неактивной кнопки */
+  cursor: not-allowed;
+}
+
+/* Увеличенная длина кнопки для массового удаления */
+.delete-check-button {
+  width: 100%; /* Кнопка займет всю ширину контейнера */
+  padding: 12px; /* Увеличиваем внутренние отступы */
+  font-size: 18px; /* Увеличиваем шрифт для акцента */
+}
+
+/* Красный текст "Удаляем!" */
+.delete-confirmation-text {
+  color: #ff0000; /* Красный цвет текста */
+  font-weight: bold; /* Жирный для акцента */
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО КАК ДЛЯ МАССОВОГО ПЕРЕМЕЩЕНИЯ КЛИЕНТОВ, ТАК И ОДИНОЧНОГ ОПЕРЕМЕЩЕНИЯ КЛИЕНТА В ДРУГУЮ ГРУППУ/ПОДГРУППУ */
+
+.modal-window-content.move-client {
+  width: 370px;
+  background-color: #2e2e2e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+#existingGroups,
+#existingGroupsCheck {
+  width: 85%; /* Ширина поля выбора */
+  margin: 10px auto;
+  padding: 8px;
+  border: 1px solid #666;
+  border-radius: 6px;
+  background-color: #444;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Поля ввода */
+#moveClientForm input[type="text"],
+#moveCheckClientsForm input[type="text"] {
+  width: 80%; /* Ширина полей ввода */
+  margin: 10px auto;
+  padding: 8px;
+  border: 1px solid #666;
+  border-radius: 6px;
+  background-color: #444;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Разделитель между группами */
+#existingGroups option.group-divider,
+#existingGroupsCheck option.group-divider {
+  background-color: #333;
+  font-style: italic;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+  padding: 5px 0; /* Отступ сверху и снизу */
+}
+
+/* Кнопка перемещения */
+.save-buttonModal {
+  margin: 10px auto;
+  font-size: 18px;
+}
+
+/* Выделение выбранной строки */
+#existingGroups option.highlight-selected,
+#existingGroupsCheck option.highlight-selected {
+  background-color: #ccff90; /* Мятный фон */
+  color: #000000; /* Чёрный текст */
+  font-weight: bold; /* Жирный шрифт */
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО УЧЁТНЫХ ЗАПИСЕЙ АДМИНОВ */
+
+#accountsModal .modal-window-content {
+  width: 70%; /* Ширина модального окна */
+  max-width: 910px; /* Максимальная ширина */
+  max-height: 85vh; /* высота модального окна */
+  min-width: 750px; /* Минимальная ширина */
+  overflow-y: auto; /* Включаем полосу прокрутки */
+  background-color: #2a2a2a; /* Цвет фона */
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: #e0e0e0;
+  position: relative;
+}
+
+/* В два столбика */
+#accountsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+#accountsModal .close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+#accountsModal .close:hover {
+  color: white;
+}
+
+#accountsModal h2 {
+  font-size: 26px; /* Размер шрифта заголовка */
+  margin-bottom: 26px; /* Отступ для заголовка */
+}
+
+#addUserForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#addUserForm input[type="text"],
+#addUserForm input[type="password"],
+#addUserForm .save-buttonModal {
+  border-radius: 8px;
+}
+
+#accountsModal input[type="text"],
+#accountsModal input[type="password"] {
+  width: calc(100% - 20px); /* Увеличена ширина поля ввода */
+  padding: 10px; /* Увеличен внутренний отступ */
+  border: 1px solid #555; /* Цвет рамки */
+  border-radius: 4px; /* Скругление углов поля ввода */
+  background-color: #3e3e3e; /* Цвет фона для темной темы */
+  color: white; /* Цвет текста */
+  font-size: 14px; /* Увеличен размер шрифта */
+}
+
+.login-display {
+    margin-bottom: 10px;
+    padding: 8px;
+    background-color: #3e3e3e;
+    border-radius: 4px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.account-form {
+  border: 1px solid #555; /* Цвет рамки */
+  border-radius: 12px; /* Скругление углов */
+  padding: 12px; /* Внутренний отступ */
+  background-color: #444; /* Цвет фона для темной темы */
+  width: calc(45% - 10px); /* Ширина контейнера */
+  box-sizing: border-box; /* Учитываем padding и border в общей ширине */
+}
+
+.account-form input,
+.login-display {
+    margin-bottom: 9px;
+}
+
+.account-form button {
+  width: calc(55% - 24px); /* Ширина кнопок */
+  margin: 8px 4px 8px 0;
+  margin-top: 1px; /* Поднять кнопки */
+  padding: 6px 12px; /* Уменьшен внутренний отступ */
+  font-size: 14px;
+}
+
+.password-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-container .toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.password-input-container .toggle-password img {
+  width: 25px;
+  height: 25px;
+}
+
+#accountsList .save-buttonModal {
+  background-color: #d9534f; /* Красный цвет кнопки Удалить */
+  border: none;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#accountsList .save-buttonModal:hover {
+  background-color: #c9302c; /* Более тёмный красный */
+}
+
+#accountsList .save-buttonModal.update-button {
+  background-color: #2196f3; /* Голубой цвет кнопки Обновить */
+}
+
+#accountsList .save-buttonModal.update-button:hover {
+  background-color: #1e88e5; /* Более тёмный голубой */
+}
+
+#addUserForm .save-buttonModal {
+  background-color: #5cb85c; /* Зелёный цвет кнопки Добавить*/
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+#addUserForm .save-buttonModal:hover {
+  background-color: #4cae4c; /* Более тёмный красный */
+}
+
+.admin-form-container {
+  border: 1px solid #555; /* Цвет рамки */
+  border-radius: 12px; /* Скругление углов */
+  padding: 20px; /* Внутренний отступ */
+  background-color: #444; /* Цвет фона для темной темы */
+  width: 100%; /* Ширина контейнера */
+  max-width: 400px; /* Максимальная ширина контейнера */
+  margin: 0 auto; /* Центрирование контейнера */
+}
+
+/* Текстовая строка Создан/Изменён */
+.date-info {
+  font-size: 12px;
+  margin-bottom: 7px;
+  color: #888;
+}
+
+.date-info.padding-right-26 {
+padding-right: 26px;
+}
+
+.login-display span.login-name {
+margin-left: 3px;
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО MQTT АВТОРИЗАЦИЯ */
+
+#mqttAuthModal .modal-window-content.mqtt-auth-content {
+  width: 450px; /* Увеличиваем ширину модального окна */
+  background-color: #2a2a2a; /* Цвет фона */
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: #e0e0e0;
+  position: relative;
+}
+
+#mqttAuthModal .close-mqtt {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+#mqttAuthModal .close-mqtt:hover {
+  color: white;
+}
+
+#mqttAuthModal h2 {
+  font-size: 26px; /* Размер шрифта заголовка */
+  margin-bottom: 26px; /* Отступ для заголовка */
+}
+
+#mqttAuthForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#mqttAuthForm input[type="text"],
+#mqttAuthForm input[type="password"] {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #3e3e3e;
+  color: white;
+  font-size: 16px;
+}
+
+#mqttAuthForm input[type="text"]:read-only {
+  background-color: #2a2a2a; /* Темный фон для поля только для чтения */
+  color: #888; /* Серый цвет текста */
+}
+
+#mqttAuthForm input[type="text"]::placeholder,
+#mqttAuthForm input[type="password"]::placeholder {
+  color: #888;
+}
+
+#mqttAuthForm .mqtt-password-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px; /* Расстояние между полем ввода и кнопкой */
+}
+
+#mqttAuthForm .mqtt-password-input-container input[type="password"] {
+  flex: 1; /* Поле ввода занимает всё доступное пространство */
+}
+
+#mqttAuthForm .mqtt-password-input-container .mqtt-toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+#mqttAuthForm .mqtt-password-input-container .mqtt-toggle-password img {
+  width: 25px;
+  height: 25px;
+}
+
+#saveMqttAuth {
+  background-color: #2196f3; /* Голубой цвет кнопки */
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 6px; /* Скругление углов поля ввода */
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s ease;
+}
+
+#saveMqttAuth:hover {
+  background-color: #1e88e5; /* Более тёмный голубой */
+}
+
+#saveMqttAuth.confirm-mode {
+  background-color: #d9534f; /* Красный цвет */
+}
+
+#saveMqttAuth.confirm-mode:hover {
+  background-color: #c9302c; /* Темнее красный при hover */
+}
+
+/* Стили для контейнера резервного аккаунта */
+.reserve-account-container {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background-color: #3e3e3e;
+  text-align: center;
+}
+
+#reserveAccountStatus {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+#reserveAccountState {
+  font-weight: bold;
+}
+
+#reserveAccountState.enabled {
+  color: #ff0000; /* Ярко-красный цвет для "Включён" */
+}
+
+#reserveAccountState.disabled {
+  color: #00ff00; /* Ярко-зелёный цвет для "Выключен" */
+}
+
+#toggleReserveAccount {
+  padding: 10px 40px; /* Увеличиваем ширину кнопки */
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #2196f3; /* Синий цвет */
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+#toggleReserveAccount:hover {
+  background-color: #1e88e5; /* Более тёмный синий */
+}
+
+#toggleReserveAccount.confirm-mode {
+  background-color: #d9534f; /* Красный цвет для режима подтверждения */
+}
+
+#toggleReserveAccount.confirm-mode:hover {
+  background-color: #c9302c; /* Более тёмный красный */
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО ВЫПОЛНИТЬ КОМАНДУ */
+
+.command-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.command-modal-content {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  color: #e0e0e0;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+#executeCommandModal .command-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaaaaa;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#executeCommandModal .command-modal-close:hover {
+  color: #ffffff;
+}
+
+#executeCommandModal .command-modal-content h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  text-align: center;
+}
+
+#executeCommandModal .command-modal-field {
+  margin-bottom: 15px;
+}
+
+#executeCommandModal .command-modal-field label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+#executeCommandModal .command-modal-field select,
+#executeCommandModal .command-modal-field input[type="text"],
+#executeCommandModal .command-modal-field input[type="password"],
+#executeCommandModal .command-modal-field textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555555;
+  border-radius: 4px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+#executeCommandModal .command-password-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+
+#executeCommandModal .command-password-input-container input[type="password"],
+#executeCommandModal .command-password-input-container input[type="text"] {
+  flex: 1;
+}
+
+/* Неактивное состояние поля пароль */
+#executeCommandModal #commandPassword:disabled {
+  background-color: #000;
+  color: #888;
+  cursor: not-allowed;
+}
+
+#executeCommandModal .command-toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+#executeCommandModal .command-toggle-password img {
+  width: 25px;
+  height: 25px;
+}
+
+/* Красный контур для полей ввода при фокусе */
+#executeCommandModal .command-modal-field input[type="text"]:focus,
+#executeCommandModal .command-modal-field input[type="password"]:focus,
+#executeCommandModal .command-modal-field textarea:focus {
+  outline: none; /* Убираем стандартный контур */
+  border-color: #d9534f; /* Красная рамка при фокусе */
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2); /* Легкая тень для акцента */
+}
+
+#executeCommandModal .command-modal-field textarea {
+  resize: vertical;
+  min-height: 80px; /* Минимальная высота */
+  max-height: 300px; /* Максимальная высота */
+}
+
+#executeCommandModal .command-modal-checkbox {
+  margin-bottom: 15px;
+}
+
+#executeCommandModal .command-modal-checkbox label {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+#executeCommandModal .command-modal-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+#executeCommandModal .command-modal-submit {
+  background-color: #1e88e5;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+#executeCommandModal .command-modal-submit:hover {
+  background-color: #1976d2;
+}
+
+#executeCommandModal .command-modal-radio {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+#executeCommandModal .command-modal-radio label {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+#executeCommandModal .command-modal-radio input[type="radio"] {
+  margin-right: 5px;
+}
+
+#executeCommandModal .command-modal-field fieldset {
+  border: none; /* Убираем стандартную рамку fieldset */
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+#executeCommandModal .command-modal-field legend {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+/* Стили для radio-блока "Выполнение для пользователей" */
+#userExecutionFieldset .command-modal-radio label {
+  font-size: 14px; /* Размер шрифта 14px */
+  white-space: normal; /* Перенос текста */
+  position: relative;
+  cursor: help;
+  line-height: 1.3;
+}
+
+/* Знак вопроса */
+#userExecutionFieldset .command-modal-radio label::after {
+  content: "?"; /* Знак вопроса */
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-40%);
+  font-size: 12px;
+  color: #1e88e5;
+}
+
+/* Всплывающая подсказка */
+#userExecutionFieldset .command-modal-radio label:hover::before {
+  content: attr(data-tooltip); /* Текст подсказки */
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 250px;
+  z-index: 1000;
+  opacity: 0;
+  animation: tooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
+}
+
+/* Анимация для подсказки */
+@keyframes tooltipFade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Стили для неактивного состояния */
+#userExecutionFieldset:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+#userExecutionFieldset:disabled .command-modal-radio label {
+  cursor: not-allowed;
+  color: #666;
+}
+
+#userExecutionFieldset:disabled .command-modal-radio label::after {
+  color: #666;
+}
+
+/* fieldset для "Тип терминала" */
+#terminalTypeFieldset {
+  width: 43%;
+  display: inline-block;
+  vertical-align: top;
+}
+
+/* Контейнер для кнопки "Список полезных команд" */
+#cheatsheetButtonContainer {
+  width: 43%;
+  display: inline-block;
+  margin-left: 3%;
+  vertical-align: bottom;
+  padding: 7.4px 0 0 0;
+}
+
+/* Кнопка "Список полезных команд" */
+#executeCommandModal .command-help-button {
+  background-color: #444345;
+  color: #ffffff;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.25s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+#executeCommandModal .command-help-button:hover {
+  background-color: #403f41;   /* чуть темнее */
+}
+
+/* fieldset для кнопки "Список полезных команд" */
+#cheatsheetFieldset {
+  width: 43%;
+  height: 34px;
+  display: inline-block;
+  margin-left: 3%;
+  vertical-align: top; /* чтобы легло ровно рядом с типом терминала */
+  padding: 7px;
+}
+
+/* Опускает fieldset "Список полезных команд" вниз */
+#cheatsheetFieldset {
+  position: relative;
+  top: 8px;
+}
+
+/* Модалка "Список полезных команд" поверх окна "Выполнить команду" */
+#commandCheatsheetModal {
+  z-index: 1200; /* Выше, чем #executeCommandModal (1000) */
+}
+
+#commandCheatsheetModal .command-modal-content {
+  max-width: 900px;
+  max-height: 90vh;       /* не выше 90% высоты окна */
+  overflow-y: auto;       /* вертикальная прокрутка при необходимости */
+  overflow-x: hidden;     /* убираем горизонтальную */
+}
+
+#commandCheatsheetModal .command-modal-content h2 {
+  margin: 0 0 15px;   /* чуть меньше отступ снизу */
+  font-size: 20px;    /* немного меньше размера */
+  text-align: center; /* по центру */
+}
+
+#commandCheatsheetModal .command-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaaaaa;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+#commandCheatsheetModal .command-modal-close:hover {
+  color: #ffffff;
+}
+
+#commandCheatsheetModal .cheatsheet-content {
+  white-space: pre-wrap;
+  line-height: 1.4;
+  font-size: 15px;
+  color: #e0e0e0;
+}
+
+/* Вкладки в модалке "Список полезных команд" */
+#commandCheatsheetModal .cheatsheet-tabs {
+  display: flex;
+  gap: 0;                       /* без зазоров — единый блок */
+  background-color: #2e2e2e;
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+#commandCheatsheetModal .cheatsheet-tab {
+  flex: 1;                      /* 50/50 ширины */
+  text-align: center;
+  background: transparent;
+  color: #dddddd;
+  border: none;
+  cursor: pointer;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: background-color 0.2s, color 0.2s;
+  border-right: 1px solid #444; /* разделитель между вкладками */
+}
+
+#commandCheatsheetModal .cheatsheet-tab:last-child {
+  border-right: none;
+}
+
+#commandCheatsheetModal .cheatsheet-tab:hover {
+  background-color: rgba(76, 175, 80, 0.10);
+  color: #c8e6c9;
+}
+
+#commandCheatsheetModal .cheatsheet-tab.active {
+  background: linear-gradient(180deg, rgba(76,175,80,0.22), rgba(76,175,80,0.12));
+  color: #e8f5e9;
+}
+
+#commandCheatsheetModal .cheatsheet-panels {
+  margin-top: 10px;
+}
+
+#commandCheatsheetModal .cheatsheet-panel {
+  display: none;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  font-size: 15px;
+  color: #e0e0e0;
+}
+
+#commandCheatsheetModal .cheatsheet-panel.active {
+  display: block;
+}
+
+/* Две колонки для "Список полезных команд" */
+#commandCheatsheetModal .cheatsheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#commandCheatsheetModal .cheat-row {
+  display: grid;
+  grid-template-columns: 34px minmax(260px, 38%) 1fr; /* кнопка / команда / описание */
+  align-items: center; /* текст остаётся сверху для читабельности */
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px dashed #3a3a3a;
+}
+
+/* Разрешаем контенту сжиматься внутри grid-колонок и не вылезать */
+#commandCheatsheetModal .cheat-cmd,
+#commandCheatsheetModal .cheat-desc {
+  min-width: 0;
+}
+
+/* На всякий случай, чтобы длинные описания не толкали сетку */
+#commandCheatsheetModal .cheat-desc {
+  overflow-wrap: anywhere;
+}
+
+#commandCheatsheetModal .cheat-row:last-child {
+  border-bottom: none;
+}
+
+#commandCheetsheetModal .cheat-row:hover,
+#commandCheatsheetModal .cheat-row:hover { /* защита от опечаток селектора */
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Команда: моноширинный блок */
+#commandCheatsheetModal .cheat-cmd code {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;	/* чтобы padding и border не вылезали */
+  background: #222;
+  border: 1px solid #3f3f3f;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #e8f5e9;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+/* Описание */
+#commandCheatsheetModal .cheat-desc {
+  color: #cfcfcf;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Адаптив: на узких экранах стекаем в колонку */
+@media (max-width: 700px) {
+  #commandCheatsheetModal .cheat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Стили кнопки вставки команды */
+#commandCheatsheetModal .cheat-insert-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #4CAF50;
+  background: #2e7d32; /* зелёная под тёмную тему */
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color .2s, transform .08s, box-shadow .2s, border-color .2s;
+
+  /* Центровка кнопки по вертикали строки (относительно высоты .cheat-cmd) */
+  align-self: center;
+  justify-self: center;
+
+  /* Запрет выделения стрелки "⮕" */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+#commandCheatsheetModal .cheat-insert-btn:hover {
+  background: #43a047;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+  border-color: #66bb6a;
+}
+
+#commandCheatsheetModal .cheat-insert-btn:active {
+  transform: scale(0.96);
+  background: #1b5e20;
+}
+
+#commandCheatsheetModal .cheat-insert-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25);
+}
+
+/* Подсказка для всех кнопок вставки команды */
+#commandCheatsheetModal .cheat-insert-btn {
+  position: relative; /* для привязки подсказки */
+}
+
+/* Подсказки для кнопок вставки команды */
+#commandCheatsheetModal .cheat-insert-btn:hover::before {
+  content: "Вставить команду в поле";
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: rgba(20, 20, 20, 0.8);
+  color: #fff;
+  padding: 5px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 110px;
+  z-index: 1300;
+  opacity: 0;
+  animation: tooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО УСТАНОВКИ ПО */
+
+.install-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.install-modal-content {
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  color: #e0e0e0;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.install-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaaaaa;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.install-modal-close:hover {
+  color: #ffffff;
+}
+
+.install-modal-content h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.install-modal-field {
+  margin-bottom: 15px;
+}
+
+.install-modal-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+.install-modal-field input[type="text"],
+.install-modal-field input[type="password"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555555;
+  border-radius: 4px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* Неактивное состояние поля пароль */
+#installPassword:disabled {
+  background-color: #000;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Стили для отключенных полей при "Только скачать" */
+.install-modal-field input:disabled,
+.install-modal-checkbox input:disabled {
+  background-color: #000;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.install-password-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+
+.install-password-input-container input[type="password"],
+.install-password-input-container input[type="text"] {
+  flex: 1;
+}
+
+.install-toggle-password {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.install-toggle-password img {
+  width: 25px;
+  height: 25px;
+}
+
+/* Стили для панели Drag-and-drop */
+.drop-area {
+  border: 2px dashed #555;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 15px;
+  height: 90px;
+  /* Фиксированная высота */
+  min-height: 90px;
+  /* Предотвращает сжатие панели */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Убирает влияние текста на высоту */
+}
+
+/* Размер шрифта для Drag-and-drop панели */
+#dropText {
+  pointer-events: none; /* «пропускаем» все события через <p> прямо в .drop-area */
+  font-size: 14px;
+  margin-top: 30px;
+}
+
+.install-modal-submit {
+  background-color: #1e88e5;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s;
+}
+
+.install-modal-submit:hover {
+  background-color: #1976d2;
+}
+
+.install-modal-radio {
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+/* Красный контур для полей ввода при фокусе в модальном окне "Установка ПО" */
+#installProgramModal .install-modal-field input[type="text"]:focus,
+#installProgramModal .install-modal-field input[type="password"]:focus {
+  outline: none;
+  border-color: #d9534f;
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2);
+}
+
+/* Стили для radio-блока "Выполнение для пользователей" в "Установка ПО" */
+#installUserExecutionFieldset .install-modal-radio label {
+  font-size: 14px;
+  white-space: normal;
+  display: flex;
+  position: relative;
+  cursor: help;
+  line-height: 1.3;
+}
+
+/* Знак вопроса для radio-блока */
+#installUserExecutionFieldset .install-modal-radio label::after {
+  content: "?";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-40%);
+  font-size: 12px;
+  color: #1e88e5;
+  margin-left: 5px;
+}
+
+/* Всплывающая подсказка для radio-блока */
+#installUserExecutionFieldset .install-modal-radio label:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 250px;
+  z-index: 1000;
+  opacity: 0;
+  animation: tooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
+}
+
+/* Стили для метки с подсказкой (для полей ввода и чекбоксов) */
+.tooltip-label {
+  font-size: 16px;
+  position: relative;
+  cursor: help;
+  display: inline-block;
+  /* Для корректного позиционирования псевдоэлемента в полях ввода */
+}
+
+/* Для чекбоксов, чтобы сохранить выравнивание */
+.install-modal-checkbox .tooltip-label {
+  display: flex;
+  align-items: center;
+}
+
+/* Знак вопроса для всех меток с классом .tooltip-label */
+.tooltip-label::after {
+  content: "?";
+  position: relative;
+  display: inline-block;
+  font-size: 12px;
+  color: #1e88e5;
+  margin-left: 5px;
+  /* Отступ слева от текста метки */
+  vertical-align: middle;
+  /* Выравнивание по вертикали */
+}
+
+/* Всплывающая подсказка для меток с классом .tooltip-label */
+.tooltip-label:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 250px;
+  z-index: 1000;
+  opacity: 0;
+  animation: tooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
+}
+
+/* Анимация для подсказки */
+@keyframes tooltipFade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.install-modal-radio input[type="radio"] {
+  margin-right: 5px;
+}
+
+.install-modal-checkbox {
+  margin-bottom: 15px;
+}
+
+.install-modal-checkbox label {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.install-modal-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.install-modal-field fieldset {
+  border: none;
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+.install-modal-field legend {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+/* Стили для текста с названием файла */
+#fileNameText {
+  font-size: 14px;
+  font-weight: bold;
+  color: #d0d0d0;
+  text-align: center;
+  margin-top: -50px;
+  word-break: break-all;
+  padding: 0 5px;
+}
+
+/* Контейнер для информации о загрузке */
+#uploadInfoContainer {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+}
+
+/* Стили для текста прогресса и отмены */
+#dropArea #uploadProgress,
+#dropArea #cancelUploadText,
+#dropArea #postUploadCancelText{
+  margin: 15px 0;
+  font-size: 14px;
+  color: #b0b0b0;
+}
+
+/* Дополнительные стили для панели */
+.drop-area {
+  position: relative; /* Необходимо для позиционирования */
+  min-height: 90px; /* Сохраняем минимальную высоту */
+  height: auto; /* Разрешаем растягивание по содержимому */
+}
+
+/* Показываем "запрещающий" курсор, только во время dragover при блокировке */
+.drop-area.blocked.drag-over {
+  cursor: not-allowed !important;
+}
+
+/* Выбор файла */
+.hidden-file-input {
+display: none !important;
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО "Отчёт" */
+
+.report-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.report-modal-content {
+    background-color: #2a2a2a;
+    padding: 20px;
+    border-radius: 8px;
+    width: 80%;
+    max-height: 680px;
+    max-width: 1270px;
+    color: #e0e0e0;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.report-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 24px;
+    color: #aaaaaa;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.report-modal-close:hover {
+    color: #ffffff;
+}
+
+.report-modal-content h2 {
+    margin: 0 0 14px;
+    font-size: 26px;
+    text-align: center;
+}
+
+.report-tabs {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.report-tab-button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+	border-radius: 0;
+}
+
+.report-tab-button:hover {
+    background-color: #4a4a4a;
+}
+
+.report-tab-button.active {
+    background-color: #1e88e5;
+    font-size: 15px;
+}
+
+/* Скругления по краям */
+.report-tab-button:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.report-tab-button:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.report-tab-content {
+    display: none;
+}
+
+.report-tab-content.active {
+    display: block;
+}
+
+/* Общие стили для выбора даты и кнопки удаления */
+.report-select {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.report-select label {
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.report-select select {
+    padding: 5px;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    font-size: 16px;
+}
+
+#deleteCommandBtn,
+#deleteInstallBtn {
+    margin-left: auto;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#deleteCommandBtn:hover,
+#deleteInstallBtn:hover {
+    background-color: #b71c1c;
+}
+
+/* Общие стили для деталей */
+.report-details {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 60px);
+    min-width: 300px;
+}
+
+.cmd-fieldset-fixed,
+.install-fieldset-fixed {
+    flex: 0 0 auto;
+    border: 3px solid #cb0000;
+    margin-bottom: 20px;
+    transition: none;
+}
+
+.report-cmd-details fieldset,
+.report-install-details fieldset {
+    border: 3px solid #cb0000;
+    margin-bottom: 20px;
+    max-height: 180px; /* Фиксированная высота для блока деталей */
+    overflow-y: auto; /* Включаем вертикальную прокрутку */
+    flex: 0 0 auto;
+}
+
+.report-cmd-details legend,
+.report-install-details legend {
+    font-size: 16px;
+    color: #e0e0e0;
+    padding: 0 5px;
+}
+
+/* При разворачивании "Запрос:" на вкладке cmd — ограничиваем высоту и включаем прокрутку */
+#cmdDetails {
+  font-size: 16px;
+  line-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  padding: 0 15px;
+}
+
+.cmd-fieldset-fixed.expanded #cmdDetails {
+  max-height: 185px;
+  overflow-y: auto;  /* вертикальный скролл при переполнении */
+}
+
+.install-fieldset-fixed.expanded #installDetails {
+  max-height: 185px;
+  overflow-y: auto;
+}
+
+#cmdDetails,
+#installDetails {
+    font-size: 16px;
+    line-height: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding: 0 15px;
+	will-change: max-height; /* сглаживает анимацию */
+}
+
+#installDetails p,
+#cmdDetails p {
+    font-size: 14px;
+    margin: 0;
+    padding: 2px 0;
+    line-height: 1.4;
+    overflow-wrap: break-word; /* Перенос длинных слов на новую строку */
+    word-break: break-word; /* Альтернатива для лучшей совместимости */
+    max-width: 100%; /* Ограничиваем ширину контейнера */
+}
+
+.cmd-fieldset-fixed.collapsed,
+.install-fieldset-fixed.collapsed {
+    max-height: 24px;
+    overflow: hidden;
+}
+
+.report-cmd-details p,
+.report-install-details p {
+    font-size: 14px;
+    margin: 0;
+    padding: 2px 0;
+    line-height: 1.4;
+}
+
+/* Контейнер таблицы */
+.cmd-clients-table-container,
+.install-clients-table-container {
+    flex: 1;
+    transition: max-height 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.clients-table-header {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.clients-table-header,
+.clients-table-body {
+    width: calc(100% - 3px);
+}
+
+.clients-table-body-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 3px;
+}
+
+.clients-table-body {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* Общие стили таблицы */
+.clients-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.clients-table-header thead th {
+    background-color: #3a3a3a;
+    padding: 8px;
+    text-align: center;
+    border-bottom: 2px solid #555555;
+}
+
+.clients-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #555555;
+}
+
+.clients-table td:nth-child(2) {
+    text-align: center;
+}
+
+.clients-table td:nth-child(3) {
+    text-align: center;
+}
+
+.clients-table tr:hover {
+    background-color: #4a4a4a;
+}
+
+.col-client {
+    width: auto;
+}
+
+.col-done {
+    width: 160px;
+}
+
+.col-action {
+    width: 100px;
+}
+
+.action-button {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 0 5px;
+}
+
+.action-button.delete {
+    color: red;
+}
+
+.action-button.restart {
+    color: #00e5ff;
+}
+
+/* Стили для "Запрос:" */
+.label-bold {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Стили для кнопок сворачивания/разворачивания */
+.toggle-details-btn {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+	font-size: 16px;
+	padding: 0;
+	margin: 0;
+}
+
+/* Стили для элементов с display: none */
+.initially-hidden {
+    display: none;
+}
+
+.file-name-text {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.upload-info-text {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #b0b0b0;
+}
+
+/* Всплывающие подсказки */
+#tooltipBox.tooltip-box {
+    position: absolute;
+    z-index: 9999;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    max-width: 180px;
+    white-space: normal;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+}
+
+/* Широкие подсказки для колонки "Выполнено" */
+#tooltipBox.tooltip-box.wide {
+  max-width: 360px;
+  overflow-wrap: anywhere; /* перенос даже слитного текста */
+  word-break: break-word; /* резерв для старых движков */
+}
+
+/* Для кнопки подтверждения */
+#confirmDeleteRequestButton:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Запрет выделения легенды */
+#ProhibitHighlightingLegend,
+#ProhibitHighlightingLegendInstall {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Для выполненных задач */
+.done {
+    color: #00ff00; /* Зелёный цвет */
+}
+
+/* Для незавершённых задач */
+.pending {
+    color: #ffa500; /* Оранжевый цвет */
+    font-weight: bold;
+}
+
+/* Для ошибок во вкладке "По установкам ПО" */
+.error {
+  color: #ff2d2d; /* Красный */
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО "О проекте" */
+
+.about-modal-window {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  align-items: center;
+}
+
+.about-modal-content {
+  background-color: #2a2a2a;
+  padding: 30px;
+  border-radius: 8px;
+  color: #e0e0e0;
+  position: relative;
+  width: 705px;
+  max-width: 80%;
+}
+
+.about-modal-content h2 {
+  font-size: 26px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.about-modal-content p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.about-modal-content a {
+  color: #4da6ff;
+  text-decoration: none;
+}
+
+.about-modal-content a:hover {
+  text-decoration: underline;
+}
+
+.about-version {
+  text-align: left;
+  font-size: 14px;
+  color: #aaa;
+  margin-bottom: 20px;
+}
+
+.about-close-button {
+  background-color: #d9534f;
+  border: none;
+  color: white;
+  padding: 10px 25px;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  outline: 2px solid transparent; /* Для фокуса */
+  transition: outline 0.2s ease;
+}
+
+.about-close-button:hover,
+.about-close-button:focus {
+  background-color: #c9302c;
+  outline: 2px solid #fff; /* Видимый контур при фокусе */
+}
+
+/* Отступ в половину абзаца */
+.about-modal-content .first-Progect-paragraph {
+margin-bottom: 0.5em;
+}
+
+/* Только для блока версий в строке FiReMQ */
+#firemqCurrentVersion, 
+#firemqNewVersion {
+}
+
+.owasp-crs-row .owasp-crs-versions.firemq {
+  margin-left: 6px; /* чуть вправо, чтобы совпало с верхней строкой */
+}
+
+/* Блок OWASP CRS в модалке "О проекте" */
+.owasp-crs-section {
+  margin: 18px 0 22px 0;
+}
+
+.owasp-crs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background-color: #1f1f1f;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.owasp-crs-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.owasp-crs-title {
+  font-weight: 600;
+  color: #e0e0e0;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.owasp-crs-versions {
+  color: #cfcfcf;
+  font-size: 14px;
+}
+
+.owasp-crs-sep {
+  color: #666;
+  margin: 0 6px;
+}
+
+.owasp-crs-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.owasp-crs-btn {
+  border: 1px solid #555;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: filter 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.owasp-crs-btn.update {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+}
+.owasp-crs-btn.update:hover:not(:disabled) {
+  background-color: #1b5e20;
+}
+
+.owasp-crs-btn.rollback {
+  background-color: #1565c0;
+  border-color: #1565c0;
+}
+.owasp-crs-btn.rollback:hover {
+  background-color: #0d47a1;
+}
+
+.owasp-crs-btn:disabled {
+  background-color: #2a2a2a;
+  border-color: #444;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Универсальные подсказки при наведении */
+.has-tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.has-tooltip:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
+  width: max-content;
+  max-width: 420px;
+  z-index: 1100;
+  opacity: 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  pointer-events: none;
+  animation: tooltipFade 0.3s ease-in forwards;
+}
+#owaspCRSRollbackBtn.has-tooltip:hover::before {
+  left: auto;
+  right: 0;
+}
+
+#firemqRollbackBtn.has-tooltip:hover::before {
+  left: auto;
+  right: 0;
+}
+
+
+
+/* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ FiReAgent */
+.modal-window-content.uninstall-fireagent {
+  width: 630px;
+  background-color: #2e2e2e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* Список ID клиентов (чипы) */
+.client-id-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 150px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #555;
+  background-color: #242424;
+  border-radius: 6px;
+  margin: 8px 0 16px;
+}
+
+.client-id-list .client-id-chip {
+  background-color: #3e3e3e;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 13px;
+}
+
+/* Поле ввода подтверждения (общее для обоих окон) */
+#deleteConfirmationInput,
+#uninstallConfirmationInput {
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #3e3e3e;
+  color: white;
+  font-size: 16px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+#deleteConfirmationInput:focus,
+#uninstallConfirmationInput:focus {
+  outline: none;
+  border-color: #d9534f; /* Красная рамка при фокусе */
+}
+
+/* Заголовки для списков (оффлайн и онлайн) */
+.pending-caption {
+  margin: 24px 0 4px;
+  color: #cfcfcf;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Индивидуальная строка для подтверждения */
+.delete-confirm-caption {
+  margin: 24px 0 6px;
+  color: #ddd;
+  font-size: 18px;
+}
+
+/* Плейсхолдер пустого списка */
+.client-id-list .list-empty {
+  color: #9a9a9a;
+  font-style: italic;
+  padding: 4px;
+}
+
+/* Чипы — теперь делаем их инлайн-флекс, чтобы добавить крестик */
+.client-id-list .client-id-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #3e3e3e;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Визуально отличим "ожидающих" (оффлайн) */
+.client-id-list .client-id-chip.pending {
+  background-color: #3a2f2f;
+  border-color: #6b4444;
+}
+
+/* Кнопка-крестик внутри чипа */
+.client-id-chip .chip-remove {
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  color: #b5b5b5;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.client-id-chip .chip-remove:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Пока отправляется отмена — делаем крестик полупрозрачным */
+.client-id-chip .chip-remove[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}

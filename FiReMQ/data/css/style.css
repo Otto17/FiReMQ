@@ -1,0 +1,18 @@
+/* ОБЩИЕ СТИЛИ */
+
+body {
+  font-family: Arial, Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  background-color: #181818;
+  color: #e0e0e0;
+  overflow-x: hidden;
+}
+
+.container {
+  display: flex;
+  gap: 20px;
+  padding: 10px 18px;
+  flex-direction: row;
+  align-items: flex-start;
+}

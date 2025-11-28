@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Permissions-Policy" content="interest-cohort()">
+  <meta name="robots" content="noindex, nofollow">
+  <title>FiReMQ (File Relay & MQTT)</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/groups.css">
+  <link rel="stylesheet" href="css/clients.css">
+  <link rel="stylesheet" href="css/push.css">
+</head>
+
+<body>
+  <!-- Модальное окно удаления клиента -->
+  <div id="deleteClientModal" class="modal-window">
+    <div class="modal-window-content delete-client">
+      <span class="close" id="closeDeleteModal">&times;</span>
+      <h2>Удаляем клиента?</h2>
+      <p><strong id="clientNameToDelete"></strong></p>
+      <button id="confirmDeleteButton" class="save-buttonModal">Удалить</button>
+    </div>
+  </div>
+
+  <!-- Модальное окно массового удаления клиентов -->
+  <div id="deleteCheckClientsModal" class="modal-window">
+    <div class="modal-window-content delete-check">
+      <span class="close" id="closeDeleteCheckModal">&times;</span>
+      <h2>Удаляем выделенных клиентов?</h2>
+      <p>Напишите <strong class="delete-confirmation-text">"Удаляем!"</strong> для подтверждения.</p>
+      <input type="text" id="deleteConfirmationInput" placeholder="Введите 'Удаляем!'" autocomplete="off">
+      <button id="confirmDeleteCheckButton" class="save-buttonModal delete-check-button" disabled>
+        Удалить
+      </button>
+    </div>
+  </div>
+
+  <!-- Модальное окно перемещения клиента -->
+  <div id="moveClientModal" class="modal-window">
+    <div class="modal-window-content move-client">
+      <span class="close" id="closeMoveClientModal">&times;</span>
+      <h2>Перемещение клиента</h2>
+      <form id="moveClientForm">
+        <!-- Радио кнопки -->
+        <div>
+          <label>
+            <input type="radio" name="moveOption" value="existing" checked>Выбрать из списка </label>
+          <select id="existingGroups">
+            <option value="" disabled selected>Выберите группу и подгруппу</option>
+          </select>
+        </div>
+        <div>
+          <label>
+            <input type="radio" name="moveOption" value="new">Создать вручную </label>
+          <input type="text" id="newGroupName" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+          <input type="text" id="newSubgroupName" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+        </div>
+        <button type="button" id="confirmMoveClientButton" class="save-buttonModal">Переместить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно перемещения выделенных клиентов -->
+  <div id="moveCheckClientsModal" class="modal-window">
+    <div class="modal-window-content move-client">
+      <span class="close" id="closeMoveCheckModal">&times;</span>
+      <h2>Перемещение выделенных клиентов</h2>
+      <form id="moveCheckClientsForm">
+        <!-- Выбор из списка -->
+        <div>
+          <label>
+            <input type="radio" name="moveOption" value="existing" checked>Выбрать из списка </label>
+          <select id="existingGroupsCheck">
+            <option value="" disabled selected>Выберите группу и подгруппу</option>
+          </select>
+        </div>
+        <!-- Ввод вручную -->
+        <div>
+          <label>
+            <input type="radio" name="moveOption" value="new">Создать вручную </label>
+          <input type="text" id="newGroupNameCheck" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+          <input type="text" id="newSubgroupNameCheck" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+        </div>
+        <button type="button" id="confirmMoveCheckClientsButton" class="save-buttonModal">Переместить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно для учётных записей Админов -->
+  <div id="accountsModal" class="modal-window">
+    <div class="modal-window-content accounts-modal">
+      <span class="close" id="closeAccountsModal">&times;</span>
+      <h2>Учётные записи</h2>
+      <div id="accountsList"></div>
+        <br><hr><br>
+        <h2>Добавить нового Админа</h2>
+        <div class="admin-form-container">
+            <form id="addUserForm">
+                <input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
+                <input type="text" id="newLogin" placeholder="Новый логин (до 30)" maxlength="30" autocomplete="off">
+                <div class="password-input-container">
+                    <input type="password" id="newPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+                    <button type="button" class="toggle-password" data-target="newPassword">
+                        <img id="newPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+                    </button>
+                </div>
+                <button type="submit" class="save-buttonModal">Добавить</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+  <!-- Модальное окно MQTT авторизации -->
+  <div id="mqttAuthModal" class="modal-window">
+    <div class="modal-window-content mqtt-auth-content">
+      <span class="close-mqtt" id="closeMqttAuthModal">&times;</span>
+      <h2>MQTT Авторизация</h2>
+      <form id="mqttAuthForm" onsubmit="return false;">
+        <!-- Поле только для чтения с username из приоритета 0 -->
+        <span>Текущий логин:</span>
+        <input type="text" id="currentMqttUsername" name="currentMqttUsername" readonly>
+        <span>Новые данные:</span>
+        <input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
+        <!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
+        <div class="mqtt-password-input-container">
+          <input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+          <button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
+            <img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+          </button>
+        </div>
+		<button type="button" id="saveMqttAuth" class="mqtt-save-buttonModal">Сохранить</button>
+        <!-- Новый блок для управления резервным аккаунтом -->
+        <div class="reserve-account-container">
+          <span id="reserveAccountStatus">Резервный аккаунт: <span id="reserveAccountState">Выключен</span></span>
+		  <button type="button" id="toggleReserveAccount" class="reserve-button">Включить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно для выполнения команды -->
+  <div id="executeCommandModal" class="command-modal">
+    <div class="command-modal-content">
+      <span class="command-modal-close" id="closeExecuteCommandModal">&times;</span>
+      <h2>Выполнить команду</h2>
+      <!-- Выбор терминала -->
+      <form id="executeCommandForm">
+        <fieldset id="terminalTypeFieldset" class="command-modal-field">
+          <legend>Тип терминала:</legend>
+          <div class="command-modal-radio">
+            <label>
+              <input type="radio" name="terminalType" value="cmd" checked>CMD </label>
+            <label>
+              <input type="radio" name="terminalType" value="powershell">PowerShell </label>
+          </div>
+        </fieldset>
+        <!-- Кнопка "Список полезных команд" -->
+		  <fieldset id="cheatsheetFieldset" class="command-modal-field">
+			  <button type="button" id="openCommandCheatsheet" class="command-help-button">Список команд</button>
+			</fieldset>
+        <!-- Команда -->
+        <div class="command-modal-field">
+          <label for="commandText">Команда:</label>
+          <textarea id="commandText" name="commandText" placeholder="Введите команду" rows="4" required></textarea>
+        </div>
+        <!-- Поле рабочей папки -->
+        <div class="command-modal-field">
+          <label for="workingFolder">Рабочая папка (опционально):</label>
+          <input type="text" id="workingFolder" name="workingFolder" placeholder="C:\путь\к\папке">
+        </div>
+        <!-- Выбор выполнения для пользователей -->
+        <fieldset id="userExecutionFieldset" class="command-modal-field">
+          <legend>Выполнение для пользователей:</legend>
+          <div class="command-modal-radio">
+            <label data-tooltip="Задача запускается в фоне (неинтерактивный режим), без доступа к графическому интерфейсу пользователя.">
+              <input type="radio" name="runUserScope" value="true" checked>Выполнять для всех пользователей
+            </label>
+            <label data-tooltip="Задача запускается в интерактивном режиме, то есть она может взаимодействовать с пользователем через GUI.">
+              <input type="radio" name="runUserScope" value="false">Выполнять только для пользователей, вошедших в систему
+            </label>
+          </div>
+        </fieldset>
+        <!-- Учётные данные -->
+        <div class="command-modal-field">
+          <label for="commandUserName">Имя пользователя (опционально):</label>
+          <input type="text" id="commandUserName" name="commandUserName" placeholder="Если не задано, используется - СИСТЕМА" autocomplete="off">
+        </div>
+        <div class="command-modal-field">
+          <label for="commandPassword">Пароль (опционально):</label>
+          <div class="command-password-input-container">
+            <input type="password" id="commandPassword" name="commandPassword" placeholder="Пароль" autocomplete="off">
+            <button type="button" class="command-toggle-password">
+				<img id="commandPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+			</button>
+          </div>
+        </div>
+        <!-- Флаг задачи -->
+        <div class="command-modal-checkbox">
+          <label>
+            <input type="checkbox" id="highestPrivileges" name="highestPrivileges">Запуск с наивысшими привилегиями </label>
+        </div>
+        <button type="submit" class="command-modal-submit">Отправить</button>
+      </form>
+    </div>
+  </div>
+
+	<!-- Модальное окно "Список полезных команд" -->
+	<div id="commandCheatsheetModal" class="command-modal">
+	  <div class="command-modal-content">
+		<span class="command-modal-close" id="closeCommandCheatsheetModal">&times;</span>
+		<h2>Список полезных команд</h2>
+		<div class="cheatsheet-tabs">
+		  <button type="button" class="cheatsheet-tab active" data-tab="cmd">CMD команды</button>
+		  <button type="button" class="cheatsheet-tab" data-tab="powershell">PowerShell команды</button>
+		</div>
+
+		<div class="cheatsheet-panels">
+		<!-- CMD команды -->
+		  <div class="cheatsheet-panel active" id="cheat-tab-cmd">
+		  <div class="cheatsheet-list">
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>Dism /Online /Cleanup-Image /RestoreHealth</code></div>
+			  <div class="cheat-desc">Восстанавливает повреждённые системные файлы Windows, скачивая исправленные версии с серверов Microsoft  (требуются права администратора).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>sfc /scannow</code></div>
+			  <div class="cheat-desc">Проверяет и восстанавливает целостность системных файлов  (требуются права администратора).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>echo Y | chkdsk C: /f</code></div>
+			  <div class="cheat-desc">Проверяет и исправляет ошибки на диске C: (требует перезагрузки, если диск системный или занят и права администратора), "echo Y" - автоматически отправляет "Y" (да) на запрос подтверждения.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>wmic product get name</code></div>
+			  <div class="cheat-desc">Выводит список установленных программ, через WMIC (требуются права администратора).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall" /s | findstr /I "DisplayName"</code></div>
+			  <div class="cheat-desc">Выводит список установленных программ через реестр, быстрее и полнее для большинства случаев, чем WMIC.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>netstat -ano</code></div>
+			  <div class="cheat-desc">Показывает активные сетевые подключения, порты и PID процессов.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>tasklist</code></div>
+			  <div class="cheat-desc">Отображает список запущенных процессов.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>taskkill /PID [ID] /F</code></div>
+			  <div class="cheat-desc">Принудительно завершает процесс по его PID (ID).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>ipconfig /all</code></div>
+			  <div class="cheat-desc">Показывает полную информацию о сетевых адаптерах и IP-адресах.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>ipconfig /flushdns</code></div>
+			  <div class="cheat-desc">Очищает локальный кэш DNS-резолвера.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>systeminfo</code></div>
+			  <div class="cheat-desc">Подробная информация о системе, включая версию Windows, процессор, память и т. д.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>shutdown /r /t [время_в_секундах]</code></div>
+			  <div class="cheat-desc">Перезагружает компьютер через N-секунд, для отмены - "shutdown /a".</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>schtasks /query /fo LIST /v</code></div>
+			  <div class="cheat-desc">Показывает список всех запланированных задач (включая скрытые).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>driverquery /v</code></div>
+			  <div class="cheat-desc">Список всех установленных драйверов и их состояние.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>net start w32time & w32tm /resync /force</code></div>
+			  <div class="cheat-desc">Запускает службу времени (если не запущена) и синхронизирует системное время с сервером времени (требуются права администратора).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>assoc</code></div>
+			  <div class="cheat-desc">Список ассоциаций файлов (какие программы открывают какие расширения).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>wevtutil qe System "/rd:true" /f:text /c:[кол-во_записей]</code></div>
+			  <div class="cheat-desc">Последние N-записей системного журнала.</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>bcdedit /enum all</code></div>
+			  <div class="cheat-desc">Конфигурация загрузки Windows (требуются права администратора).</div>
+			</div>
+			<div class="cheat-row">
+			  <button type="button" class="cheat-insert-btn">⮕</button>
+			  <div class="cheat-cmd"><code>tracert [домен_или_ip]</code></div>
+			  <div class="cheat-desc">Трассирует маршрут до указанного хоста, показывая задержки на каждом шаге.</div>
+			</div>
+		  </div>
+		</div>
+		  <!-- PowerShell команды -->
+			<div class="cheatsheet-panel" id="cheat-tab-powershell">
+			  <div class="cheatsheet-list">
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-ComputerInfo</code></div>
+				  <div class="cheat-desc">Подробная информация о системе (аналог systeminfo в CMD).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First [кол-во_процессов]</code></div>
+				  <div class="cheat-desc">Топ‑N процессов по потреблению CPU.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-NetAdapter</code></div>
+				  <div class="cheat-desc">Список сетевых адаптеров в деталях.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-ExecutionPolicy -List</code></div>
+				  <div class="cheat-desc">Просмотр уровня безопасности для запуска скриптов PowerShell.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Set-ExecutionPolicy [ключ] -Scope [область] -Force</code></div>
+				  <div class="cheat-desc">Устанавливает политику выполнения скриптов PowerShell для локального компьютера. Ключи: "Restricted" - запрещены все скрипты (по умолчанию), "AllSigned" - разрешены только скрипты с цифровой подписью, "RemoteSigned" - локальные скрипты - любые, из интернета - только с подписью, "Unrestricted" - разрешены все скрипты, "Bypass" - никакие проверки не выполняются, "Undefined" - сбрасывает политику на уровень по умолчанию. Область: "LocalMachine" для локального компьютера (требуются права администратора), "CurrentUser" - для текущего пользователя, "Process" - только для текущего сеанса PowerShell.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-WmiObject Win32_Product | Select-Object Name, Version</code></div>
+				  <div class="cheat-desc">Список установленных программ (аналог wmic product get name), показывает название программы и версию.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Test-NetConnection [адрес] -Port [порт]</code></div>
+				  <div class="cheat-desc">Проверка доступности (пинга) удалённого хоста и порта.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-NetIPConfiguration</code></div>
+				  <div class="cheat-desc">Подробная информация о сетевых интерфейсах (аналог ipconfig /all).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Clear-DnsClientCache</code></div>
+				  <div class="cheat-desc">Очищает локальный кэш DNS-резолвера (аналог ipconfig /flushdns).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-Service | Where-Object {$_.Status -eq "Running"}</code></div>
+				  <div class="cheat-desc">Список запущенных служб.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Stop-Service -Name [имя_службы] -Force</code></div>
+				  <div class="cheat-desc">Останавливает службу (требуются права администратора).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-EventLog -LogName System -Newest [кол-во_записей]</code></div>
+				  <div class="cheat-desc">Последние N-записей системного журнала событий, альтернативно "Get-WinEvent -MaxEvents [кол-во_записей] -LogName System".</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-HotFix</code></div>
+				  <div class="cheat-desc">Список установленных обновлений Windows.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-Disk | Get-Partition | Get-Volume</code></div>
+				  <div class="cheat-desc">Информация о дисках, разделах и томах системы (требуются права администратора).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Repair-Volume -DriveLetter C -Scan</code></div>
+				  <div class="cheat-desc">Проверка диска C: на ошибки (аналог chkdsk, без перезагрузки, требуются права администратора).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-ScheduledTask | Where-Object {$_.State -ne "Disabled"}</code></div>
+				  <div class="cheat-desc">Список активных запланированных задач.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-WindowsOptionalFeature -Online</code></div>
+				  <div class="cheat-desc">Список доступных и включённых компонентов Windows (требуются права администратора).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-AppxPackage | Select-Object Name, PackageFullName</code></div>
+				  <div class="cheat-desc">Список установленных UWP‑приложений (универсальные приложения для Windows).</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Restart-Computer -Force</code></div>
+				  <div class="cheat-desc">Принудительно перезагружает компьютер, для выключения компьютера использовать - "Stop-Computer".</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-LocalUser</code></div>
+				  <div class="cheat-desc">Структурированный список локальных пользователей.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-LocalGroupMember -Group [имя_локальной_группы]</code></div>
+				  <div class="cheat-desc">Показывает членов указанной группы: "Администраторы", "Пользователи", "Гости" и т.д.</div>
+				</div>
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>Get-CimInstance -ClassName Win32_BIOS</code></div>
+				  <div class="cheat-desc">Современная альтернатива WMI (CIM). Показывает информацию о BIOS, включая серийный номер.</div>
+				</div>
+			  </div>
+			</div>
+		</div>
+	  </div>
+	</div>
+
+  <!-- Модальное окно для установки ПО -->
+  <div id="installProgramModal" class="install-modal">
+    <div class="install-modal-content">
+      <span class="install-modal-close" id="closeInstallProgramModal">×</span>
+      <h2>Установка ПО</h2>
+      <form id="installProgramForm">
+        <!-- Панель Drag-and-drop -->
+        <div id="dropArea" class="drop-area">
+          <p id="dropText">Перетащите исполняемый файл на панель или кликнете сюда</p>
+          <input type="file" id="fileInput" class="hidden-file-input" accept=".exe,.msi,.bat,.cmd,.ps1,.vbs,*/*">
+          <!-- Добавленный элемент для названия файла -->
+		  <div id="fileNameText" class="initially-hidden file-name-text"></div>
+          <div id="uploadInfoContainer">
+			<p id="uploadProgress" class="initially-hidden upload-info-text">Загружено 0%</p>
+			<p id="cancelUploadText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
+			<p id="postUploadCancelText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
+          </div>
+        </div>
+        <!-- Поле ввода "Путь скачивания" -->
+        <div class="install-modal-field">
+          <label for="downloadPath" class="tooltip-label" data-tooltip="Это путь, по которому файл будет загружен клиенту. Если поле пустое, тогда используется путь по умолчанию 'C:\ProgramData\FiReAgent\Files'.">
+            Путь скачивания (опционально):
+          </label>
+          <input type="text" id="downloadPath" name="downloadPath" placeholder="C:\путь\к\папке">
+        </div>
+        <!-- Поле ввода "Аргументы" -->
+        <div class="install-modal-field">
+          <label for="launchKeys">Аргументы (опционально):</label>
+          <input type="text" id="launchKeys" name="launchKeys" placeholder="/S /D /EXIT и т.д.">
+        </div>
+        <!-- Выбор выполнения для пользователей -->
+        <fieldset id="installUserExecutionFieldset" class="install-modal-field">
+          <legend>Выполнение для пользователей:</legend>
+          <div class="install-modal-radio">
+            <label data-tooltip="Задача запускается в фоне (неинтерактивный режим), без доступа к графическому интерфейсу пользователя.">
+              <input type="radio" name="installRunUserScope" value="true" checked>Выполнять для всех пользователей
+            </label>
+            <label data-tooltip="Задача запускается в интерактивном режиме, то есть она может взаимодействовать с пользователем через GUI.">
+              <input type="radio" name="installRunUserScope" value="false">Выполнять только для пользователей, вошедших в систему
+            </label>
+          </div>
+        </fieldset>
+        <!-- Учётные данные -->
+        <div class="install-modal-field">
+          <label for="installUserName">Имя пользователя (опционально):</label>
+          <input type="text" id="installUserName" name="installUserName" placeholder="Если не задано, используется - СИСТЕМА" autocomplete="off">
+        </div>
+        <div class="install-modal-field">
+          <label for="installPassword">Пароль (опционально):</label>
+          <div class="install-password-input-container">
+            <input type="password" id="installPassword" name="installPassword" placeholder="Пароль" autocomplete="off">
+            <button type="button" class="install-toggle-password" id="toggleInstallPasswordButton">
+              <img id="installPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+            </button>
+          </div>
+        </div>
+        <!-- Чекбокс для привилегий -->
+        <div class="install-modal-checkbox">
+          <label class="tooltip-label" data-tooltip="Использовать только для пользователей с административными правами. При указании пользователя с ограниченными правами, запрос установки не сможет выполнится!">
+            <input type="checkbox" id="installHighestPrivileges" name="installHighestPrivileges">Запуск с наивысшими привилегиями
+          </label>
+        </div>
+        <!-- Чекбокс "Не удалять после установки" -->
+        <div class="install-modal-checkbox">
+          <label class="tooltip-label" data-tooltip="После скачивания исполняемого файла и его выполнения, скаченный файл не будет удалён у клиента.">
+            <input type="checkbox" id="notDeleteAfterInstallation" name="notDeleteAfterInstallation">Не удалять после установки
+          </label>
+        </div>
+        <!-- Чекбокс "Только скачать" -->
+        <div class="install-modal-checkbox">
+          <label class="tooltip-label" data-tooltip="При установке галочки, произойдёт только скачивание файла, без его запуска и удаления. Может потребоваться для распространения какого либо файла, без его выполнения.">
+            <input type="checkbox" id="onlyDownload" name="onlyDownload">Только скачать
+          </label>
+        </div>
+        <button type="submit" class="install-modal-submit">Отправить</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно подтверждения отмены загрузки в "Установка ПО"-->
+  <div id="confirmCancelUploadModal" class="modal-window">
+    <div class="modal-window-content delete-client">
+      <span class="close" id="closeConfirmCancelUploadModal">&times;</span>
+      <h2>Отменить загрузку</h2>
+      <p id="confirmCancelUploadMessage"></p>
+      <div class="modal-buttons">
+        <button class="save-buttonModal" id="confirmCancelReportButton">Отменить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно "Отчёт" -->
+  <div id="reportModal" class="report-modal">
+    <div class="report-modal-content">
+      <span class="report-modal-close" id="closeReportModal">×</span>
+      <h2>Отчёт</h2>
+      <div class="report-tabs">
+        <button class="report-tab-button active" id="installReportTab">По установкам ПО</button>
+		<button class="report-tab-button" id="cmdReportTab">По cmd / PowerShell</button>
+      </div>
+	  
+	  <!-- Для вкладки "По установкам ПО" -->
+      <div id="installReport" class="report-tab-content active">
+        <div class="report-select">
+          <label for="installDateSelect">Запрос создан:</label>
+          <select id="installDateSelect">
+            <!-- Опции будут добавлены динамически -->
+          </select>
+          <button id="deleteInstallBtn" class="delete-install-btn">Удалить выбранный запрос</button>
+        </div>
+        <div class="report-details">
+          <fieldset class="install-fieldset-fixed">
+            <legend id="ProhibitHighlightingLegendInstall">
+              <span id="toggleLegendInstall">Запрос:</span>
+              <!-- <button id="toggleInstallDetails" style="background: none; border: none; color: #e0e0e0; cursor: pointer;">+</button> -->
+			  <button id="toggleInstallDetails" class="toggle-details-btn">+</button>
+            </legend>
+            <div id="installDetails">
+              <!-- Содержимое добавляется динамически -->
+            </div>
+          </fieldset>
+          <div id="installClientsList" class="install-clients-table-container">
+            <div class="clients-table-header-container">
+              <table class="clients-table clients-table-header">
+                <colgroup>
+                  <col class="col-client">
+                  <col class="col-done">
+                  <col class="col-action">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Клиенты</th>
+                    <th>Выполнено</th>
+                    <th>Действие</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+            <div class="clients-table-body-container">
+              <table class="clients-table clients-table-body">
+                <colgroup>
+                  <col class="col-client">
+                  <col class="col-done">
+                  <col class="col-action">
+                </colgroup>
+                <tbody id="installClientsTableBody">
+                  <!-- Список клиентов будет добавлен динамически -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+	  
+	  <!-- Для вкладки "По cmd / PowerShell" -->
+      <div id="cmdReport" class="report-tab-content">
+        <div class="report-select">
+          <label for="cmdDateSelect">Запрос создан:</label>
+          <select id="cmdDateSelect">
+            <!-- Опции будут добавлены динамически -->
+          </select>
+          <button id="deleteCommandBtn" class="delete-command-btn">Удалить выбранный запрос</button>
+        </div>
+        <div class="report-details">
+          <fieldset class="cmd-fieldset-fixed">
+            <legend id="ProhibitHighlightingLegend">
+              <span id="toggleLegend">Запрос:</span>
+              <button id="toggleCmdDetails" class="toggle-details-btn">+</button>
+            </legend>
+            <div id="cmdDetails">
+              <!-- Содержимое добавляется динамически -->
+            </div>
+          </fieldset>
+          <div id="cmdClientsList" class="cmd-clients-table-container">
+            <div class="clients-table-header-container">
+              <table class="clients-table clients-table-header">
+                <colgroup>
+                  <col class="col-client">
+                  <col class="col-done">
+                  <col class="col-action">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Клиенты</th>
+                    <th>Выполнено</th>
+                    <th>Действие</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+            <div class="clients-table-body-container">
+              <table class="clients-table clients-table-body">
+                <colgroup>
+                  <col class="col-client">
+                  <col class="col-done">
+                  <col class="col-action">
+                </colgroup>
+                <tbody id="clientsTableBody">
+                  <!-- Список клиентов будет добавлен динамически -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно подтверждения удаления запроса из модального окна для отчётов -->
+  <div id="confirmDeleteRequestModal" class="modal-window">
+    <div class="modal-window-content delete-client">
+      <span class="close" id="closeConfirmDeleteRequestModal">&times;</span>
+      <h2>Удалить запрос</h2>
+      <p id="confirmMessage"></p>
+      <button class="save-buttonModal" id="confirmDeleteReportButton">Удалить</button>
+    </div>
+  </div>
+
+
+  <!-- Модальное окно "О проекте" -->
+	<div id="aboutProjectModal" class="about-modal-window">
+	  <div class="about-modal-content">
+		<h2>О проекте</h2>
+		<p class="first-Progect-paragraph"><a href="https://gitflic.ru/project/otto/firemq" target="_blank">FiReMQ</a> (Файловая ретрансляция по MQTT) — это серверная система для гибкой, автоматической развёртки программ, самораспаковывающихся архивов и выполнения удалённых команд (в cmd или PowerShell от любого пользователя) на большом количестве компьютеров, не связанных одной сетью.</p>
+		<p>FiReMQ способна эффективно обрабатывать до тысячи агентов одновременно, обеспечивая постоянную обратную связь через MQTT, включая сбор характеристик агентов и контроль выполнения запросов.</p>
+		<p><a href="https://gitflic.ru/project/otto/fireagent" target="_blank">FiReAgent</a> (Агент файловой ретрансляции) —  это программное обеспечение, которое устанавливается на клиентские компьютеры для обработки запросов от FiReMQ.</p>
+		<!-- обновление и откат OWASP CRS правил -->
+		<div class="owasp-crs-section">
+		  <div class="owasp-crs-row">
+			<div class="owasp-crs-left">
+			  <span
+				class="owasp-crs-title has-tooltip"
+				data-tooltip="OWASP CRS (Core Rule Set) — это набор универсальных правил обнаружения атак, предназначенных для защиты веб-приложений через веб-брандмауэр Coraza WAF. Не забывайте своевременно обновлять правила для поддержания эффективной защиты!">Правила OWASP CRS</span>
+			  <span class="owasp-crs-versions">
+				Текущая: <span id="owaspCRSCurrentVersion">—</span>
+				<span class="owasp-crs-sep">|</span>
+				Новая: <span id="owaspCRSNewVersion">—</span>
+			  </span>
+			</div>
+			<div class="owasp-crs-actions">
+			  <button id="owaspCRSUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
+			  <button
+				id="owaspCRSRollbackBtn"
+				class="owasp-crs-btn rollback has-tooltip"
+				data-tooltip="Откатывает правила к предыдущей (ранее установленной) версии. Это может понадобиться в случае серьёзных изменений новых правил, которые могут привести к некорректной работе FiReMQ.">
+				Откатить
+			  </button>
+			</div>
+		  </div>
+		</div>
+		<!-- Проверка/обновление/откат FiReMQ -->
+		<div class="owasp-crs-section">
+		  <div class="owasp-crs-row">
+			<div class="owasp-crs-left">
+			  <span
+				class="owasp-crs-title has-tooltip"
+				data-tooltip="Обновление серверной части 'FiReMQ' из репозитория GitFlic/GitHub. При обновлении сервер корректно завершится, будет заменён новым релизом и автоматически запущен.">Обновление FiReMQ</span>
+			  <span class="owasp-crs-versions firemq">
+				Текущая: <span id="firemqCurrentVersion">—</span>
+				<span class="owasp-crs-sep">|</span>
+				Новая: <span id="firemqNewVersion">—</span>
+			  </span>
+			</div>
+			<div class="owasp-crs-actions">
+			  <button id="firemqUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
+			  <button
+				id="firemqRollbackBtn"
+				class="owasp-crs-btn rollback has-tooltip"
+				data-tooltip="Откатывает сервер FiReMQ к предыдущей (ранее установленной) версии. Это может понадобиться в случае, если после обновления FiReMQ возникли проблемы.">
+				Откатить
+			  </button>
+			</div>
+		  </div>
+		</div>
+		<!-- Информация об авторе и лицензия-->
+		<div class="about-version">
+		  Автор: © <span id="currentYear"></span> Otto
+		  <br>
+		  Лицензия: <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a>
+		</div>
+		<button id="aboutCloseButton" class="about-close-button">Закрыть</button>
+	  </div>
+	</div>
+
+	<!-- Модальное окно удаления FiReAgent -->
+	<div id="uninstallFiReAgentModal" class="modal-window" role="dialog" aria-modal="true" aria-labelledby="uninstallTitle">
+	  <div class="modal-window-content uninstall-fireagent">
+		<span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>
+		<h2 id="uninstallTitle">Полное удаление FiReAgent</h2>
+
+		<!-- Оффлайн-очередь на удаление -->
+		<p class="pending-caption">Ожидают удаления (оффлайн):</p>
+		<div id="pendingUninstallList" class="client-id-list" aria-live="polite">
+		  <div class="list-empty">Загрузка...</div>
+		</div>
+
+		<p class="pending-caption">Этим клиентам будут отправлен запрос на удаление FiReAgent:</p>
+		<div id="uninstallClientsList" class="client-id-list"></div>
+
+		<p class="delete-confirm-caption">Напишите <strong class="delete-confirmation-text">"Удаляем!"</strong> для подтверждения.</p>
+		<input type="text" id="uninstallConfirmationInput" placeholder="Введите 'Удаляем!'" autocomplete="off">
+
+		<button id="confirmUninstallButton" class="save-buttonModal delete-check-button" disabled>
+		  Удалить
+		</button>
+	  </div>
+	</div>
+
+  <!-- Панель меню -->
+  <div class="top-bar">
+    <div class="dropdown">
+      <button class="dropbtn" id="menuButton">Меню</button>
+      <div class="dropdown-content" id="myDropdown">
+       <!-- <a href="#" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a> -->
+        <a id="accountsMQTT" class="menu-item-with-icon removeFiReAgent-button"><img src="../icon/Mqtt.svg" alt="MQTT авторизация" class="menu-icon"><span>MQTT авторизация</span></a>
+       <a id="removeFiReAgent" href="#" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
+        <a id="accountsLink" class="menu-item-with-icon"><img src="../icon/AccountsAdmin.svg" alt="Учётные записи Админов" class="menu-icon"><span>Учётные записи Админов</span></a>
+		<hr>
+		<a id="aboutProject" class="menu-item-with-icon"><img src="../icon/O_Project.svg" alt="О проекте" class="menu-icon"><span>О проекте</span></a>
+      </div>
+      <button id="installProgramButton" class="installProgram-button" disabled>Установка ПО</button>
+      <button id="executeCommandButton" class="executeCommand-button" disabled>Выполнить cmd / PowerShell</button>
+      <button id="clientsReportButton" class="clientsReport-button">Отчёт</button>
+    </div>
+
+    <!-- Вывод имени авторизованного пользователя -->
+    <div id="auth-name"></div>
+
+    <!-- Кнопка Выход -->
+    <button class="exit" id="logoutButton"></button>
+
+  </div>
+
+  <div class="container">
+
+    <!-- Группы и подгруппы -->
+    <div class="groups">
+      <h2>Группы</h2>
+      <div class="group-item" id="all-clients-group">
+        <span class="group-name all_clients">Все клиенты</span>
+      </div>
+      <div id="groupsContainer">
+        <!-- Динамические группы и подгруппы будут добавлены здесь -->
+      </div>
+    </div>
+
+    <!-- Клиенты -->
+    <div class="clients">
+      <h2>Клиенты</h2>
+      <div id="clientsContainer">
+        <!-- Динамические клиенты будут добавлены здесь -->
+      </div>
+    </div>
+
+    <!-- Контекстное меню для формы с клиентами -->
+    <div id="contextMenu" class="context-menu">
+      <ul>
+        <li id="takeOffAll" class="context-menu-item hidden"><img src="../icon/CheckMark.svg" alt="Снять все ✓" class="context-menu-icon"><span>Снять все&ensp;'✓'</span></li>
+        <li id="moveClient" class="context-menu-item"><img src="../icon/Move.svg" alt="Переместить в..." class="context-menu-icon"><span>Переместить в...</span></li>
+        <li id="informLiteClient" class="context-menu-item"><img src="../icon/Info_Lite.svg" alt="Информация Lite" class="context-menu-icon"><span>Информация Lite (F1)</span></li>
+        <li id="informAidaClient" class="context-menu-item"><img src="../icon/Info_Aida64.svg" alt="Информация Aida64" class="context-menu-icon"><span>Информация Aida64 (F4)</span></li>
+        <li id="installProgramItem" class="context-menu-item hidden"><img src="../icon/SoftInstal.svg" alt="Установка ПО" class="context-menu-icon"><span>Установка ПО</span></li>
+        <li id="runCommandItem" class="context-menu-item hidden"><img src="../icon/Terminal.svg" alt="Выполнить cmd / PowerShell" class="context-menu-icon"><span>Выполнить cmd / PowerShell</span></li>
+        <li id="moveClientCheckedItem" class="context-menu-item hidden"><img src="../icon/MoveAll.svg" alt="Переместить выделенных" class="context-menu-icon"><span>Переместить выделенных</span></li>
+        <li id="renameClient" class="context-menu-item"><img src="../icon/Edit.svg" alt="Переименовать" class="context-menu-icon"><span>Переименовать (F2)</span></li>
+        <li id="deleteItem" class="context-menu-item"><img src="../icon/Delete.svg" alt="Удалить" class="context-menu-icon"><span>Удалить</span></li>
+        <li id="deleteCheckedItem" class="context-menu-item hidden"><img src="../icon/DeleteAll.svg" alt="Удалить выделенных" class="context-menu-icon"><span>Удалить выделенных</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Элемент для отображения push-уведомлений -->
+  <div id="pushContainer" class="push-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Элемент для всплывающих подсказок поверх модального окна отчётов -->
+  <div id="tooltipBox" class="tooltip-box"></div>
+  
+  <script src="js/csrf.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/menu.js"></script>
+  <script src="js/clients.js"></script>
+  <script src="js/groups.js"></script>
+  <script src="js/push.js"></script>
+</body>
+
+</html>

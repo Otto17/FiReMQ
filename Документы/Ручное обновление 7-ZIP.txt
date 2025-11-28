@@ -1,0 +1,4 @@
+Скачать новую версию можно отсюда: https://www.7-zip.org/download.html
+
+Для Linux скачивать: ".tar.xz" "64-bit Linux x86-64" и извлекать файл "7zzs" заменив на сервере.
+Для Windows скачивать: ".exe" "64-bit Windows x64" и извлекать файл "7z.exe" + "7z.dll".
