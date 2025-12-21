@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
 	"FiReMQ/protection"  // Локальный пакет с функциями базовой защиты
@@ -152,7 +153,7 @@ func EnsureMQTTConfig() error {
 			return fmt.Errorf("ошибка при записи файла конфигурации: %v", err)
 		}
 
-		fmt.Println("Конфигурационный файл mqtt_config.json создан")
+		logging.LogSystem("MQTT Serv: Создан конфигурационный файл: %s", pathsOS.Path_Config_MQTT)
 	}
 
 	return nil
@@ -287,7 +288,7 @@ func RestartMqttHandler() error {
 	// Останавливает текущий сервер, если он запущен
 	if Server != nil {
 		if err := Server.Close(); err != nil {
-			//log.Printf("Ошибка при остановке MQTT сервера: %v", err)
+			logging.LogError("MQTT Serv: Ошибка при перезапуске MQTT (остановка): %v", err)
 			return err // Возвращает ошибку, если остановка не удалась
 		}
 	}

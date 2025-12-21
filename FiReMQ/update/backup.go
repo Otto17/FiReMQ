@@ -10,13 +10,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
@@ -204,14 +205,7 @@ func CreateFullBackup() (string, error) {
 	// Обходит все пути, указанные в конфигурации
 	for _, e := range cfgEntries {
 		// Проверяет, не исключен ли путь из бэкапа
-		excluded := false
-		for _, ex := range ExcludedBackupKeys {
-			if e.Key == ex {
-				excluded = true
-				break
-			}
-		}
-		if excluded {
+		if slices.Contains(ExcludedBackupKeys, e.Key) {
 			continue
 		}
 
@@ -277,7 +271,7 @@ func CreateFullBackup() (string, error) {
 	// Удаляет старые бэкапы, оставляя только самый свежий
 	removeOldBackups(backupDir, filepath.Base(backupPath))
 
-	log.Printf("[update] Полный бэкап создан: %s", backupPath)
+	logging.LogUpdate("Обновление FiReMQ: Полный бэкап создан: %s", backupPath)
 	return backupPath, nil
 }
 

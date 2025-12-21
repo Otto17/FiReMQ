@@ -6,9 +6,9 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS"    // Локальный пакет с путями для разных платформ
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 
@@ -41,7 +41,7 @@ func InitDB() error {
 	// Создаёт пользователя по умолчанию, если база данных пуста
 	if isUsersEmpty() {
 		createDefaultUser()
-		log.Println("Создан первый пользователь 'FiReMQ' по умолчанию")
+		logging.LogSystem("БД: Создан первый пользователь 'FiReMQ' по умолчанию")
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func isUsersEmpty() bool {
 	})
 
 	if err != nil {
-		log.Printf("Ошибка проверки пользователей: %v", err)
+		logging.LogError("БД: Ошибка проверки пользователей в БД: %v", err)
 	}
 	return empty
 }
@@ -88,7 +88,7 @@ func createDefaultUser() {
 
 	userData, err := json.Marshal(defaultUser)
 	if err != nil {
-		log.Printf("Ошибка маршалинга пользователя: %v", err)
+		logging.LogError("БД: Ошибка маршалинга пользователя: %v", err)
 		return
 	}
 
@@ -98,7 +98,7 @@ func createDefaultUser() {
 	})
 
 	if err != nil {
-		log.Printf("Ошибка сохранения пользователя: %v", err)
+		logging.LogError("БД: Ошибка сохранения пользователя: %v", err)
 	}
 }
 

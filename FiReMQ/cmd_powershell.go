@@ -5,13 +5,13 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет с MQTT клиентом AutoPaho
 
 	"github.com/dgraph-io/badger/v4"
@@ -109,7 +109,7 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 				}
 			}
 
-			// Если уже отправляли и не стоит флаг повторной — пропускаем
+			// Если уже отправляли и не стоит флаг повторной — пропускает
 			if alreadySent && !rr {
 				continue
 			}
@@ -159,7 +159,7 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 			chosenRecord["SentFor"] = sentFor
 		}
 
-		// Снимем флаг ResendRequested для этого клиента
+		// Снимет флаг ResendRequested для этого клиента
 		if rrMap, ok := chosenRecord["ResendRequested"].(map[string]any); ok {
 			if _, ex := rrMap[clientID]; ex {
 				delete(rrMap, clientID)
@@ -167,7 +167,7 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 			}
 		}
 
-		// Сохраняем изменения
+		// Сохраняет изменения
 		newBytes, err := json.Marshal(chosenRecord)
 		if err != nil {
 			return err
@@ -202,7 +202,7 @@ func startCmdQueueForClient(clientID string) {
 		}()
 
 		for {
-			// Прерываем, если клиент офлайн
+			// Прерывает, если клиент офлайн
 			online, _ := isClientOnline(clientID)
 			if !online {
 				return
@@ -224,12 +224,12 @@ func startCmdQueueForClient(clientID string) {
 			}
 
 			if err := mqtt_client.Publish(topic, payload, 2); err != nil {
-				log.Printf("CMD очередь: ошибка публикации для %s: %v", clientID, err)
+				logging.LogError("CMD/PowerShell: Ошибка публикации для %s: %v", clientID, err)
 				time.Sleep(3 * time.Second)
 				continue
 			}
 
-			// Отметим момент отправки
+			// Отметка момента отправки
 			q.mu.Lock()
 			q.lastSend = time.Now()
 			q.mu.Unlock()
@@ -239,7 +239,7 @@ func startCmdQueueForClient(clientID string) {
 
 // checkAndResendCommands Запускает очередь после небольшой задержки
 func checkAndResendCommands(clientID string) {
-	// Ждем 3 секунды, чтобы клиент успел корректно запуститься
+	// Ждёт 3 секунды, чтобы клиент успел корректно запуститься
 	time.Sleep(3 * time.Second)
 	startCmdQueueForClient(clientID)
 }
@@ -252,11 +252,11 @@ func HandleAnswerMessage(clientID string, payload []byte) {
 	}
 
 	if err := json.Unmarshal(payload, &ansMsg); err != nil {
-		log.Printf("Ошибка парсинга ответа от клиента %s: %v", clientID, err)
+		logging.LogError("CMD/PowerShell: Ошибка парсинга ответа от клиента %s: %v", clientID, err)
 		return
 	}
 
-	// Формируем ключ по Date_Of_Creation (ключ: "FiReMQ_Command:<Date_Of_Creation>")
+	// Формирует ключ по Date_Of_Creation (ключ: "FiReMQ_Command:<Date_Of_Creation>")
 	dbKey := "FiReMQ_Command:" + ansMsg.Date_Of_Creation
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(dbKey))
@@ -286,7 +286,7 @@ func HandleAnswerMessage(clientID string, payload []byte) {
 			return nil
 		}
 
-		// Если для этого клиента уже установлен ответ, ничего не меняем
+		// Если для этого клиента уже установлен ответ, ничего не меняет
 		if ans, _ := clientEntry["Answer"].(string); ans != "" {
 			return nil
 		}
@@ -302,9 +302,9 @@ func HandleAnswerMessage(clientID string, payload []byte) {
 	})
 
 	if err != nil {
-		log.Printf("Ошибка обновления записи для ответа от клиента %s: %v", clientID, err)
+		logging.LogError("CMD/PowerShell: Ошибка обновления записи для ответа от клиента %s: %v", clientID, err)
 	} else {
-		log.Printf("Обновлена запись команды %s для клиента %s", ansMsg.Date_Of_Creation, clientID)
+		logging.LogSystem("CMD/PowerShell: Обновлена запись команды %s для клиента %s", ansMsg.Date_Of_Creation, clientID)
 	}
 }
 

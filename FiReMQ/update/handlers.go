@@ -4,22 +4,24 @@
 package update
 
 import (
-	"FiReMQ/pathsOS"
 	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
+	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
 // shutdownFn хранит функцию для мягкого завершения работы сервера
@@ -150,6 +152,18 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Под Windows кастомные обновления больше не поддерживается!
+	if runtime.GOOS == "windows" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"UpdateAnswer": "Ошибка",
+			"Description":  "Обновление FiReMQ недоступно под Windows. Используйте Linux для полноценной работы с FiReMQ.",
+		})
+		logging.LogUpdate("Обновление FiReMQ: Запрос обновления отклонён — автообновление не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ.")
+		return
+	}
+
 	zipPath, meta, err := PrepareUpdate()
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -182,8 +196,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"Description": err.Error()})
 		return
 	}
-	log.Printf("[update] ServerUpdater запущен (PID=%d), архив: %s, latest=%s",
-		cmd.Process.Pid, zipAbs, meta.RemoteVersion)
+	logging.LogUpdate("Обновление FiReMQ: Инициировано обновление сервера до версии %s. ServerUpdater запущен (PID=%d), архив: %s", meta.RemoteVersion, cmd.Process.Pid, zipAbs)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{
@@ -202,13 +215,26 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Под Windows откат версий больше не поддерживается!
+	if runtime.GOOS == "windows" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"RollbackAnswer": "Ошибка",
+			"Description":    "Откат версии FiReMQ недоступно под Windows. Используйте Linux для полноценной работы с FiReMQ.",
+		})
+		logging.LogUpdate("Обновление FiReMQ: Запрос отката отклонён — откат не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ.")
+		return
+	}
+
 	backupPath, backupDir, err := latestFiReMQBackupPath()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if backupPath == "" {
-		log.Printf("[update] Откат FiReMQ отклонён: бэкапов нет в %s", backupDir)
+		logging.LogUpdate("Обновление FiReMQ: Откат FiReMQ отклонён: бэкапов нет в %s", backupDir)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -224,7 +250,7 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 		bkpVer = extractVersionFromBackupName(filepath.Base(backupPath))
 	}
 
-	log.Printf("[update] Проверка отката: Current=%q, Backup=%q, file=%s", strings.TrimSpace(CurrentVersion), strings.TrimSpace(bkpVer), backupPath)
+	logging.LogUpdate("Обновление FiReMQ: Проверка условий отката: Текущая=%q, Бэкап=%q, Файл=%s", strings.TrimSpace(CurrentVersion), strings.TrimSpace(bkpVer), backupPath)
 
 	// Предотвращает откат, если невозможно гарантировать целевую версию бэкапа
 	if strings.TrimSpace(bkpVer) == "" {
@@ -259,8 +285,8 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"Description": err.Error()})
 		return
 	}
-	log.Printf("[update] ServerUpdater запущен для отката (PID=%d), backup=%s, targetVersion=%s",
-		cmd.Process.Pid, backupPath, bkpVer)
+
+	logging.LogUpdate("Обновление FiReMQ: Инициирован откат сервера к версии %s. ServerUpdater запущен для отката (PID=%d) с бэкапом: %s.", bkpVer, cmd.Process.Pid, backupPath)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{

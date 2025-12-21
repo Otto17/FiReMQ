@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
 
@@ -61,9 +61,9 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 			data = make(map[string]string)
 		}
 
-		prevStatus := data["status"] // Запоминаем предыдущий статус
+		prevStatus := data["status"] // Запоминает предыдущий статус
 
-		// Проверяем, изменились ли данные
+		// Проверяет, изменились ли данные
 		changed := false
 
 		if data["status"] != status {
@@ -71,7 +71,7 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 			data["time_stamp"] = time.Now().Format("02.01.06(15:04)")
 			changed = true
 
-			// Отмечаем переход из оффлайна в онлайн
+			// Отмечает переход из оффлайна в онлайн
 			if prevStatus != "On" && status == "On" {
 				becameOnline = true
 			}
@@ -97,7 +97,7 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 			changed = true
 		}
 
-		// Устанавливаем группу и подгруппу по умолчанию, если они не заданы
+		// Устанавливает группу и подгруппу по умолчанию, если они не заданы
 		if data["group"] == "" {
 			data["group"] = "Новые клиенты"
 			changed = true
@@ -107,7 +107,7 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 			changed = true
 		}
 
-		// Если данные не изменились, прерываем транзакцию
+		// Если данные не изменились, прерывает транзакцию
 		if !changed {
 			return nil
 		}
@@ -196,7 +196,7 @@ func UpdateOrInsertClient(status, name, ip, localIP, clientID string) error {
 
 // resetActivityTimer сбрасывает таймер активности пользователя
 func resetActivityTimer() {
-	stopActivityTimer() // Останавливаем текущий таймер, если он существует
+	stopActivityTimer() // Останавливает текущий таймер, если он существует
 
 	activityTimer = time.AfterFunc(2*time.Minute, func() { // Время бездействия до остановки StatusClient
 		if statusClientRunning {
@@ -223,24 +223,24 @@ func StatusClient() {
 	statusClientRunning = true
 	statusClientStop = make(chan struct{}) // Пересоздаём канал остановки
 
-	resetActivityTimer() // Запускаем таймер активности
+	resetActivityTimer() // Запускает таймер активности
 
 	go func() {
 		defer func() {
 			statusClientRunning = false
-			stopActivityTimer() // Останавливаем таймер при завершении работы
+			stopActivityTimer() // Останавливает таймер при завершении работы
 		}()
 
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
-		updateClientStatus() // Немедленно выполняем обновление статуса
+		updateClientStatus() // Немедленно выполняет обновление статуса
 
-		// Запускаем цикл для периодического выполнения
+		// Запускает цикл для периодического выполнения
 		for {
 			select {
 			case <-statusClientStop:
-				return // Останавливаем цикл
+				return // Останавливает цикл
 			case <-ticker.C:
 				updateClientStatus()
 			}
@@ -250,7 +250,7 @@ func StatusClient() {
 
 // updateClientStatus обновляет статусы всех клиентов в одной транзакции
 func updateClientStatus() {
-	// Получаем актуальный список ID всех подключенных клиентов
+	// Получает актуальный список ID всех подключенных клиентов
 	connectedClients := mqtt_server.Server.Clients.GetAll()
 	onlineClientIDs := make(map[string]struct{}, len(connectedClients))
 	for _, client := range connectedClients {
@@ -261,7 +261,7 @@ func updateClientStatus() {
 	var newlyOnlineIDs []string  // Клиенты, перешедшие в онлайн
 	var newlyOfflineIDs []string // Клиенты, перешедшие в оффлайн
 
-	// Запускаем одну транзакцию для обновления всех статусов
+	// Запускает одну транзакцию для обновления всех статусов
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = []byte("client:")
@@ -279,8 +279,8 @@ func updateClientStatus() {
 				return json.Unmarshal(val, &data)
 			})
 			if err != nil {
-				log.Printf("Ошибка десериализации данных для клиента %s: %v", clientID, err)
-				continue // Пропускаем поврежденную запись, но не прерываем транзакцию
+				logging.LogError("Клиенты: Ошибка десериализации данных для клиента %s: %v", clientID, err)
+				continue // Пропускает поврежденную запись, но не прерывает транзакцию
 			}
 
 			_, isOnline := onlineClientIDs[clientID]
@@ -288,12 +288,12 @@ func updateClientStatus() {
 			needsUpdate := false
 
 			if isOnline && currentStatus != "On" {
-				// Случай 1: Клиент онлайн, а в БД оффлайн, меняем на "On"
+				// Случай 1: Клиент онлайн, а в БД оффлайн, меняет на "On"
 				data["status"] = "On"
 				newlyOnlineIDs = append(newlyOnlineIDs, clientID)
 				needsUpdate = true
 			} else if !isOnline && currentStatus != "Off" {
-				// Случай 2: Клиент оффлайн, а в БД онлайн, меняем на "Off"
+				// Случай 2: Клиент оффлайн, а в БД онлайн, меняет на "Off"
 				data["status"] = "Off"
 				newlyOfflineIDs = append(newlyOfflineIDs, clientID)
 				needsUpdate = true
@@ -304,10 +304,10 @@ func updateClientStatus() {
 				data["time_stamp"] = time.Now().Format("02.01.06(15:04)")
 				jsonData, err := json.Marshal(data)
 				if err != nil {
-					return err // Критическая ошибка, прерываем транзакцию
+					return err // Критическая ошибка, прерывает транзакцию
 				}
 				if err := txn.Set(item.KeyCopy(nil), jsonData); err != nil {
-					return err // Критическая ошибка, прерываем транзакцию
+					return err // Критическая ошибка, прерывает транзакцию
 				}
 			}
 		}
@@ -315,7 +315,7 @@ func updateClientStatus() {
 	})
 
 	if err != nil {
-		log.Printf("Критическая ошибка во время транзакции обновления статусов клиентов: %v", err)
+		logging.LogError("Клиенты: Критическая ошибка во время транзакции обновления статусов клиентов: %v", err)
 	}
 
 	// Фоновые задачи запускаются после транзакции, чтобы не блокировать БД
@@ -381,7 +381,7 @@ func removeClientIDsFromCommandRecords(clientIDs []string) error {
 				continue
 			}
 
-			// Очищаем SentFor
+			// Очищает SentFor
 			if sf, ok := record["SentFor"]; ok {
 				if arr, ok := sf.([]any); ok {
 					filtered := make([]string, 0, len(arr))
@@ -396,7 +396,7 @@ func removeClientIDsFromCommandRecords(clientIDs []string) error {
 				}
 			}
 
-			// Очищаем ResendRequested
+			// Очищает ResendRequested
 			if rr, ok := record["ResendRequested"].(map[string]any); ok && rr != nil {
 				for id := range idsSet {
 					delete(rr, id)
@@ -468,7 +468,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 				continue
 			}
 
-			// Очищаем SentFor
+			// Очищает SentFor
 			if sf, ok := record["SentFor"]; ok {
 				if arr, ok := sf.([]any); ok {
 					filtered := make([]string, 0, len(arr))
@@ -483,7 +483,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 				}
 			}
 
-			// Очищаем ResendRequested
+			// Очищает ResendRequested
 			if rr, ok := record["ResendRequested"].(map[string]any); ok && rr != nil {
 				for id := range idsSet {
 					delete(rr, id)
@@ -492,11 +492,11 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 			}
 
 			if len(mapping) == 0 {
-				// Если запись стала пустой, удаляем её и, возможно, связанный файл
+				// Если запись стала пустой, удаляет её и, возможно, связанный файл
 				if fn, err := extractFileNameFromQUICRecord(record); err == nil && strings.TrimSpace(fn) != "" {
 					filesToMaybeDelete = append(filesToMaybeDelete, fn)
 				} else if err != nil {
-					log.Printf("Не удалось извлечь имя файла из QUIC записи: %v", err)
+					logging.LogError("Клиенты: Не удалось извлечь имя файла из QUIC записи: %v", err)
 				}
 				if err := txn.Delete(key); err != nil {
 					return err
@@ -518,7 +518,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 		return err
 	}
 
-	// Удаляем файл, если он больше не используется
+	// Удаляет файл, если он больше не используется
 	if len(filesToMaybeDelete) > 0 {
 		uniq := make(map[string]struct{})
 		for _, f := range filesToMaybeDelete {
@@ -532,7 +532,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 		}
 	}
 
-	// После изменений пересчитываем доступ к QUIC
+	// После изменений пересчитывает доступ к QUIC
 	RecalculateQUICAccess("удаление клиента(ов) из QUIC-отчетов")
 	return nil
 }
@@ -560,33 +560,33 @@ func fullyRemoveClientAndData(clientIDs []string) error {
 		return nil
 	}
 
-	// Удаляем клиентов из основной БД
+	// Удаляет клиентов из основной БД
 	if err := DeleteSelectedClients(clientIDs); err != nil {
 		// Если не удалось удалить из БД, продолжать нет смысла
 		return fmt.Errorf("ошибка удаления клиентов из БД: %w", err)
 	}
 
-	// Удаляем файлы отчетов, логируя некритичные ошибки
+	// Удаляет файлы отчетов, логируя некритичные ошибки
 	for _, clientID := range clientIDs {
 		filePathLite := filepath.Join(pathsOS.Path_Info, "Lite_"+clientID+".html.xz")
 		if err := os.Remove(filePathLite); err != nil && !os.IsNotExist(err) {
-			log.Printf("Ошибка удаления файла отчета %s: %v", filePathLite, err)
+			logging.LogError("Клиенты: Ошибка удаления файла отчета %s: %v", filePathLite, err)
 		}
 		filePathAida := filepath.Join(pathsOS.Path_Info, "Aida_"+clientID+".html.xz")
 		if err := os.Remove(filePathAida); err != nil && !os.IsNotExist(err) {
-			log.Printf("Ошибка удаления файла отчета %s: %v", filePathAida, err)
+			logging.LogError("Клиенты: Ошибка удаления файла отчета %s: %v", filePathAida, err)
 		}
 	}
 
-	// Очищаем все отчёты
+	// Очищает все отчёты
 	if err := removeClientIDsFromCommandRecords(clientIDs); err != nil {
-		log.Printf("Ошибка удаления клиентов из отчётов CMD/PowerShell: %v", err)
+		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов CMD/PowerShell: %v", err)
 	}
 	if err := removeClientIDsFromQUICRecords(clientIDs); err != nil {
-		log.Printf("Ошибка удаления клиентов из отчётов Установки ПО: %v", err)
+		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов Установки ПО: %v", err)
 	}
 
-	// Очищаем runtime-состояния (очереди, сессии)
+	// Очищает runtime-состояния (очереди, сессии)
 	cleanupClientsRuntimeState(clientIDs)
 
 	return nil

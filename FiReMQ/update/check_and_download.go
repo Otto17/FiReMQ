@@ -10,15 +10,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
@@ -30,6 +31,22 @@ type CheckResult struct {
 	AssetURL      string
 	ExpectedSHA   string // sha256 в hex
 }
+
+// updateChainManifest описывает цепочку обновлений для утилиты ServerUpdater
+type updateChainManifest struct {
+	CurrentVersion string            `json:"CurrentVersion"`
+	Items          []updateChainItem `json:"Items"`
+}
+
+// updateChainItem описывает один релиз в цепочке
+type updateChainItem struct {
+	Version  string `json:"Version"`
+	FileName string `json:"FileName"`
+	Repo     string `json:"Repo"`
+}
+
+// Формат версии для time.Parse ("дд.мм.гг")
+const versionLayout = "02.01.06"
 
 // Sentinel-ошибки для сигнализации отсутствия обновлений/ассета
 var ErrNoMatchingAsset = errors.New("подходящего обновления не найдено")
@@ -188,7 +205,6 @@ type gitflicReleases struct {
 type gitflicRelease struct {
 	TagName         string         `json:"tagName"`
 	AttachmentFiles []gitflicAsset `json:"attachmentFiles"`
-	PreRelease      bool           `json:"preRelease"`
 }
 
 // gitflicAsset представляет структуру данных ассета (файла) релиза GitFlic
@@ -264,9 +280,6 @@ func findLatestGitFlicRelease(rels *gitflicReleases) (*gitflicRelease, error) {
 
 	for i := range rels.Embedded.ReleaseTagModelList {
 		r := &rels.Embedded.ReleaseTagModelList[i]
-		if r.PreRelease {
-			continue // Игнорирует предварительные релизы
-		}
 		t, err := time.Parse(versionLayout, r.TagName)
 		if err != nil {
 			continue // Игнорирует релизы с некорректным форматом версии
@@ -334,7 +347,7 @@ func CheckLatest() (*CheckResult, error) {
 		if err == nil {
 			return res, nil
 		}
-		log.Printf("[update] Не удалось получить с GitFlic: %v — пробуем GitHub", err)
+		logging.LogError("Обновление FiReMQ: Не удалось получить с GitFlic: %v — пробуем GitHub", err)
 		// Возвращается к GitHub в случае ошибки
 		return checkLatestFromGitHub()
 	}
@@ -344,9 +357,161 @@ func CheckLatest() (*CheckResult, error) {
 	if err == nil {
 		return res, nil
 	}
-	log.Printf("[update] Не удалось получить с GitHub: %v — пробуем GitFlic", err)
+	logging.LogError("Обновление FiReMQ: Не удалось получить с GitHub: %v — пробуем GitFlic", err)
 	// Возвращается к GitFlic в случае ошибки
 	return checkLatestFromGitFlic()
+}
+
+// CheckAll возвращает список всех подходящих ассетов (по assetPattern) из приоритетного репозитория (с резервом на второй), используется для построения цепочки обновлений.
+func CheckAll() ([]CheckResult, error) {
+	var list []CheckResult
+	var err error
+
+	if strings.EqualFold(pathsOS.Update_PrimaryRepo, "gitflic") {
+		list, err = checkAllFromGitFlic()
+		if err == nil {
+			return list, nil
+		}
+		logging.LogError("Обновление FiReMQ: Не удалось получить все релизы с GitFlic: %v — пробуем GitHub", err)
+		return checkAllFromGitHub()
+	}
+
+	// GitHub — как первичный или не задан PrimaryRepo
+	list, err = checkAllFromGitHub()
+	if err == nil {
+		return list, nil
+	}
+	logging.LogError("Обновление FiReMQ: Не удалось получить все релизы с GitHub: %v — пробуем GitFlic", err)
+	return checkAllFromGitFlic()
+}
+
+// checkAllFromGitFlic возвращает все стабильные релизы с подходящими ассетами
+func checkAllFromGitFlic() ([]CheckResult, error) {
+	rels, err := fetchGitFlicReleases()
+	if err != nil {
+		return nil, err
+	}
+	if len(rels.Embedded.ReleaseTagModelList) == 0 {
+		return nil, ErrNoReleases
+	}
+
+	var results []CheckResult
+	for i := range rels.Embedded.ReleaseTagModelList {
+		r := &rels.Embedded.ReleaseTagModelList[i]
+		asset, remoteVersion, err := findGitFlicAsset(r)
+
+		if err != nil {
+			// Релиз без подходящего ассета — пропускается
+			continue
+		}
+
+		if !validVersion(remoteVersion) {
+			continue
+		}
+
+		if strings.TrimSpace(asset.HashSha256) == "" {
+			continue
+		}
+
+		results = append(results, CheckResult{
+			Repo:          "gitflic",
+			RemoteVersion: remoteVersion,
+			AssetName:     asset.Name,
+			AssetURL:      asset.Link,
+			ExpectedSHA:   strings.ToLower(asset.HashSha256),
+		})
+	}
+
+	if len(results) == 0 {
+		return nil, ErrNoMatchingAsset
+	}
+	return results, nil
+}
+
+// fetchGitHubReleasesList запрашивает полный список релизов GitHub (/releases)
+func fetchGitHubReleasesList(apiURLLatest string) ([]githubRelease, error) {
+	u, err := url.Parse(apiURLLatest)
+	if err != nil {
+		return nil, err
+	}
+	// /repos/<owner>/<repo>/releases/latest -> /repos/<owner>/<repo>/releases
+	u.Path = strings.TrimSuffix(u.Path, "/latest")
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", fmt.Sprintf("FiReMQ-Updater/1.0 (+%s)", pathsOS.Update_GitHubReleasesURL))
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	client := &http.Client{Timeout: 20 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("запрос к GitHub API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API вернул статус %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+
+	var list []githubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&list); err != nil {
+		return nil, fmt.Errorf("ошибка декодирования JSON: %w", err)
+	}
+	return list, nil
+}
+
+// checkAllFromGitHub возвращает все стабильные релизы с подходящими ассетами
+func checkAllFromGitHub() ([]CheckResult, error) {
+	apiURL, err := toAPIReleasesLatestURL(pathsOS.Update_GitHubReleasesURL)
+	if err != nil {
+		return nil, fmt.Errorf("GitHub: некорректный URL релизов: %w", err)
+	}
+	rels, err := fetchGitHubReleasesList(apiURL)
+	if err != nil {
+		return nil, err
+	}
+	if len(rels) == 0 {
+		return nil, ErrNoReleases
+	}
+
+	var results []CheckResult
+	for i := range rels {
+		r := &rels[i]
+		asset, remoteVersion, err := findAssetGitHub(r)
+
+		if err != nil {
+			continue
+		}
+
+		if !validVersion(remoteVersion) {
+			continue
+		}
+
+		if strings.TrimSpace(asset.Digest) == "" ||
+			!strings.HasPrefix(strings.ToLower(asset.Digest), "sha256:") {
+			continue
+		}
+		exp := strings.ToLower(strings.TrimPrefix(asset.Digest, "sha256:"))
+
+		results = append(results, CheckResult{
+			Repo:          "github",
+			RemoteVersion: remoteVersion,
+			AssetName:     asset.Name,
+			AssetURL:      asset.BrowserDownloadURL,
+			ExpectedSHA:   exp,
+		})
+	}
+
+	if len(results) == 0 {
+		return nil, ErrNoMatchingAsset
+	}
+	return results, nil
 }
 
 // downloadWithChecksumStreaming скачивает файл по частям, вычисляет SHA256 и проверяет его соответствие ожидаемому значению
@@ -434,13 +599,13 @@ func downloadWithChecksumStreaming(urlStr, dest, expectedSHAHex string, extraHea
 		// Обрабатывает ошибку контрольной суммы, которая приводит к повторной попытке
 		_ = os.Remove(dest)
 		lastErr = fmt.Errorf("контрольная сумма не совпала (ожидалось %s, получено %s) [попытка %d/%d]", expectedSHAHex, sum, i, attempts)
-		log.Println("[update] Внимание:", lastErr)
+		logging.LogError("Обновление FiReMQ: Ошибка обновления: %v", lastErr)
 	}
 
 	return lastErr
 }
 
-// PrepareUpdate проверяет версию, скачивает архив обновления во временную директорию и проверяет его целостность
+// PrepareUpdate проверяет версию, при одной новой версии скачивает один архив (при нескольких - скачивает все и формирует "/tmp/update_chain.json" для последовательного обновления) во временной директории
 func PrepareUpdate() (zipPath string, meta *CheckResult, err error) {
 	if !validVersion(CurrentVersion) {
 		return "", nil, fmt.Errorf("некорректный формат текущей версии %q (ожидается дд.мм.гг)", CurrentVersion)
@@ -454,41 +619,103 @@ func PrepareUpdate() (zipPath string, meta *CheckResult, err error) {
 	if backupBase == "" {
 		backupBase = "Backup"
 	}
-	// Определяет абсолютный путь к директории бэкапов
+	// Абсолютный путь к директории бэкапов
 	if !filepath.IsAbs(backupBase) {
 		backupBase = filepath.Join(exeBase, backupBase)
 	}
 
 	tmpDir := filepath.Join(backupBase, "tmp")
-	_ = os.RemoveAll(tmpDir) // Удаляет предыдущую временную директорию перед созданием новой
+	_ = os.RemoveAll(tmpDir) // Удаляет старый tmp
 	if err := pathsOS.EnsureDir(tmpDir); err != nil {
 		return "", nil, fmt.Errorf("не удалось создать временную директорию %q: %w", tmpDir, err)
 	}
 
-	meta, err = CheckLatest()
+	// Получает все релизы из репозитория
+	all, err := CheckAll()
 	if err != nil {
 		return "", nil, err
 	}
-	need, err := isRemoteNewer(CurrentVersion, meta.RemoteVersion)
+
+	// Сортирует по дате версии (дд.мм.гг) по возрастанию
+	sort.SliceStable(all, func(i, j int) bool {
+		ti, _ := time.Parse(versionLayout, all[i].RemoteVersion)
+		tj, _ := time.Parse(versionLayout, all[j].RemoteVersion)
+		return ti.Before(tj)
+	})
+
+	if len(all) == 0 {
+		return "", nil, ErrNoReleases
+	}
+
+	// Отбирает только версии, строго новее текущей
+	newer := make([]CheckResult, 0, len(all))
+	for _, cr := range all {
+		need, err := isRemoteNewer(CurrentVersion, cr.RemoteVersion)
+		if err != nil {
+			return "", nil, fmt.Errorf("ошибка сравнения версий: %w", err)
+		}
+		if need {
+			newer = append(newer, cr)
+		}
+	}
+
+	if len(newer) == 0 {
+		latest := all[len(all)-1]
+		return "", &latest, fmt.Errorf("обновление не требуется — локальная версия не старее (current=%s latest=%s)", CurrentVersion, latest.RemoteVersion)
+	}
+
+	// Если только одно обновление, скачивает и обновляет
+	if len(newer) == 1 {
+		m := newer[0] // Локальная копия
+		assetPath := filepath.Join(tmpDir, m.AssetName)
+
+		var headers map[string]string
+		if strings.EqualFold(m.Repo, "gitflic") && pathsOS.Update_GitFlicToken != "" {
+			headers = map[string]string{"Authorization": "token " + pathsOS.Update_GitFlicToken}
+		}
+
+		if err := downloadWithChecksumStreaming(m.AssetURL, assetPath, m.ExpectedSHA, headers); err != nil {
+			return "", &m, fmt.Errorf("не удалось скачать ассет с корректной контрольной суммой: %w", err)
+		}
+
+		return assetPath, &m, nil
+	}
+
+	// Несколько обновлений — скачивает всю цепочку и формирует список релизов "update_chain.json" в tmp
+	chain := updateChainManifest{
+		CurrentVersion: CurrentVersion,
+		Items:          make([]updateChainItem, 0, len(newer)),
+	}
+
+	for _, r := range newer {
+		assetPath := filepath.Join(tmpDir, r.AssetName)
+
+		var headers map[string]string
+		if strings.EqualFold(r.Repo, "gitflic") && pathsOS.Update_GitFlicToken != "" {
+			headers = map[string]string{"Authorization": "token " + pathsOS.Update_GitFlicToken}
+		}
+
+		if err := downloadWithChecksumStreaming(r.AssetURL, assetPath, r.ExpectedSHA, headers); err != nil {
+			return "", nil, fmt.Errorf("не удалось скачать ассет %s с корректной контрольной суммой: %w", r.AssetName, err)
+		}
+
+		chain.Items = append(chain.Items, updateChainItem{
+			Version:  r.RemoteVersion,
+			FileName: r.AssetName,
+			Repo:     r.Repo,
+		})
+	}
+
+	chainPath := filepath.Join(tmpDir, "update_chain.json")
+	data, err := json.MarshalIndent(chain, "", " ")
 	if err != nil {
-		return "", nil, fmt.Errorf("ошибка сравнения версий: %w", err)
+		return "", nil, fmt.Errorf("не удалось сериализовать update_chain.json: %w", err)
 	}
-	if !need {
-		return "", meta, fmt.Errorf("обновление не требуется — локальная версия не старее (current=%s latest=%s)", CurrentVersion, meta.RemoteVersion)
-	}
-
-	// Скачивает ассет во временную директорию
-	assetPath := filepath.Join(tmpDir, meta.AssetName)
-	var headers map[string]string
-
-	// Добавляет токен авторизации GitFlic, если он необходим
-	if strings.EqualFold(meta.Repo, "gitflic") && pathsOS.Update_GitFlicToken != "" {
-		headers = map[string]string{"Authorization": "token " + pathsOS.Update_GitFlicToken}
+	if err := os.WriteFile(chainPath, data, 0o644); err != nil {
+		return "", nil, fmt.Errorf("не удалось записать update_chain.json: %w", err)
 	}
 
-	if err := downloadWithChecksumStreaming(meta.AssetURL, assetPath, meta.ExpectedSHA, headers); err != nil {
-		return "", meta, fmt.Errorf("не удалось скачать ассет с корректной контрольной суммой: %w", err)
-	}
-
-	return assetPath, meta, nil
+	// В meta возвращает последнюю (целевую) версию цепочки
+	last := newer[len(newer)-1]
+	return chainPath, &last, nil
 }

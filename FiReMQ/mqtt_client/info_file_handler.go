@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,6 +18,7 @@ import (
 	"time"
 
 	"FiReMQ/db"         // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS"    // Локальный пакет с путями для разных платформ
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 
@@ -120,7 +120,7 @@ func HandleClientInfoFileRequest(w http.ResponseWriter, r *http.Request) {
 		// Распаковывает архив, чтобы получить доступ к HTML-файлу
 		unpackedFile, tempDir, err := unpackReportArchive(req.ClientID, req.Prefix)
 		if err != nil {
-			log.Printf("Ошибка обработки архива: %v", err)
+			logging.LogError("MQTT Info_Files: Ошибка обработки архива отчёта клиента %s: %v", req.ClientID, err)
 			if strings.Contains(err.Error(), "не найден") {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
@@ -170,7 +170,7 @@ func HandleClientInfoFileRequest(w http.ResponseWriter, r *http.Request) {
 		// Обрабатывает запрос на прямое скачивание
 		unpackedFile, tempDir, err := unpackReportArchive(req.ClientID, req.Prefix)
 		if err != nil {
-			log.Printf("Ошибка обработки архива: %v", err)
+			logging.LogError("MQTT Info_Files: Ошибка обработки архива отчёта клиента %s: %v", req.ClientID, err)
 			if strings.Contains(err.Error(), "не найден") {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
@@ -241,7 +241,7 @@ func ReportViewHandler(w http.ResponseWriter, r *http.Request) {
 	// Читает файл перед ответом
 	htmlContent, err := os.ReadFile(tr.FilePath)
 	if err != nil {
-		log.Printf("Ошибка чтения отчёта %s: %v", tr.FilePath, err)
+		logging.LogError("MQTT Info_Files: Ошибка чтения файла отчёта %s: %v", tr.FilePath, err)
 		_ = os.RemoveAll(tr.TempDir)
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -359,7 +359,7 @@ func clientExists(clientID string) bool {
 	})
 
 	if err != nil {
-		log.Printf("Ошибка проверки существования клиента %s в БД: %v", clientID, err)
+		logging.LogError("Ошибка проверки существования клиента %s в БД: %v", clientID, err)
 		return false
 	}
 	return exists

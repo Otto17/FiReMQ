@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -23,6 +22,7 @@ import (
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
 
@@ -97,17 +97,17 @@ const TokenTTL = 10 * time.Second
 func StartQUICServer(ctx context.Context) {
 	clientCACert, err := os.ReadFile(filepath.Join(pathsOS.Path_Client_QUIC_CA))
 	if err != nil {
-		log.Printf("Не удалось прочитать клиентский CA сертифкат: %v", err)
+		logging.LogError("QUIC: Не удалось прочитать клиентский CA сертификат: %v", err)
 		return
 	}
 	cert, err := tls.LoadX509KeyPair(filepath.Join(pathsOS.Path_Server_QUIC_Cert), filepath.Join(pathsOS.Path_Server_QUIC_Key))
 	if err != nil {
-		log.Printf("Не удалось загрузить серверный сертификат: %v", err)
+		logging.LogError("QUIC: Не удалось загрузить серверный сертификат: %v", err)
 		return
 	}
 	clientCAPool := x509.NewCertPool()
 	if !clientCAPool.AppendCertsFromPEM(clientCACert) {
-		log.Println("Не удалось добавить CA сертификат")
+		logging.LogError("QUIC: Не удалось добавить CA сертификат")
 		return
 	}
 	tlsConfig := &tls.Config{
@@ -117,7 +117,7 @@ func StartQUICServer(ctx context.Context) {
 		NextProtos:   []string{"quic-file-transfer"},
 	}
 
-	// Инициализируем менеджер доступа
+	// Инициализирут менеджер доступа
 	quicMgr = &quicAccessManager{
 		tlsConfig: tlsConfig,
 		addr:      pathsOS.QUIC_Host + ":" + pathsOS.QUIC_Port,
@@ -140,13 +140,13 @@ func handleQUICConnection(conn *quic.Conn) {
 			}
 			delete(sessionStore, mqttID)
 			sessionMutex.Unlock()
-			log.Printf("Сессия для %s удалена (ошибка или отсутствие подтверждения)", mqttID)
+			logging.LogAction("QUIC: Сессия для %s удалена (ошибка или отсутствие подтверждения)", mqttID)
 		}
 	}()
 
 	stream, err := conn.AcceptStream(context.Background())
 	if err != nil {
-		log.Printf("Ошибка при открытии потока: %v", err)
+		logging.LogError("QUIC: Ошибка при открытии потока: %v", err)
 		return
 	}
 	defer stream.Close()
@@ -154,26 +154,26 @@ func handleQUICConnection(conn *quic.Conn) {
 	// Чтение токена
 	var tokenLen uint16
 	if err := binary.Read(stream, binary.BigEndian, &tokenLen); err != nil {
-		log.Printf("Ошибка при чтении длины токена: %v", err)
+		logging.LogError("QUIC: Ошибка при чтении длины токена: %v", err)
 		return
 	}
 	tokenBytes := make([]byte, tokenLen)
 	if _, err := io.ReadFull(stream, tokenBytes); err != nil {
-		log.Printf("Ошибка при чтении токена: %v", err)
+		logging.LogError("QUIC: Ошибка при чтении токена: %v", err)
 		return
 	}
 	token := string(tokenBytes)
-	log.Printf("Получен токен: %s для проверки mqttID: %s", token, mqttID) // ДЛЯ ОТЛАДКИ
+	//log.Printf("QUIC: Получен токен: %s для проверки mqttID: %s", token, mqttID) // ДЛЯ ОТЛАДКИ
 
 	// Чтение mqttID
 	var mqttIDLen uint16
 	if err := binary.Read(stream, binary.BigEndian, &mqttIDLen); err != nil {
-		log.Printf("Ошибка при чтении длины mqttID: %v", err)
+		logging.LogError("QUIC: Ошибка при чтении длины mqttID: %v", err)
 		return
 	}
 	mqttIDBytes := make([]byte, mqttIDLen)
 	if _, err := io.ReadFull(stream, mqttIDBytes); err != nil {
-		log.Printf("Ошибка при чтении mqttID: %v", err)
+		logging.LogError("QUIC: Ошибка при чтении mqttID: %v", err)
 		return
 	}
 	mqttID = string(mqttIDBytes)
@@ -181,10 +181,10 @@ func handleQUICConnection(conn *quic.Conn) {
 	// Чтение смещения
 	var resumeFrom uint64
 	if err := binary.Read(stream, binary.BigEndian, &resumeFrom); err != nil {
-		log.Printf("Ошибка при чтении смещения: %v", err)
+		logging.LogError("QUIC: Ошибка при чтении смещения: %v", err)
 		return
 	}
-	log.Printf("Получено смещение resumeFrom=%d для mqttID=%s", resumeFrom, mqttID)
+	logging.LogAction("QUIC: Получено смещение resumeFrom=%d для mqttID=%s", resumeFrom, mqttID)
 
 	// Проверка токена
 	if !validateQUICToken(token, mqttID) {
@@ -232,65 +232,65 @@ func handleQUICConnection(conn *quic.Conn) {
 
 	// Перед метаданными шлём статус OK
 	if err := binary.Write(stream, binary.BigEndian, statusOK); err != nil {
-		log.Printf("Ошибка отправки статуса: %v", err)
+		logging.LogError("QUIC: Ошибка отправки статуса: %v", err)
 		return
 	}
 
-	// Всегда отправляем метаданные файла (имя и размер)
+	// Всегда отправляет метаданные файла (имя и размер)
 	fileNameBytes := []byte(fileName)
 	if err := binary.Write(stream, binary.BigEndian, uint16(len(fileNameBytes))); err != nil {
-		log.Printf("Ошибка при отправке длины имени файла: %v", err)
+		logging.LogError("QUIC: Ошибка при отправке длины имени файла: %v", err)
 		return
 	}
 	if _, err := stream.Write(fileNameBytes); err != nil {
-		log.Printf("Ошибка при отправке имени файла: %v", err)
+		logging.LogError("QUIC: Ошибка при отправке имени файла: %v", err)
 		return
 	}
 	if err := binary.Write(stream, binary.BigEndian, fileSize); err != nil {
-		log.Printf("Ошибка при отправке размера файла: %v", err)
+		logging.LogError("QUIC: Ошибка при отправке размера файла: %v", err)
 		return
 	}
 
 	// Перемещение к указанному смещению
 	if _, err := file.Seek(int64(resumeFrom), 0); err != nil {
-		log.Printf("Ошибка при установке смещения: %v", err)
+		logging.LogError("QUIC: Ошибка при установке смещения: %v", err)
 		return
 	}
-	log.Printf("Отправка файла: %s, начиная с %d байт", fileName, resumeFrom)
+	logging.LogAction("QUIC: Отправка файла: %s, начиная с %d байт", fileName, resumeFrom)
 
 	// Определение размера буфера
 	bufSize := getBufferSize(fileSize, resumeFrom)
 	buf := make([]byte, bufSize)
-	log.Printf("Используется буфер %d КБ для файла %s", bufSize/1024, fileName)
+	// log.Printf("Используется буфер %d КБ для файла %s", bufSize/1024, fileName) // ДЛЯ ОТЛАДКИ
 
 	var sent uint64 = resumeFrom
 	for sent < fileSize {
 		n, err := file.Read(buf)
 		if err != nil && err != io.EOF {
-			log.Printf("Ошибка при чтении файла: %v", err)
+			logging.LogError("QUIC: Ошибка при чтении файла: %v", err)
 			return
 		}
 		if n == 0 {
 			break
 		}
 		if _, wErr := stream.Write(buf[:n]); wErr != nil {
-			log.Printf("Ошибка при отправке данных: %v", wErr)
+			logging.LogError("QUIC: Ошибка при отправке данных: %v", wErr)
 			return
 		}
 		sent += uint64(n)
 	}
-	log.Printf("Файл %s отправлен полностью: %d байт", fileName, sent)
-	shouldDeleteSession = false // Ожидаем подтверждение от клиента
+	logging.LogAction("QUIC: Файл %s отправлен полностью: %d байт", fileName, sent)
+	shouldDeleteSession = false // Ожидает подтверждение от клиента
 }
 
 // GetBufferSize адаптивное определение размера буфера
 func getBufferSize(fileSize, resumeFrom uint64) int {
 	remaining := fileSize - resumeFrom
-	// Для файлов < 1 MB используем буфер 16 КБ
+	// Для файлов < 1 MB использует буфер 16 КБ
 	if remaining < 1<<20 { // 1 MB
 		return 16 << 10 // 16 КБ
 	}
-	// Для файлов > 100 MB используем буфер 256 КБ
+	// Для файлов > 100 MB использует буфер 256 КБ
 	if remaining > 100<<20 { // 100 MB
 		return 256 << 10 // 256 КБ
 	}
@@ -309,7 +309,7 @@ func validateQUICToken(token, mqttID string) bool {
 		sessionStore[mqttID] = session
 		return true
 	}
-	log.Printf("Недействительный токен %s для mqttID %s", token, mqttID)
+	logging.LogError("QUIC: Недействительный токен %s для mqttID %s", token, mqttID)
 	return false
 }
 
@@ -317,7 +317,7 @@ func validateQUICToken(token, mqttID string) bool {
 func generateToken() string {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
-		log.Printf("Ошибка генерации токена: %v", err)
+		logging.LogError("QUIC: Ошибка генерации токена: %v", err)
 		return ""
 	}
 	return hex.EncodeToString(b)
@@ -325,7 +325,7 @@ func generateToken() string {
 
 // CheckAndResendQUIC запускает per-client очередь
 func checkAndResendQUIC(clientID string) {
-	// Ждем 3 секунды, чтобы клиент успел корректно запуститься
+	// Ждёт 3 секунды, чтобы клиент успел корректно запуститься
 	time.Sleep(3 * time.Second)
 	EnsureQUICOpen("фоновая повторная отправка для " + clientID)
 	startQUICQueueForClient(clientID)
@@ -368,7 +368,7 @@ func HandleQUICAnswerMessage(clientID, dateOfCreation, answer, quicExecution, at
 		return txn.Set([]byte(dbKey), updatedBytes)
 	})
 	if err != nil {
-		log.Printf("Ошибка обновления QUIC-ответа для клиента %s: %v", clientID, err)
+		logging.LogError("QUIC: Ошибка обновления QUIC-ответа для клиента %s: %v", clientID, err)
 	}
 
 	sessionMutex.Lock()
@@ -380,7 +380,7 @@ func HandleQUICAnswerMessage(clientID, dateOfCreation, answer, quicExecution, at
 	}
 	sessionMutex.Unlock()
 
-	// После обновления ответа — пересчитываем доступ
+	// После обновления ответа — пересчитывает доступ
 	RecalculateQUICAccess("получен ответ от клиента " + clientID)
 }
 
@@ -397,16 +397,16 @@ func (m *quicAccessManager) open(why string) {
 	// Открытие порта, только, если есть незавершённые задачи и хотя бы один клиент онлайн
 	ready, err := hasReadyQUICTasks()
 	if err != nil {
-		log.Printf("QUIC: ошибка проверки готовности к открытию: %v", err)
+		logging.LogError("QUIC: Ошибка проверки готовности к открытию порта: %v", err)
 	}
 	if !ready {
-		// log.Printf("QUIC: не открываем порт — нет онлайн клиентов с незавершёнными задачами (%s)", why)
+		// log.Printf("QUIC: не открывает порт — нет онлайн клиентов с незавершёнными задачами (%s)", why) // ДЛЯ ОТЛАДКИ
 		return
 	}
 
 	m.mu.Lock()
 	if m.isOpen {
-		// Уже открыт — просто отменим возможное отложенное закрытие
+		// Уже открыт — просто отменит возможное отложенное закрытие
 		m.cancelCloseTimerLocked()
 		m.mu.Unlock()
 		return
@@ -415,17 +415,19 @@ func (m *quicAccessManager) open(why string) {
 
 	udpAddr, err := net.ResolveUDPAddr("udp", m.addr)
 	if err != nil {
-		log.Printf("QUIC: не удалось резолвить адрес %s: %v", m.addr, err)
+		logging.LogError("QUIC: Не удалось резолвить адрес %s: %v", m.addr, err)
 		return
 	}
+
 	udpConn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		log.Printf("QUIC: не удалось слушать UDP на %s: %v", m.addr, err)
+		logging.LogError("QUIC: Не удалось слушать UDP на %s: %v", m.addr, err)
 		return
 	}
+
 	listener, err := quic.Listen(udpConn, m.tlsConfig, &quic.Config{})
 	if err != nil {
-		log.Printf("QUIC: не удалось запустить listener: %v", err)
+		logging.LogError("QUIC: Не удалось запустить listener: %v", err)
 		udpConn.Close()
 		return
 	}
@@ -434,10 +436,10 @@ func (m *quicAccessManager) open(why string) {
 	m.udpConn = udpConn
 	m.listener = listener
 	m.isOpen = true
-	m.cancelCloseTimerLocked() // на всякий случай
+	m.cancelCloseTimerLocked() // На всякий случай
 	m.mu.Unlock()
 
-	log.Printf("QUIC-сервер запущен на %s (доступ разрешён: %s)", m.addr, why)
+	logging.LogSystem("QUIC: QUIC-сервер запущен на %s (доступ разрешён: %s)", m.addr, why)
 	m.acceptWG.Add(1)
 	go m.acceptLoop()
 }
@@ -449,10 +451,10 @@ func (m *quicAccessManager) acceptLoop() {
 		conn, err := m.listener.Accept(m.ctx)
 		if err != nil {
 			if m.ctx.Err() != nil {
-				log.Println("QUIC-сервер остановлен (ctx cancel)")
+				logging.LogSystem("QUIC: QUIC-сервер остановлен (ctx cancel)")
 				return
 			}
-			// listener закрыт — выходим из acceptLoop
+			// listener закрыт — выход из acceptLoop
 			return
 		}
 		go handleQUICConnection(conn)
@@ -482,7 +484,7 @@ func (m *quicAccessManager) close(why string) {
 		_ = udpConn.Close()
 	}
 	m.acceptWG.Wait()
-	log.Printf("QUIC доступ запрещён (%s); порт не слушается", why)
+	logging.LogSystem("QUIC: QUIC доступ запрещён (%s); порт не слушается", why)
 }
 
 // ScheduleClose отложенное закрытие с повторной проверкой готовности
@@ -498,17 +500,17 @@ func (m *quicAccessManager) scheduleClose(why string) {
 		// Повторная проверка — вдруг кто-то успел зайти онлайн
 		ready, err := hasReadyQUICTasks()
 		if err != nil {
-			log.Printf("QUIC: ошибка перепроверки перед закрытием: %v", err)
+			logging.LogError("QUIC: Ошибка перепроверки перед закрытием: %v", err)
 			return
 		}
 		if ready {
-			// Кто-то онлайн с незавершённой задачей — оставляем порт открытым
+			// Кто-то онлайн с незавершённой задачей — оставляет порт открытым
 			return
 		}
-		// Проверяем, остались ли вообще невыполненные задания
+		// Проверяет, остались ли вообще невыполненные задания
 		hasPending, err := hasPendingQUICTasks()
 		if err != nil {
-			log.Printf("QUIC: ошибка проверки активных задач перед закрытием: %v", err)
+			logging.LogError("QUIC: Ошибка проверки активных задач перед закрытием: %v", err)
 		}
 		if hasPending {
 			m.close("закрытие после grace-периода: " + why)
@@ -523,12 +525,12 @@ func (m *quicAccessManager) scheduleClose(why string) {
 func (m *quicAccessManager) run(ctx context.Context) {
 	m.ctx = ctx
 	if ready, err := hasReadyQUICTasks(); err != nil {
-		//log.Printf("QUIC: ошибка первичной проверки задач: %v", err)
+		logging.LogError("QUIC: ошибка первичной проверки задач: %v", err)
 	} else if ready {
 		m.open("startup: есть невыполненные задачи и онлайн-клиенты")
 	} else {
 		_, _ = hasPendingQUICTasks()
-		// if has, _ := hasPendingQUICTasks(); has {
+		// if has, _ := hasPendingQUICTasks(); has { // ДЛЯ ОТЛАДКИ
 		// 	log.Printf("QUIC: доступ закрыт (startup) — есть задачи, но все целевые клиенты офлайн")
 		// } else {
 		// 	log.Printf("QUIC: доступ закрыт (startup) — нет активных задач")
@@ -578,7 +580,7 @@ func hasPendingQUICTasks() (bool, error) {
 // EnsureQUICOpen принудительно открывает UDP QUIC-порт
 func EnsureQUICOpen(why string) {
 	if quicMgr == nil {
-		log.Printf("EnsureQUICOpen: менеджер не инициализирован (%s)", why)
+		logging.LogError("QUIC: Ошибка, менеджер не инициализирован (%s)", why)
 		return
 	}
 	quicMgr.open(why)
@@ -599,7 +601,7 @@ func RecalculateQUICAccess(why string) {
 	}
 	ready, err := hasReadyQUICTasks()
 	if err != nil {
-		log.Printf("RecalculateQUICAccess: ошибка проверки готовности: %v", err)
+		logging.LogError("QUIC: Ошибка проверки готовности: %v", err)
 		return
 	}
 	if ready {
@@ -608,14 +610,14 @@ func RecalculateQUICAccess(why string) {
 	}
 	has, err := hasPendingQUICTasks()
 	if err != nil {
-		log.Printf("RecalculateQUICAccess: ошибка проверки активных задач: %v", err)
+		logging.LogError("QUIC: Ошибка проверки активных задач: %v", err)
 		return
 	}
 	if has {
-		// Есть задачи, но онлайн-клиентов под них нет — закрываем с задержкой
+		// Есть задачи, но онлайн-клиентов под них нет — закрывает с задержкой
 		quicMgr.scheduleClose("нет онлайн-клиентов для активных задач (" + why + ")")
 	} else {
-		// Задач нет — закрываем сразу
+		// Задач нет — закрывает сразу
 		quicMgr.close("нет активных задач (" + why + ")")
 	}
 }
@@ -674,11 +676,11 @@ func deleteQUICFileIfUnreferenced(fileName string) {
 	}
 	referenced, err := isQUICFileStillReferenced(fileName)
 	if err != nil {
-		log.Printf("Проверка ссылок на файл %s завершилась ошибкой: %v", fileName, err)
+		logging.LogError("QUIC: Проверка ссылок на файл %s завершилась ошибкой: %v", fileName, err)
 		return
 	}
 	if referenced {
-		log.Printf("Файл %s не удалён — всё ещё используется другими запросами", fileName)
+		logging.LogSystem("QUIC: Файл %s не удалён — всё ещё используется другими запросами", fileName)
 		return
 	}
 	downloadsDir := pathsOS.Path_QUIC_Downloads
@@ -686,20 +688,20 @@ func deleteQUICFileIfUnreferenced(fileName string) {
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			log.Printf("Файл %s отсутствует — удаление не требуется", filePath)
+			logging.LogSystem("QUIC: Файл %s отсутствует — удаление не требуется", filePath)
 			break
 		}
 		if err := os.Remove(filePath); err != nil {
-			log.Printf("Попытка %d: ошибка удаления файла %s: %v", i+1, filePath, err)
+			logging.LogError("QUIC: Попытка %d: ошибка удаления файла %s: %v", i+1, filePath, err)
 			if i < maxRetries-1 {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
-			// Последняя попытка — просто логируем
-			log.Printf("Не удалось удалить файл %s окончательно: %v", filePath, err)
+			// Последняя попытка — просто логирует
+			logging.LogError("QUIC: Не удалось удалить файл %s окончательно: %v", filePath, err)
 			return
 		}
-		log.Printf("Файл %s удалён (очистка после удаления запроса)", filePath)
+		logging.LogAction("QUIC: Файл %s удалён (очистка после удаления запроса)", filePath)
 		break
 	}
 }
@@ -737,8 +739,8 @@ func generateQUICTokenForFile(mqttID, filePath, dateOfCreation string) string {
 			}
 			sessionMutex.Unlock()
 			if expired {
-				log.Printf("Срок действия токена истек для %s", client)
-				// Отмечаем флаг для будущей отправки
+				logging.LogSystem("QUIC: Срок действия токена истек для %s", client)
+				// Отмечат флаг для будущей отправки
 				if snap.DateOfCreation != "" {
 					_ = setResendRequestedFor(client, snap.DateOfCreation)
 				}
@@ -875,7 +877,7 @@ func setResendRequestedFor(clientID, dateOfCreation string) bool {
 		return nil
 	})
 	if err != nil {
-		log.Printf("Ошибка установки ResendRequested для клиента %s (%s): %v", clientID, dateOfCreation, err)
+		logging.LogError("QUIC: Ошибка установки повторного запроса для клиента %s (%s): %v", clientID, dateOfCreation, err)
 	}
 	return changed
 }
@@ -923,7 +925,7 @@ func markQUICResendOnOffline(clientID string) {
 		return nil
 	})
 	if err != nil {
-		log.Printf("Ошибка отметки ResendRequested при оффлайне для %s: %v", clientID, err)
+		logging.LogError("QUIC: Ошибка отметки повторного запроса при оффлайне для %s: %v", clientID, err)
 	}
 }
 
@@ -1071,7 +1073,7 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 			chosenRecord["SentFor"] = sentFor
 		}
 
-		// Снимем флаг ResendRequested для этого клиента
+		// Снимет флаг ResendRequested для этого клиента
 		if rrMap, ok := chosenRecord["ResendRequested"].(map[string]any); ok {
 			if _, ex := rrMap[clientID]; ex {
 				delete(rrMap, clientID)
@@ -1079,7 +1081,7 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 			}
 		}
 
-		// Сохраняем изменения
+		// Сохраняет изменения
 		newBytes, err := json.Marshal(chosenRecord)
 		if err != nil {
 			return err
@@ -1117,7 +1119,7 @@ func startQUICQueueForClient(clientID string) {
 			q.mu.Unlock()
 		}()
 		for {
-			// Если клиент ушёл оффлайн, завершаем (перезапустится при следующем Online)
+			// Если клиент ушёл оффлайн, завершает (перезапустится при следующем Online)
 			online, _ := isClientOnline(clientID)
 			if !online {
 				return
@@ -1144,7 +1146,7 @@ func startQUICQueueForClient(clientID string) {
 			}
 			EnsureQUICOpen("очередь QUIC — отправка клиенту " + clientID)
 			if err := mqtt_client.Publish(topic, payload, 2); err != nil {
-				log.Printf("QUIC очередь: ошибка публикации для %s: %v", clientID, err)
+				logging.LogError("QUIC: Ошибка публикации для %s: %v", clientID, err)
 				time.Sleep(3 * time.Second)
 				continue
 			}

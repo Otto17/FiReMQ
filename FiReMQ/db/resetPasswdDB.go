@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -17,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 
 	"github.com/dgraph-io/badger/v4"
@@ -87,18 +87,21 @@ func PerformPasswordReset() {
 			}
 			os.Exit(1)
 		}
-		log.Fatalf("Не удалось открыть БД: %v", err)
+		logging.LogError("Сброс пароля БД: Не удалось открыть БД: %v", err)
 	}
 
-	defer func() { // Гарантирует закрытие БД при выходе
+	// Закрытие БД при выходе
+	defer func() {
 		if err := Close(); err != nil {
-			log.Printf("Ошибка закрытия БД: %v", err)
+			logging.LogError("Сброс пароля БД: Ошибка закрытия БД: %v", err)
 		}
 	}()
 
-	users, err := loadUsers() // Загружает учётные записи админов
+	// Загружает учётные записи админов
+	users, err := loadUsers()
 	if err != nil {
-		log.Fatalf("Ошибка чтения учётных записей админов: %v", err)
+		logging.LogError("Сброс пароля: Ошибка чтения учётных записей: %v", err)
+		os.Exit(1)
 	}
 
 	if len(users) == 0 {
@@ -115,16 +118,20 @@ func PerformPasswordReset() {
 	newPass := promptNewPassword(selectedUser.Login) // Запрашивает новый пароль
 
 	if err := updatePassword(selectedUser.Login, newPass); err != nil { // Обновляет пароль в БД
-		log.Fatalf("%sОшибка обновления пароля:%s %v", ColorRed, ColorReset, err)
+		logging.LogError("Сброс пароля: Ошибка обновления пароля для %s: %v", selectedUser.Login, err)
+		os.Exit(1)
 	}
 
+	logging.LogAction("Сброс пароля: Пароль для '%s' (%s) успешно изменён", selectedUser.Login, selectedUser.Name)
 	fmt.Printf("\n%sПароль для учётной записи '%s' (%s) успешно изменён!%s\n", ColorGreen, selectedUser.Login, selectedUser.Name, ColorReset)
 
 	if runtime.GOOS == "linux" { // Восстанавливает права доступа
 		fmt.Println("Применение прав доступа...")
 		if err := pathsOS.VerifyAndFixPermissions(); err != nil {
-			log.Printf("%sОшибка при восстановлении прав доступа: %v%s\n", ColorRed, err, ColorReset)
+			logging.LogError("Сброс пароля БД: Сброс пароля: Ошибка при восстановлении прав доступа: %v", err)
+			fmt.Printf("%sОшибка при восстановлении прав доступа: %v%s\n", ColorRed, err, ColorReset)
 		} else {
+			logging.LogAction("Сброс пароля БД: Права доступа, владелец и группа успешно восстановлены.")
 			fmt.Println("Права доступа, владелец и группа успешно восстановлены.")
 		}
 	}

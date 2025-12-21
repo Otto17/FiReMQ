@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
 	"FiReMQ/new_cert"    // Локальный пакет для проверки и создания mTLS сертификатов
@@ -63,14 +64,59 @@ func main() {
 	// Умеренный вызов сборщика мусора
 	debug.SetGCPercent(80)
 
+	//  Временный перехват логов из пакета "pathsOS" для дальнейшей записи в HTML лог
+	// Создание буфера для ранних логов (ДО инициализации главного конфига)
+	type bufferedLog struct {
+		Level   string // "SYSTEM" или "ERROR"
+		Message string
+	}
+	var startupBuffer []bufferedLog
+
+	// Записываются в консоль (чтобы видеть), и в буфер (чтобы потом записать в файл)
+	pathsOS.LogSystem = func(format string, args ...any) {
+		msg := fmt.Sprintf(format, args...)
+		log.Printf("[СИСТЕМА] %s", msg) // В консоль
+		startupBuffer = append(startupBuffer, bufferedLog{"SYSTEM", msg})
+	}
+
+	pathsOS.LogError = func(format string, args ...any) {
+		msg := fmt.Sprintf(format, args...)
+		log.Printf("[ОШИБКА] %s", msg) // В консоль
+		startupBuffer = append(startupBuffer, bufferedLog{"ERROR", msg})
+	}
+
+	// Загрузка главного конфига
+	if err := pathsOS.Init(); err != nil {
+		logging.LogError("Инициализация: Ошибка инициализации главного конфига \"server.conf\": %v", err)
+	}
+
+	// Инициализация HTML логирования
+	logging.InitLog()
+
+	// Перенаправление буфера в реальный логгер
+	for _, l := range startupBuffer {
+		if l.Level == "ERROR" {
+			logging.LogError("%s", l.Message)
+		} else {
+			logging.LogSystem("%s", l.Message)
+		}
+	}
+
+	// Инъекции функций логирования в пакет protection и pathsOS, чтобы избежать циклических импортов
+	pathsOS.LogSystem = logging.LogSystem
+	pathsOS.LogError = logging.LogError
+	protection.LogSecurity = logging.LogSecurity
+	protection.LogSystem = logging.LogSystem
+	protection.LogError = logging.LogError
+
 	// Проверка запуска FiReMQ от суперпользователя в Linux
 	if runtime.GOOS == "linux" && os.Geteuid() == 0 {
-		log.Println("FiReMQ запущен от root. Коррекция прав будет выполнена при завершении.")
+		logging.LogSystem("FiReMQ запущен от root. Коррекция прав будет выполнена при завершении.")
 		defer func() {
 			if err := pathsOS.VerifyAndFixPermissions(); err != nil {
-				log.Printf("Ошибка. Не удалось исправить права доступа при завершении: %v", err)
+				logging.LogError("Ошибка. Не удалось исправить права доступа при завершении: %v", err)
 			} else {
-				log.Println("Коррекция прав и владельца успешно завершена.")
+				logging.LogSystem("Коррекция прав и владельца успешно завершена.")
 			}
 		}()
 	}
@@ -81,7 +127,7 @@ func main() {
 
 	// Пакет "update" имеет возможность инициировать завершение так же, как по сигналу
 	update.BindShutdown(func() {
-		// Отправляем в done, как если бы пришёл SIGINT/SIGTERM
+		// Отправляет в done, как если бы пришёл SIGINT/SIGTERM
 		done <- true
 	})
 
@@ -90,11 +136,6 @@ func main() {
 		<-sigs
 		done <- true
 	}()
-
-	// Проверка и загрузка главного конфига
-	if err := pathsOS.Init(); err != nil {
-		log.Fatalf("Ошибка инициализации главной конфигурации \"server.conf\": %v", err)
-	}
 
 	// Режима смены пароля WEB админки (выбор админа через интерактивное меню)
 	if len(args) >= 2 && strings.EqualFold(args[1], "--PasswdDB") {
@@ -116,7 +157,7 @@ func main() {
 	// Проверка и исправление права доступа для Linux после загрузки конфига
 	if err := pathsOS.VerifyAndFixPermissions(); err != nil {
 		// Ошибки внутри уже логируются, но можно добавить общее предупреждение
-		log.Printf("Возникли проблемы при проверке прав доступа: %v", err)
+		logging.LogError("Инициализация: Возникли проблемы при проверке прав доступа: %v", err)
 	}
 
 	// Проверка и корректировка прав доступа для исполняемых утилит "7zzs" и "ServerUpdater"
@@ -124,12 +165,12 @@ func main() {
 
 	// Загрузка HTML шаблонов после инициализации конфига
 	if err := loadTemplates(); err != nil {
-		log.Fatalf("Ошибка загрузки WEB шаблонов: %v", err)
+		logging.LogError("Инициализация: Ошибка загрузки WEB шаблонов: %v", err)
 	}
 
 	// Проверка конфига "mqtt_config.json", если отсутствует, тогда создаём его
 	if err := mqtt_server.EnsureMQTTConfig(); err != nil {
-		fmt.Println("Ошибка:", err)
+		logging.LogError("Инициализация: Ошибка MQTT конфига: %v", err)
 		return
 	}
 
@@ -140,7 +181,7 @@ func main() {
 
 	// Инициализация БД
 	if err := db.InitDB(); err != nil {
-		log.Fatalf("Ошибка инициализации БД: %v", err)
+		logging.LogError("Инициализация: Ошибка инициализации БД: %v", err)
 	}
 
 	// Запуск планировщика бэкапов БД
@@ -148,7 +189,7 @@ func main() {
 
 	defer func() { // Завершение работы с BadgerDB при завершении основной программы
 		if err := db.Close(); err != nil {
-			log.Printf("Ошибка закрытия БД: %v", err)
+			logging.LogError("Завершение: Ошибка закрытия БД: %v", err)
 		}
 	}()
 
@@ -157,7 +198,7 @@ func main() {
 
 	// Инициализация Coraza WAF с откатом из бэкапа при ошибках конфигурации OWASP CRS
 	if err := protection.InitializeWAFWithRecovery(); err != nil {
-		log.Fatalf("Не удалось инициализировать Coraza WAF после отката: %v", err)
+		logging.LogError("Инициализация: Не удалось инициализировать Coraza WAF после отката: %v", err)
 	}
 
 	// Запуск mqtt-сервера
@@ -176,16 +217,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	var wgQUIC sync.WaitGroup
 
-	// Запускаем QUIC‐сервер в горутине
+	// Запуск QUIC‐сервера в горутине
 	wgQUIC.Go(func() {
 		StartQUICServer(ctx)
 	})
 
-	log.Println("FiReMQ запущен!")
+	logging.LogSystem("FiReMQ запущен!")
 
 	// Ожидание завершения
 	<-done
-	log.Println("Завершение работы FiReMQ...")
+	logging.LogSystem("Завершение работы FiReMQ...")
 	// Остановка QUIC‐сервера
 	cancel()
 
@@ -197,9 +238,10 @@ func main() {
 
 	// Остановка сервера Mochi MQTT
 	if err := mqtt_server.Stop(); err != nil {
-		log.Printf("Ошибка остановки MQTT-сервера: %v", err)
+		logging.LogError("Завершение: Ошибка остановки MQTT-сервера: %v", err)
 	}
-	log.Println("FiReMQ корректно завершён.")
+
+	logging.LogSystem("FiReMQ корректно завершён.")
 }
 
 // GetTimestampWithMs форматирует дату/время с миллисекундами (минимум 2 знака) – используется для даты создания запроса в "Date_Of_Creation"
@@ -211,16 +253,16 @@ func getTimestampWithMs(t time.Time) string {
 
 // CleanupTempFiles удаляет возможные мусорные файлы из директории "pathsOS.Path_QUIC_Downloads"
 func cleanupTempFiles() {
-	// Проверяем и создаем директорию, если она отсутствует
+	// Проверяет и создаёт директорию, если она отсутствует
 	if err := pathsOS.EnsureDir(pathsOS.Path_QUIC_Downloads); err != nil {
-		log.Printf("Ошибка создания директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
+		logging.LogError("Очистка Downloads: Ошибка создания директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
 		return
 	}
 
-	// Читаем содержимое директории
+	// Читает содержимое директории
 	entries, err := os.ReadDir(pathsOS.Path_QUIC_Downloads)
 	if err != nil {
-		log.Printf("Ошибка чтения директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
+		logging.LogError("Очистка Downloads: Ошибка чтения директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
 		return
 	}
 
@@ -231,15 +273,16 @@ func cleanupTempFiles() {
 		}
 		if strings.HasPrefix(e.Name(), "upload-") {
 			filePath := filepath.Join(pathsOS.Path_QUIC_Downloads, e.Name())
+
 			if err := os.Remove(filePath); err != nil {
-				log.Printf("Ошибка удаления временного файла %s: %v", filePath, err)
+				logging.LogError("Очистка Downloads: Ошибка удаления временного файла %s: %v", filePath, err)
 			} else {
-				log.Printf("Удален временный файл: %s", filePath)
+				logging.LogSystem("Очистка Downloads: Удалён временный файл: %s", filePath)
 			}
 		}
 	}
 
-	// Если БД ещё не инициализирована — дальше не пытаемся чистить "осиротевшие" файлы
+	// Если БД ещё не инициализирована — дальше не пытается чистить "осиротевшие" файлы
 	if db.DBInstance == nil {
 		return
 	}
@@ -278,14 +321,14 @@ func cleanupTempFiles() {
 		return nil
 	})
 	if err != nil {
-		log.Printf("Ошибка чтения БД при сборе ссылок на файлы QUIC: %v", err)
+		logging.LogError("Очистка Downloads: Ошибка чтения БД при сборе ссылок на файлы QUIC: %v", err)
 		return
 	}
 
 	// Повторное чтение каталога (после удаления upload-*)
 	entries, err = os.ReadDir(pathsOS.Path_QUIC_Downloads)
 	if err != nil {
-		log.Printf("Ошибка повторного чтения директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
+		logging.LogError("Очистка Downloads: Ошибка повторного чтения директории %s: %v", pathsOS.Path_QUIC_Downloads, err)
 		return
 	}
 
@@ -299,7 +342,7 @@ func cleanupTempFiles() {
 			continue // Уже обработано
 		}
 		if _, inUse := referenced[name]; inUse {
-			continue // Файл используется хотя бы одним запросом — не трогаем
+			continue // Файл используется хотя бы одним запросом — не трогает
 		}
 
 		filePath := filepath.Join(pathsOS.Path_QUIC_Downloads, name)
@@ -317,13 +360,13 @@ func cleanupTempFiles() {
 					continue
 				}
 			} else {
-				log.Printf("Удалён неиспользуемый файл: %s", filePath)
+				logging.LogSystem("Очистка Downloads: Удалён неиспользуемый файл: %s", filePath)
 				lastErr = nil
 				break
 			}
 		}
 		if lastErr != nil {
-			log.Printf("Не удалось удалить неиспользуемый файл %s: %v", filePath, lastErr)
+			logging.LogError("Очистка Downloads: Не удалось удалить неиспользуемый файл %s: %v", filePath, lastErr)
 		}
 	}
 }

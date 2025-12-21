@@ -6,13 +6,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
 
@@ -52,7 +52,7 @@ func publishUninstallCommand(clientID string) error {
 
 // addPendingUninstallBatch Пакетно добавляет оффлайн-ID в очередь удаления в БД
 func addPendingUninstallBatch(ids []string) error {
-	wb := db.DBInstance.NewWriteBatch() // Используем батчу
+	wb := db.DBInstance.NewWriteBatch() // Использует батчу
 	defer wb.Cancel()
 
 	now := time.Now().Format(time.RFC3339Nano)
@@ -130,7 +130,7 @@ func schedulePendingUninstall(clientID string) {
 	go func() {
 		defer pendingUninstallWorkers.Delete(clientID)
 
-		// Ждем 3 секунды, чтобы клиент успел корректно запуститься
+		// Ждёт 3 секунды, чтобы клиент успел корректно запуститься
 		time.Sleep(3 * time.Second)
 
 		// Повторная проверка: ожидание ещё актуально?
@@ -145,53 +145,53 @@ func schedulePendingUninstall(clientID string) {
 			return
 		}
 
-		// Вызываем функцию, которая выполняет все шаги по удалению
+		// Вызывает функцию, которая выполняет все шаги по удалению
 		if err := fullyDeleteClient(clientID); err != nil {
-			log.Printf("Delete_FiReAgent: ошибка при выполнении полного удаления для %s: %v", clientID, err)
+			logging.LogError("Удаление Агента: Ошибка при выполнении полного удаления для %s: %v", clientID, err)
 			return
 		}
 
-		// Если ошибок не было, логируем успешное завершение
-		log.Printf("Delete_FiReAgent: клиент %s удалён (после входа онлайн) и исключён из очереди", clientID)
+		// Если ошибок не было, логирует успешное завершение
+		logging.LogAction("Удаление Агента: Клиент %s удалён (после входа онлайн) и исключён из очереди", clientID)
 	}()
 }
 
 // fullyDeleteClient Инкапсулирует всю логику полного удаления клиента и связанных с ним данных
 func fullyDeleteClient(clientID string) error {
-	// Отправляем команду на самоудаление
+	// Отправляет команду на самоудаление
 	if err := publishUninstallCommand(clientID); err != nil {
-		// Возвращаем ошибку, чтобы вызывающий код мог решить, что делать дальше
+		// Возвращает ошибку, чтобы вызывающий код мог решить, что делать дальше
 		return fmt.Errorf("ошибка публикации MQTT для %s: %w", clientID, err)
 	}
 
-	// Удаляем клиента из основной БД
+	// Удаляет клиента из основной БД
 	if err := DeleteClient(clientID); err != nil {
-		// Аналогично, возвращаем ошибку
+		// Аналогично, возвращает ошибку
 		return fmt.Errorf("ошибка удаления клиента %s из БД: %w", clientID, err)
 	}
 
-	// Удаляем файлы отчётов (ошибки здесь только логируем, они не критичны)
+	// Удаляет файлы отчётов (ошибки здесь только логирует, они не критичны)
 	filePathLite := filepath.Join(pathsOS.Path_Info, "Lite_"+clientID+".html.xz")
 	if err := os.Remove(filePathLite); err != nil && !os.IsNotExist(err) {
-		log.Printf("Ошибка удаления файла отчета %s: %v", filePathLite, err)
+		logging.LogError("Удаление Агента: Ошибка удаления файла отчёта %s: %v", filePathLite, err)
 	}
 	filePathAida := filepath.Join(pathsOS.Path_Info, "Aida_"+clientID+".html.xz")
 	if err := os.Remove(filePathAida); err != nil && !os.IsNotExist(err) {
-		log.Printf("Ошибка удаления файла отчета %s: %v", filePathAida, err)
+		logging.LogError("Удаление Агента: Ошибка удаления файла отчёта %s: %v", filePathAida, err)
 	}
 
 	// Очистка отчётов и runtime-состояния
 	if err := removeClientIDsFromCommandRecords([]string{clientID}); err != nil {
-		log.Printf("Ошибка очистки из CMD отчетов для %s: %v", clientID, err)
+		logging.LogError("Удаление Агента: Ошибка очистки из CMD отчётов для %s: %v", clientID, err)
 	}
 	if err := removeClientIDsFromQUICRecords([]string{clientID}); err != nil {
-		log.Printf("Ошибка очистки из QUIC отчетов для %s: %v", clientID, err)
+		logging.LogError("Удаление Агента: Ошибка очистки из QUIC отчётов для %s: %v", clientID, err)
 	}
 	cleanupClientsRuntimeState([]string{clientID})
 
 	// На случай, если этот клиент раньше был в очереди — удалим ключ ожидания
 	_ = removePendingUninstall(clientID)
 
-	log.Printf("Процесс полного удаления для клиента %s инициирован.", clientID)
+	logging.LogAction("Удаление Агента: Процесс полного удаления для клиента %s инициирован.", clientID)
 	return nil
 }

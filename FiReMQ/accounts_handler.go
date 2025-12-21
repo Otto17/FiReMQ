@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"FiReMQ/db"         // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 
 	"github.com/dgraph-io/badger/v4"
@@ -36,6 +37,13 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 		Auth_Name     string `json:"auth_name"`
 		Auth_Login    string `json:"auth_login"`
 		Auth_Password string `json:"auth_password"`
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
@@ -111,10 +119,12 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := saveAdmin(user); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения нового админа %s: %v", user.Auth_Login, err)
 		http.Error(w, "Ошибка сохранения админа", http.StatusInternalServerError)
 		return
 	}
 
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) добавил новую учётную запись: \"%s\" (с именем: %s)", authInfo.Login, authInfo.Name, user.Auth_Login, user.Auth_Name)
 	w.Write([]byte("Админ добавлен"))
 }
 
@@ -140,7 +150,17 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Загружает все учетные записи для проверки количества
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	currentUserLogin := authInfo.Login
+	currentUserName := authInfo.Name
+
+	// Загружает все учетные записи для проверки их количества
 	usersMap, err := loadAdminsMap()
 	if err != nil {
 		http.Error(w, "Ошибка загрузки админов", http.StatusInternalServerError)
@@ -153,25 +173,33 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяет, удаляет ли пользователь самого себя
-	authInfo, err := getAuthInfoFromRequest(r)
-	currentUserLogin := ""
-	if err == nil {
-		currentUserLogin = authInfo.Login
+	// Получение имени удаляемого админа из карты
+	targetUser, exists := usersMap[decodedLogin]
+	targetUserName := "Неизвестный"
+
+	if exists {
+		targetUserName = targetUser.Auth_Name
+	} else {
+		// Если пользователя нет в базе
+		http.Error(w, "Пользователь не найден", http.StatusNotFound)
+		return
 	}
 
-	// Удаляет запись администратора из базы данных
+	// Удаляет запись администратора из БД
 	key := []byte("auth:" + decodedLogin)
 	err = db.DBInstance.Update(func(txn *badger.Txn) error {
 		return txn.Delete(key)
 	})
 
 	if err != nil {
+		logging.LogError("Аккаунты: Ошибка удаления админа %s: %v", decodedLogin, err)
 		http.Error(w, "Ошибка удаления админа", http.StatusInternalServerError)
 		return
 	}
 
-	// Очищает куки, если был удален текущий авторизованный пользователь
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) удалил учётную запись: \"%s\" (с именем: %s)", currentUserLogin, currentUserName, decodedLogin, targetUserName)
+
+	// Очищает куки, если был удалён текущий авторизованный пользователь (самоудаление)
 	if currentUserLogin == decodedLogin {
 		clearAuthCookie(w)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -186,6 +214,13 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -249,8 +284,12 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Флаг для отслеживания отсутствия фактических изменений
-	nameNotChanged := false
+	// Отслеживание изменений аккаунта
+	nameNotChanged := false  // Имя не изменилось (совпадает с текущим)
+	passwordChanged := false // Был ли изменен пароль
+	nameChanged := false     // Было ли изменено имя
+
+	var oldName string // Для хранения старого имени изменяемого админа
 
 	err = db.DBInstance.Update(func(txn *badger.Txn) error {
 		key := []byte("auth:" + decodedLogin)
@@ -263,13 +302,15 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 		err = item.Value(func(val []byte) error {
 			return json.Unmarshal(val, &user)
 		})
+
 		if err != nil {
 			return err
 		}
 
+		oldName = user.Auth_Name // Получение старого имени админа
+
 		// Пропускает обновление, если имя не изменилось, и пароль пуст
 		if updateUser.Auth_NewName != "" && updateUser.Auth_NewName == user.Auth_Name && updateUser.Auth_NewPassword == "" {
-			// Имя точно такое же и пароль пустой — ничего менять
 			nameNotChanged = true
 			return nil
 		}
@@ -277,11 +318,22 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 		// Обновляет хеш пароля, если предоставлен новый пароль
 		if updateUser.Auth_NewPassword != "" {
 			user.Auth_PasswordHash = protection.HashPassword(updateUser.Auth_NewPassword)
+			passwordChanged = true
 		}
 
-		// Обновляет имя, если оно предоставлено
-		if updateUser.Auth_NewName != "" {
+		// Обновляет имя, если оно предоставлено и отличается
+		if updateUser.Auth_NewName != "" && updateUser.Auth_NewName != user.Auth_Name {
 			user.Auth_Name = updateUser.Auth_NewName
+			nameChanged = true
+		}
+
+		// Если ничего по факту не изменилось (например, прислали старое имя и пустой пароль)
+		if !passwordChanged && !nameChanged {
+			// Если пароль пустой, а имя совпадает — это случай nameNotChanged
+			if updateUser.Auth_NewPassword == "" {
+				nameNotChanged = true
+			}
+			return nil
 		}
 
 		// Устанавливает текущую дату и время изменения
@@ -298,6 +350,7 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
+		logging.LogError("Аккаунты: Ошибка обновления админа %s: %v", decodedLogin, err)
 		http.Error(w, "Ошибка обновления админа", http.StatusInternalServerError)
 		return
 	}
@@ -305,6 +358,22 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	if nameNotChanged {
 		w.Write([]byte("Имя админа совпадает с текущим!"))
 		return
+	}
+
+	// Формирование сообщения для лога
+	var actionMsg string
+	initiatorStr := fmt.Sprintf("Админ \"%s\" (с именем: %s)", authInfo.Login, authInfo.Name)
+
+	if passwordChanged && nameChanged {
+		actionMsg = fmt.Sprintf("%s обновил пароль и имя учётной записи \"%s\" с \"%s\" на: \"%s\"", initiatorStr, decodedLogin, oldName, updateUser.Auth_NewName)
+	} else if nameChanged {
+		actionMsg = fmt.Sprintf("%s обновил имя учётной записи \"%s\" с \"%s\" на: \"%s\"", initiatorStr, decodedLogin, oldName, updateUser.Auth_NewName)
+	} else if passwordChanged {
+		actionMsg = fmt.Sprintf("%s обновил пароль учётной записи \"%s\" (с именем: %s)", initiatorStr, decodedLogin, oldName)
+	}
+
+	if actionMsg != "" {
+		logging.LogAction("Аккаунты: %s", actionMsg)
 	}
 
 	w.Write([]byte("Админ обновлён"))

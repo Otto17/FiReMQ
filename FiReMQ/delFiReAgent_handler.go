@@ -9,6 +9,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
+	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 )
 
 // UninstallFiReAgentHandler Инициирует самоудаление клиентов (онлайн: сразу; оффлайн: в очередь из БД)
@@ -30,7 +33,7 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Санитизация: удаляем дубликаты и пустые ID
+	// Санитизация: удаляет дубликаты и пустые ID
 	seen := make(map[string]struct{}, len(clientIDsRaw))
 	clientIDs := make([]string, 0, len(clientIDsRaw))
 	for _, id := range clientIDsRaw {
@@ -49,6 +52,12 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение логина админа
+	adminLogin, _, err := protection.GetLoginAndSessionIDFromCookie(r)
+	if err != nil {
+		adminLogin = "Логин неизвестен" // Если по какой-то причине не удалось получить логин
+	}
+
 	var firstError string
 	var offlineIDs []string
 
@@ -60,18 +69,20 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if online {
-			// Онлайн — вызываем единую функцию полного удаления
+			// Онлайн — вызывает единую функцию полного удаления
 			if err := fullyDeleteClient(id); err != nil {
 				firstError = err.Error()
 				break
 			}
+			// Лог об успешном прямом удалении
+			logging.LogAction("Удаление Агента: Админ \"%s\" удалил онлайн-клиента: %s", adminLogin, id)
 		} else {
-			// Оффлайн — добавим в очередь (с проверкой на дубликаты ниже)
+			// Оффлайн — добавит в очередь (с проверкой на дубликаты ниже)
 			offlineIDs = append(offlineIDs, id)
 		}
 	}
 
-	// Фильтруем офлайн-ID: не добавляем те, что уже есть в очереди удаления
+	// Фильтрует офлайн-ID: не добавляет те, что уже есть в очереди удаления
 	var toAdd []string
 	var alreadyPending []string
 	if firstError == "" && len(offlineIDs) > 0 {
@@ -88,10 +99,12 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Пакетно сохраняем только новые офлайн-ID
+		// Пакетно сохранят только новые офлайн-ID
 		if firstError == "" && len(toAdd) > 0 {
 			if err := addPendingUninstallBatch(toAdd); err != nil {
 				firstError = fmt.Sprintf("ошибка сохранения офлайн клиентов в БД: %v", err)
+			} else {
+				logging.LogAction("Удаление Агента: Админ \"%s\" добавил в очередь на удаление (оффлайн) клиентов: %v", adminLogin, toAdd)
 			}
 		}
 	}
@@ -108,7 +121,7 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Если были повторы — возвращаем предупреждение (HTTP 200)
+	// Если были повторы — возвращает предупреждение (HTTP 200)
 	if len(alreadyPending) > 0 {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"status":          "Предупреждение",
@@ -164,6 +177,14 @@ func CancelPendingUninstallHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка отмены удаления: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Получение логина админа
+	adminLogin, _, err := protection.GetLoginAndSessionIDFromCookie(r)
+	if err != nil {
+		adminLogin = "Логин неизвестен" // Если по какой-то причине не удалось получить логин
+	}
+
+	logging.LogAction("Удаление Агента: Админ \"%s\" отменил удаление для клиента %s", adminLogin, id) // Добавление лога действия
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{

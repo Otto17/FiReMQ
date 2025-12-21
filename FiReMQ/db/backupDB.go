@@ -8,7 +8,6 @@ import (
 	"compress/flate"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -16,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
@@ -24,7 +24,7 @@ func StartAutoBackup() {
 	intervalStr := pathsOS.DB_Backup_Interval
 	hours, err := strconv.Atoi(intervalStr)
 	if err != nil || hours <= 0 {
-		log.Printf("Автоматический бэкап БД отключен (интервал: %s)", intervalStr)
+		logging.LogSystem("Автобэкап БД: Автоматический бэкап БД отключён (интервал: %s)", intervalStr)
 		return
 	}
 
@@ -44,10 +44,10 @@ func StartAutoBackup() {
 		for range ticker.C {
 			// Пытается создать бэкап
 			if err := performHotBackup(); err != nil {
-				log.Printf("ОШИБКА создания бэкапа БД: %v", err)
+				logging.LogError("Автобэкап БД: Автоматический бэкап БД завершился ошибкой: %v", err)
 				// Если ошибка при создании, старые бэкапы НЕ удаляет
 			} else {
-				log.Println("Успешно создан автоматический бэкап БД")
+				// logging.LogSystem("Успешно создан автоматический бэкап БД") // ДЛЯ ОТЛАДКИ
 				// Только если бэкап успешно создан, запускает очистку старых
 				pruneOldBackups(retentionCount)
 			}
@@ -108,7 +108,7 @@ func performHotBackup() error {
 	fi, _ := zipFile.Stat()
 	sizeMB := float64(fi.Size()) / 1024 / 1024
 
-	log.Printf("Бэкап БД записан: %s (версия TS: %d, размер: %.2f МБ)", fileName, ts, sizeMB)
+	logging.LogAction("Автобэкап БД: Бэкап БД записан: %s (версия TS: %d, размер: %.2f МБ)", fileName, ts, sizeMB)
 	return nil
 }
 
@@ -117,7 +117,7 @@ func pruneOldBackups(maxKeep int) {
 	dir := pathsOS.Path_Backup
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		log.Printf("Ошибка чтения директории бэкапов для очистки: %v", err)
+		logging.LogError("Автобэкап БД: Ошибка чтения директории бэкапов для очистки: %v", err)
 		return
 	}
 
@@ -165,9 +165,9 @@ func pruneOldBackups(maxKeep int) {
 	for i := 0; i < toDeleteCount; i++ {
 		f := backups[i]
 		if err := os.Remove(f.Path); err != nil {
-			log.Printf("Не удалось удалить старый бэкап %s: %v", f.Name, err)
+			logging.LogError("Автобэкап БД: Не удалось удалить старый бэкап %s: %v", f.Name, err)
 		} else {
-			log.Printf("Ротация бэкапов: удален старый архив %s", f.Name)
+			logging.LogSystem("Автобэкап БД: Ротация бэкапов, удалён старый архив %s", f.Name)
 		}
 	}
 }

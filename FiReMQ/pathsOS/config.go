@@ -18,6 +18,16 @@ import (
 	"time"
 )
 
+// Функции логирования (внедряются из main.go для избежания циклического импорта)
+var (
+	LogSystem func(format string, args ...any) = func(format string, args ...any) {
+		log.Printf("[СИСТЕМА] "+format, args...)
+	}
+	LogError func(format string, args ...any) = func(format string, args ...any) {
+		log.Printf("[ОШИБКА] "+format, args...)
+	}
+)
+
 // Константы для прав доступа
 const (
 	DirPerm           os.FileMode = 0750 // Для директорий: rwxr-x--- (только владелец и группа)
@@ -64,7 +74,9 @@ var (
 	Path_Backup                 string // Путь бэкапов
 	DB_Backup_Interval          string // Интервал создания бэкапов БД
 	DB_Backup_Retention_Count   string // Кол-во хранимых бэкапов БД
-	Path_Logs                   string // Путь к директории логов
+	Path_Logs                   string // Путь к директории логов (для обновления FiReMQ)
+	Logs_Retention_Days         string // Период хранения логов в HTML, в днях
+	Logs_Min_Count_Per_Type     string // Минимальное количество логов КАЖДОГО ТИПА, которое всегда должно оставаться в HTML
 	Update_PrimaryRepo          string // Выбор основного репозитория: "github" или "gitflic"
 	Update_GitHubReleasesURL    string // URL релизов GitHub
 	Update_GitFlicReleasesURL   string // URL релизов GitFlic
@@ -126,7 +138,7 @@ func entries() []configEntry {
 		{"Path_Rules_Base", "Базовый каталог правил CRS", &Path_Rules_Base, "rules"},
 		{"Path_Setup_OWASP_CRS", "Полный путь до файла конфига \"crs-setup.conf\"", &Path_Setup_OWASP_CRS, filepath.Join(configDir, "crs-setup.conf")},
 		{"Path_Setup_Base", "Имя файла \"crs-setup.conf\" конфига", &Path_Setup_Base, "crs-setup.conf"},
-		{"URL_OWASP_CRS_LatestRelease", "Ссылка на последний релиз OWASP CRS из GitHub API (используется для проверки и обновления правил для Coraza WAF)", &URL_OWASP_CRS_LatestRelease, "https://api.github.com/repos/coreruleset/coreruleset/releases/latest"},
+		{"URL_OWASP_CRS_LatestRelease", "Ссылка на последний релиз OWASP CRS из GitHub (автоматически преобразуется в API URL, используется для проверки и обновления правил для Coraza WAF)", &URL_OWASP_CRS_LatestRelease, "https://github.com/coreruleset/coreruleset/releases/latest"},
 
 		{"Path_7zip", "Путь до ДИРЕКТОРИИ с консольной 7-Zip утилитой", &Path_7zip, sevenZipDir},
 		{"Path_Info", "Путь до директории с архивами файлов с информацией о железе клиентов", &Path_Info, infoDir},
@@ -162,7 +174,9 @@ func entries() []configEntry {
 		{"Path_Backup", "Путь до директории с бэкапами FiReMQ", &Path_Backup, backupDir},
 		{"DB_Backup_Interval", "Интервал создания полных бэкапов БД в часах (0 - отключено)", &DB_Backup_Interval, "12"},
 		{"DB_Backup_Retention_Count", "Количество хранимых бэкапов БД (при достижении лимита, новый бэкап заменяет самый старый)", &DB_Backup_Retention_Count, "15"},
-		{"Path_Logs", "Путь до директории с логами", &Path_Logs, logsDir},
+		{"Path_Logs", "Путь до директории с логами (для обновления FiReMQ)", &Path_Logs, logsDir},
+		{"Logs_Retention_Days", "Период хранения логов в HTML, в днях (0 — отключить автоматическую очистку)", &Logs_Retention_Days, "365"},
+		{"Logs_Min_Count_Per_Type", "Минимальное количество логов КАЖДОГО ТИПА, которое всегда должно оставаться в HTML (0 — без ограничения)", &Logs_Min_Count_Per_Type, "500"},
 
 		{"Update_PrimaryRepo", "Выбор основного репозитория: \"gitflic\" или \"github\" для обновления FiReMQ (резервный задействуется автоматически при проблемах с основным репозиторием)", &Update_PrimaryRepo, "gitflic"},
 		{"Update_GitHubReleasesURL", "Ссылка на последний релиз FiReMQ из GitHub (автоматически преобразуется в API URL)", &Update_GitHubReleasesURL, "https://github.com/Otto17/FiReMQ/releases/latest"},
@@ -192,7 +206,7 @@ func defaultConfPath() string {
 func normalizeIn(key, s string) string {
 	// Игнорирует нормализацию для URL
 	if strings.HasPrefix(strings.ToLower(s), "http://") || strings.HasPrefix(strings.ToLower(s), "https://") {
-		return s // URL не трогаем
+		return s // URL не трогать
 	}
 
 	original := s
@@ -225,12 +239,7 @@ func normalizeIn(key, s string) string {
 
 	// Логирует только при обнаружении некорректных или смешанных слешей
 	if hadMultiple || hadMixed {
-		log.Printf(
-			"pathsOS: исправлена запись [%s]: \"%s\" → \"%s\"",
-			key,
-			original,
-			normalized,
-		)
+		LogSystem("Главный конфиг: исправлена запись [%s]: \"%s\" → \"%s\"", key, original, normalized)
 	}
 
 	return normalized
@@ -240,7 +249,7 @@ func normalizeIn(key, s string) string {
 func normalizeOut(s string) string {
 	// Игнорирует нормализацию для URL
 	if strings.HasPrefix(strings.ToLower(s), "http://") || strings.HasPrefix(strings.ToLower(s), "https://") {
-		return s // URL записываем как есть
+		return s // URL записывает как есть
 	}
 
 	// Сначала все обратные слеши в прямые
@@ -325,7 +334,7 @@ func loadOrCreate(path string) error {
 		if err := writeConf(path, es, nil); err != nil {
 			return err
 		}
-		log.Printf("pathsOS: создан новый конфиг по умолчанию: %s", path)
+		LogSystem("Главный конфиг: создан новый конфиг по умолчанию: %s", path)
 		return nil
 	} else if err != nil {
 		return fmt.Errorf("ошибка доступа к %s: %w", path, err)
@@ -401,14 +410,15 @@ func loadOrCreate(path string) error {
 			bad = bad + "_" + time.Now().Format("20060102_150405") // Добавляет временную метку, если бэкап уже существует
 		}
 		if err := os.Rename(path, bad); err != nil {
-			log.Printf("pathsOS: не удалось создать бэкап повреждённого конфига: %v", err)
+			LogError("Главный конфиг: Не удалось создать бэкап повреждённого конфига: %v", err)
 		} else {
-			log.Printf("pathsOS: повреждённый конфиг переименован в: %s", bad)
+			LogError("Главный конфиг: Повреждённый конфиг переименован в: %s", bad)
 		}
 		if err := writeConf(path, es, nil); err != nil {
 			return err
 		}
-		log.Printf("pathsOS: создан новый конфиг по умолчанию: %s", path)
+
+		LogSystem("Главный конфиг: Создан новый конфиг по умолчанию: %s", path)
 		// Переменные уже содержат дефолты
 		return nil
 	}
@@ -426,7 +436,7 @@ func loadOrCreate(path string) error {
 		if err := writeConf(path, es, extras); err != nil {
 			return err
 		}
-		log.Printf("pathsOS: конфиг перезаписан (нормализация/добавление ключей): %s", path)
+		LogSystem("Главный конфиг: Конфиг перезаписан (нормализация/добавление ключей): %s", path)
 	}
 	return nil
 }
@@ -476,7 +486,7 @@ func Resolve7zip() (string, error) {
 		if runtime.GOOS != "windows" {
 			// Для Linux устанавливает права на исполнение
 			if err := os.Chmod(fullPath, 0755); err != nil {
-				log.Printf("Не удалось установить права на исполнение для %s: %v", fullPath, err)
+				LogError("Главный конфиг: Не удалось установить права на исполнение для %s: %v", fullPath, err)
 			}
 		}
 		return fullPath, nil
@@ -502,7 +512,7 @@ func VerifyAndFixPermissions() error {
 	firemqUser, err := user.Lookup("firemq")
 	if err != nil {
 		// Если пользователь не найден, пропускает chown, но продолжает chmod
-		log.Printf("Предупреждение: Пользователь 'firemq' не найден. Смена владельца (chown) будет пропущена. Проверяются только права доступа. Ошибка: %v", err)
+		LogSystem("Главный конфиг: Пользователь 'firemq' не найден. Смена владельца (chown) будет пропущена. Проверяются только права доступа. Ошибка: %v", err)
 		ownerChangePossible = false
 	} else {
 		// Устанавливает UID и GID для chown
@@ -561,21 +571,21 @@ func VerifyAndFixPermissions() error {
 	fixItem := func(path string, perm os.FileMode) {
 		info, err := os.Lstat(path) // Использует Lstat, чтобы не следовать по символическим ссылкам
 		if err != nil {
-			log.Printf("WARNING: Не удалось получить информацию о '%s': %v", path, err)
+			LogError("Главный конфиг: Не удалось получить информацию о '%s': %v", path, err)
 			return
 		}
 
 		// 1. Исправляет права доступа (chmod)
 		if info.Mode().Perm() != perm {
 			if err := os.Chmod(path, perm); err != nil {
-				log.Printf("ERROR: Не удалось изменить права для '%s': %v.", path, err)
+				LogError("Главный конфиг: Не удалось изменить права для '%s': %v.", path, err)
 			}
 		}
 
 		// 2. Устанавливает владельца (chown), если пользователь 'firemq' был найден
 		if ownerChangePossible {
 			if err := os.Chown(path, uid, gid); err != nil {
-				log.Printf("ERROR: Не удалось изменить владельца для '%s' на %d:%d: %v.", path, uid, gid, err)
+				LogError("Главный конфиг: Не удалось изменить владельца для '%s' на %d:%d: %v.", path, uid, gid, err)
 			}
 		}
 	}
@@ -586,10 +596,10 @@ func VerifyAndFixPermissions() error {
 			// Создает обязательные директории, если они отсутствуют
 			if item.IsDir && !item.IsOptional {
 				if err := EnsureDir(item.Path); err != nil {
-					log.Printf("ERROR: Не удалось создать обязательную директорию '%s': %v", item.Path, err)
+					LogError("Главный конфиг: Не удалось создать обязательную директорию '%s': %v", item.Path, err)
 					continue
 				}
-				log.Printf("pathsOS: создана директория: %s", item.Path)
+				LogSystem("Главный конфиг: Создана директория: %s", item.Path)
 				fixItem(item.Path, item.Perm)
 			}
 			continue
@@ -609,7 +619,7 @@ func VerifyAndFixPermissions() error {
 				return nil
 			})
 			if err != nil {
-				log.Printf("ERROR: Ошибка при рекурсивном обходе '%s': %v", item.Path, err)
+				LogError("Главный конфиг: Ошибка при рекурсивном обходе '%s': %v", item.Path, err)
 			}
 		} else {
 			// Исправляет права для отдельного файла или директории
@@ -635,7 +645,7 @@ func VerifyExecutableFilesRights() {
 		return
 	}
 
-	log.Println("Проверка прав доступа исполняемых файлов (7zzs, ServerUpdater)...")
+	LogSystem("Главный конфиг: Проверка прав доступа исполняемых файлов (7zzs, ServerUpdater)...")
 
 	type execFile struct {
 		Path string
@@ -651,7 +661,7 @@ func VerifyExecutableFilesRights() {
 	// 2) Путь к ServerUpdater (расположен рядом с бинарём FiReMQ)
 	exePath, err := os.Executable()
 	if err != nil {
-		log.Printf("ERROR: Не удалось определить путь к FiReMQ: %v", err)
+		LogError("Главный конфиг: Не удалось определить путь к FiReMQ: %v", err)
 	} else {
 		updPath := filepath.Join(filepath.Dir(exePath), "ServerUpdater")
 		execs = append(execs, execFile{Path: updPath, Name: "ServerUpdater"})
@@ -661,16 +671,16 @@ func VerifyExecutableFilesRights() {
 		info, err := os.Stat(e.Path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				log.Printf("pathsOS: %s отсутствует (%s) — пропуск проверки.", e.Name, e.Path)
+				LogSystem("Главный конфиг: %s отсутствует (%s) — пропуск проверки.", e.Name, e.Path)
 				continue
 			}
-			log.Printf("WARNING: Не удалось получить информацию о %s (%s): %v", e.Name, e.Path, err)
+			LogError("Главный конфиг: Не удалось получить информацию о %s (%s): %v", e.Name, e.Path, err)
 			continue
 		}
 
 		// Проверяет, что это файл
 		if info.IsDir() {
-			log.Printf("WARNING: %s (%s) является директорией, ожидался исполняемый файл", e.Name, e.Path)
+			LogSystem("Главный конфиг: %s (%s) является директорией, ожидался исполняемый файл", e.Name, e.Path)
 			continue
 		}
 
@@ -678,11 +688,11 @@ func VerifyExecutableFilesRights() {
 		const minRights = 0755 // rwxr-xr-x
 		// Проверяет, установлены ли необходимые права на выполнение (0755)
 		if current != minRights {
-			log.Printf("pathsOS: некорректные права для '%s'. Текущие: %o, требуемые: %o. Исправляю...", e.Path, current, minRights)
+			LogSystem("Главный конфиг: Некорректные права для '%s'. Текущие: %o, требуемые: %o. Исправляю...", e.Path, current, minRights)
 			if err := os.Chmod(e.Path, minRights); err != nil {
-				log.Printf("ERROR: не удалось изменить права для '%s': %v", e.Path, err)
+				LogError("Главный конфиг: Не удалось изменить права для '%s': %v", e.Path, err)
 			} else {
-				log.Printf("pathsOS: исправлены права для '%s' (%s) → %o", e.Name, e.Path, minRights)
+				LogSystem("Главный конфиг: Исправлены права для '%s' (%s) → %o", e.Name, e.Path, minRights)
 			}
 		}
 	}

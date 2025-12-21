@@ -587,10 +587,10 @@ async function openClientInfoInNewTab(clientID, prefix) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        showPush(`Архив ${prefix}${clientID} не найден`, '#ff4d4d');
+        showPush(`Архив ${prefix}${clientID} не найден`, '#ff4d4d'); // Красный
       } else {
         const text = await response.text().catch(() => '');
-        showPush(`Ошибка ${response.status}: ${response.statusText}${text ? ' — ' + text : ''}`, '#ff4d4d');
+        showPush(`Ошибка ${response.status}: ${response.statusText}${text ? ' — ' + text : ''}`, '#ff4d4d'); // Красный
       }
       return;
     }
@@ -599,12 +599,12 @@ async function openClientInfoInNewTab(clientID, prefix) {
     const url = data.reportURL;
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer');
-      showPush('Отчёт открыт в новой вкладке', '#2196F3');
+      showPush('Отчёт открыт в новой вкладке', '#2196F3'); // Голубой
     } else {
-      showPush('Не удалось получить ссылку на отчёт', '#ff4d4d');
+      showPush('Не удалось получить ссылку на отчёт', '#ff4d4d'); // Красный
     }
   } catch (err) {
-    showPush(`Ошибка сети: ${err.message}`, '#ff4d4d');
+    showPush(`Ошибка сети: ${err.message}`, '#ff4d4d'); // Красный
   }
 }
 

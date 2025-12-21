@@ -172,3 +172,53 @@ function refreshToken() {
 
 // Периодически проверяем статус авторизации каждые 10 секунд
 setInterval(checkAuthStatus, 10000);
+
+
+// ЛОГИ
+
+// Обработчик кнопки "Логи" (открывает в новой вкладке)
+document.addEventListener("DOMContentLoaded", function() {
+    const logsLink = document.getElementById("logsLink");
+    if (logsLink) {
+        logsLink.addEventListener("click", async function(e) {
+            e.preventDefault();
+            try {
+                // Получение CSRF токена
+                const csrfResp = await fetch('/csrf-token');
+                if (!csrfResp.ok) throw new Error('Ошибка получения CSRF токена'); // Попадет в catch -> showPush
+                const { csrf_token } = await csrfResp.json();
+
+                // Запрос ссылки с использованием токена
+                const response = await fetch('/getServer-log', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrf_token
+                    },
+                    body: JSON.stringify({ action: 'view' })
+                });
+
+				// Открытие лога
+                if (!response.ok) {
+                    if (typeof showPush === 'function') {
+                        showPush("Ошибка при открытии лога (код " + response.status + ")", "#ff4d4d"); // Красный
+                    }
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.url) {
+                    window.open(data.url, '_blank');
+                    if (typeof showPush === 'function') {
+                        showPush('Лог открыт в новой вкладке', '#2196F3'); // Голубой
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                if (typeof showPush === 'function') {
+                    showPush("Ошибка соединения: " + err.message, "#ff4d4d"); // Красный
+                }
+            }
+        });
+    }
+});

@@ -1,21 +1,23 @@
 // Copyright (c) 2025 Otto
 // Лицензия: MIT (см. LICENSE)
 
+//go:build linux
+
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 )
 
 const (
-	version = "26.11.25" // Текущая версия ServerUpdater в формате "дд.мм.гг"
+	version = "21.12.25" // Текущая версия ServerUpdater в формате "дд.мм.гг"
 
 	backupTimestampLayout = "02.01.06(в_15.04.05)" // Формат метки времени для резервной копии "дд.мм.гг(в_ЧЧ.ММ.СС)""
 	backupPatternPrefix   = "bak_"                 // Префикс
@@ -23,6 +25,19 @@ const (
 	waitShutdownTimeout   = 30 * time.Second       // Максимальное время ожидания завершения FiReMQ
 	waitShutdownInterval  = 500 * time.Millisecond // Интервал проверки завершения процесса
 )
+
+// UpdateChainManifest описывает цепочку обновлений (update_chain.json), формируемую FiReMQ
+type UpdateChainManifest struct {
+	CurrentVersion string            `json:"CurrentVersion"`
+	Items          []UpdateChainItem `json:"Items"`
+}
+
+// UpdateChainItem описывает один релиз в цепочке
+type UpdateChainItem struct {
+	Version  string `json:"Version"`
+	FileName string `json:"FileName"`
+	Repo     string `json:"Repo"`
+}
 
 func main() {
 	args := os.Args
@@ -46,7 +61,7 @@ func main() {
 		}
 
 		log.Println("Откат завершён успешно.")
-		LogSpacer(2) // Два пустых абзаца-разделителя
+		LogSpacer(1) // Один пустой абзац-разделитель
 		return       // Завершает работу после успешного отката
 	}
 
@@ -70,18 +85,18 @@ func main() {
 		}
 
 		log.Println("Замена из локального архива завершена успешно.")
-		LogSpacer(2) // Два пустых абзаца-разделителя
+		LogSpacer(1) // Один пустой абзац-разделитель
 		return       // Завершает работу после успешного обновления
 	}
 
 	log.Println("Использование:")
-	log.Printf(" %s -apply-zip \"<путь_к_архиву(.zip|.tar.gz)>\" [\"<текущая_версия(дд.мм.гг)>\"] [<pid_FiReMQ>] — обновляет FiReMQ из указанного архива.", updaterName())
+	log.Printf(" %s -apply-zip \"<путь_к_архиву(.tar.gz)>\" [\"<текущая_версия(дд.мм.гг)>\"] [<pid_FiReMQ>] — обновляет FiReMQ из указанного архива.", updaterName())
 	log.Printf(" %s -rollback — откатывает FiReMQ к предыдущей версии из бэкапа.", updaterName())
 	log.Printf(" %s --version — выводит версию утилиты.", updaterName())
 	os.Exit(2) // Выход с кодом ошибки при неверном использовании
 }
 
-// RunApplyFromZip ждёт завершения FiReMQ, делает бэкап, затем применяет обновление и запускает FiReMQ
+// RunApplyFromZip - если archPath указывает на архив (.tar.gz) — выполняет одиночное обновление, если archPath указывает на update_chain.json — по очереди применяет все обновления из цепочки.
 func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	dir, err := exeDir()
 	if err != nil {
@@ -89,18 +104,43 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	}
 	archPath = normalizePath(archPath, dir)
 
+	ext := strings.ToLower(filepath.Ext(archPath))
+	if ext == ".json" {
+		// update_chain.json
+		return runApplyChainFromManifest(dir, archPath, currentVersion, pidStr)
+	}
+
+	// Одиночный архив (.tar.gz)
+	return runApplySingleArchive(dir, archPath, currentVersion, pidStr)
+}
+
+// runApplySingleArchive обновление из одного архива
+func runApplySingleArchive(dir, archPath, currentVersion, pidStr string) error {
 	arch, err := OpenArchive(archPath)
 	if err != nil {
 		return fmt.Errorf("архив не найден или не открывается: %s (%v)", archPath, err)
 	}
-	defer arch.Close()
 
 	man, err := parseManifestFromArchive(arch)
 	if err != nil {
 		return fmt.Errorf("ошибка чтения update.toml: %w", err)
 	}
 
-	// Загружает конфигурацию server.conf
+	// Шапка
+	curVer := strings.TrimSpace(currentVersion)
+	if curVer == "" {
+		curVer = "00.00.00"
+	}
+	newVer := strings.TrimSpace(man.Version)
+
+	log.Printf("Локальная версия: %s. Найдено обновлений: 1", curVer)
+	if newVer != "" {
+		log.Printf("1. Версия %s (из архива %s)", newVer, filepath.Base(archPath))
+	} else {
+		log.Printf("1. Версия не указана в манифесте (архив %s)", filepath.Base(archPath))
+	}
+
+	// Загружает главный конфиг server.conf
 	confPath, confMap, _ := loadServerConfMap(dir)
 	ops, needReplaceExe, err := buildPlan(man, dir, confMap, confPath)
 	if err != nil {
@@ -111,7 +151,7 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	// Полный путь к основному исполняемому файлу
 	exeFull := filepath.Join(dir, exeName())
 
-	// Ждёт полного завершения FiReMQ по PID (если PID передан)
+	// Ждёт полного завершения FiReMQ по PID
 	if pidStr != "" {
 		if err := waitPIDExit(pidStr, waitShutdownTimeout); err != nil {
 			return fmt.Errorf("FiReMQ не завершился за %s: %w", waitShutdownTimeout, err)
@@ -124,11 +164,18 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	time.Sleep(1 * time.Second) // Пауза для закрытия файлов и соединений с БД
 
 	// Полный бэкап
-	bakPath, err := CreateFullBackup(dir, currentVersion, confMap, confPath)
+	bakPath, err := CreateFullBackup(dir, curVer, confMap, confPath)
 	if err != nil {
 		return fmt.Errorf("не удалось создать полный бэкап перед обновлением: %w", err)
 	}
 	log.Printf("Полный бэкап создан: %s", bakPath)
+
+	// Перед непосредственной заменой файлов - заголовок установки
+	if newVer != "" {
+		log.Printf(">>> Установка обновления 1 из 1: версия %s <<<", newVer)
+	} else {
+		log.Printf(">>> Установка обновления 1 из 1 (версия не указана в манифесте) <<<")
+	}
 
 	// Замена файлов
 	if needReplaceExe {
@@ -139,15 +186,19 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 		time.Sleep(2 * time.Second) // Пауза если исполняемый файл не подлежит замене
 	}
 
-	// Применяет план, возвращает true, если на Windows был отложен апдейт самого себя
-	selfUpdatePending, err := applyPlan(arch, ops)
+	// Применяет план
+	stats, err := applyPlan(arch, ops)
 	if err != nil {
 		return fmt.Errorf("ошибка применения плана: %w", err)
 	}
 
-	// Закрывает архив перед удалением временной директории
-	if err := arch.Close(); err != nil {
-		log.Printf("Предупреждение: не удалось закрыть архив: %v", err)
+	log.Printf("Сводка: обновлено=%d, удалено=%d, пропущено удалений=%d",
+		stats.Updated, stats.Deleted, stats.SkippedDelete)
+
+	if newVer != "" {
+		log.Printf("Версия %s успешно установлена.", newVer)
+	} else {
+		log.Printf("Обновление успешно установлено (версия не указана в манифесте).")
 	}
 
 	// Удаляет временную директорию
@@ -163,15 +214,136 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 	// Запускает FiReMQ (на Linux предварительно устанавливаются права +x и владелец)
 	startErr := startFiReMQ(exeFull)
 
-	// Если было запланировано самообновление (Windows)
-	if selfUpdatePending {
-		myExe, _ := os.Executable()
-		newExe := strings.TrimSuffix(myExe, ".exe") + "_new.exe"
-		log.Println("Запуск планировщика самообновления (замена ServerUpdater.exe после выхода)...")
-		scheduleSelfUpdate(newExe, myExe)
+	return startErr
+}
+
+// runApplyChainFromManifest применяет цепочку обновлений из update_chain.json (FiReMQ перезапускается только один раз - после установки последнего обновления)
+func runApplyChainFromManifest(dir, manifestPath, currentVersion, pidStr string) error {
+	exeFull := filepath.Join(dir, exeName())
+
+	// Чтение манифеста цепочки
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("не удалось прочитать манифест цепочки обновлений %s: %w", manifestPath, err)
 	}
 
-	return startErr
+	var chain UpdateChainManifest
+	if err := json.Unmarshal(data, &chain); err != nil {
+		return fmt.Errorf("некорректный формат update_chain.json: %w", err)
+	}
+
+	if len(chain.Items) == 0 {
+		log.Printf("Цепочка обновлений пуста. Запуск FiReMQ без изменений.")
+		return startFiReMQ(exeFull)
+	}
+
+	// Текущая версия из параметра
+	curVer := strings.TrimSpace(currentVersion)
+	if curVer == "" {
+		curVer = "00.00.00"
+	}
+
+	// Шапка
+	log.Printf("Локальная версия: %s. Найдено обновлений: %d", curVer, len(chain.Items))
+	for i, it := range chain.Items {
+		src := strings.TrimSpace(it.Repo)
+		if src == "" {
+			src = "репозиторий не указан"
+		}
+		log.Printf("%d. Версия %s (от %s)", i+1, strings.TrimSpace(it.Version), src)
+	}
+
+	// Ждёт завершения FiReMQ по PID (если передан)
+	if pidStr != "" {
+		if err := waitPIDExit(pidStr, waitShutdownTimeout); err != nil {
+			return fmt.Errorf("FiReMQ не завершился за %s: %w", waitShutdownTimeout, err)
+		}
+	} else {
+		log.Printf("PID не передан — пропускаем точное ожидание процесса, продолжаем по тайм-аутам.")
+	}
+
+	// Пауза для закрытия файлов / БД
+	time.Sleep(1 * time.Second)
+
+	// Загружает конфиг для бэкапа
+	confPath, confMap, _ := loadServerConfMap(dir)
+
+	// Полный бэкап перед всей цепочкой
+	bakPath, err := CreateFullBackup(dir, curVer, confMap, confPath)
+	if err != nil {
+		return fmt.Errorf("не удалось создать полный бэкап перед обновлением: %w", err)
+	}
+	log.Printf("Полный бэкап создан: %s", bakPath)
+
+	// Убеждается, что бинарник FiReMQ больше не используется
+	if err := waitFiReMQExit(exeFull); err != nil {
+		return err
+	}
+
+	// Последовательно применяет каждое обновление
+	for idx, it := range chain.Items {
+		ver := strings.TrimSpace(it.Version)
+		total := len(chain.Items)
+
+		if ver != "" {
+			log.Printf(">>> Установка обновления %d из %d: версия %s <<<", idx+1, total, ver)
+		} else {
+			log.Printf(">>> Установка обновления %d из %d (версия не указана в цепочке) <<<", idx+1, total)
+		}
+
+		// Путь к архиву (относительно манифеста)
+		itemArchPath := filepath.Join(filepath.Dir(manifestPath), it.FileName)
+
+		arch, err := OpenArchive(itemArchPath)
+		if err != nil {
+			return fmt.Errorf("архив не найден или не открывается: %s (%v)", itemArchPath, err)
+		}
+
+		man, err := parseManifestFromArchive(arch)
+		if err != nil {
+			return fmt.Errorf("ошибка чтения update.toml: %w", err)
+		}
+
+		// Перед каждым шагом перечитывает server.conf
+		confPath, confMap, _ = loadServerConfMap(dir)
+		ops, _, err := buildPlan(man, dir, confMap, confPath)
+		if err != nil {
+			return err
+		}
+		dumpPlan(ops)
+
+		stats, err := applyPlan(arch, ops)
+		if err != nil {
+			return fmt.Errorf("ошибка применения плана для версии %s: %w", ver, err)
+		}
+
+		log.Printf("Сводка: обновлено=%d, удалено=%d, пропущено удалений=%d",
+			stats.Updated, stats.Deleted, stats.SkippedDelete)
+
+		// Логирует установленную версию (приоритет версии из манифеста архива)
+		manVer := strings.TrimSpace(man.Version)
+		if manVer != "" {
+			log.Printf("Версия %s успешно установлена.", manVer)
+			curVer = manVer
+		} else if ver != "" {
+			log.Printf("Обновление %d из %d успешно установлено (целевой версии в манифесте нет, ожидаемая по цепочке: %s).", idx+1, total, ver)
+		} else {
+			log.Printf("Обновление %d из %d успешно установлено (версия не указана).", idx+1, total)
+		}
+	}
+
+	// В конце удаляет временную директорию с цепочкой, если это .../Backup/tmp
+	tmpDir := filepath.Dir(manifestPath)
+	if strings.EqualFold(filepath.Base(tmpDir), "tmp") {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			log.Printf("Предупреждение: не удалось удалить временную директорию %s: %v", tmpDir, err)
+		} else {
+			log.Printf("Временная директория удалена: %s", tmpDir)
+		}
+	}
+
+	// Запускает FiReMQ один раз после окончания всей цепочки
+	return startFiReMQ(exeFull)
 }
 
 // exeDir возвращает абсолютный путь к директории, где расположен апдейтер
@@ -195,34 +367,19 @@ func normalizePath(p, base string) string {
 	return filepath.Join(base, p)
 }
 
-// waitFiReMQExit гарантированно ожидает завершения процесса FiReMQ
-// На Linux использует /proc/<pid>/exe, на Windows пытается удалить исполняемый файл
+// waitFiReMQExit гарантированно ожидает завершения процесса FiReMQ через /proc/<pid>/exe
 func waitFiReMQExit(destExe string) error {
 	deadline := time.Now().Add(waitShutdownTimeout)
 
-	if runtime.GOOS == "linux" {
-		exe := filepath.Clean(destExe)
-		for time.Now().Before(deadline) {
-			running, _ := isExeRunningLinux(exe)
-			if !running {
-				return nil
-			}
-			time.Sleep(waitShutdownInterval)
-		}
-		return fmt.Errorf("процесс %s не завершился за %s", destExe, waitShutdownTimeout)
-	}
-
-	// Логика для Windows: попытка удалить файл подтверждает завершение процесса
-	for {
-		err := os.Remove(destExe)
-		if err == nil || os.IsNotExist(err) {
+	exe := filepath.Clean(destExe)
+	for time.Now().Before(deadline) {
+		running, _ := isExeRunningLinux(exe)
+		if !running {
 			return nil
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("не удалось удалить %s — процесс не завершился за %s: %v", destExe, waitShutdownTimeout, err)
 		}
 		time.Sleep(waitShutdownInterval)
 	}
+	return fmt.Errorf("процесс %s не завершился за %s", destExe, waitShutdownTimeout)
 }
 
 // isExeRunningLinux проверяет, существует ли процесс, чей исполняемый файл совпадает с destExe (учитывает " (deleted)")
@@ -271,61 +428,48 @@ func allDigits(s string) bool {
 func startFiReMQ(destExe string) error {
 	name := exeName()
 
-	if runtime.GOOS == "linux" {
-		setOwnerAndPerms(destExe, 0755) // Устанавливает права и владельца для исполняемого файла
+	setOwnerAndPerms(destExe, 0755) // Устанавливает права и владельца для исполняемого файла
 
-		// Проверяет, существует ли systemd unit для FiReMQ
-		// Ищет в /lib/systemd/system (из deb пакета) или /etc/systemd/system (пользовательский)
-		if _, err := os.Stat("/lib/systemd/system/firemq.service"); err == nil {
-			log.Printf("Обнаружен systemd сервис firemq.service — запуск через systemctl...")
-			cmd := exec.Command("systemctl", "restart", "firemq.service")
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("не удалось запустить %s через systemctl: %w", name, err)
-			}
-			log.Printf("%s успешно запущен через systemctl.", name)
-			return nil
-		} else if _, err := os.Stat("/etc/systemd/system/firemq.service"); err == nil {
-			log.Printf("Обнаружен systemd сервис firemq.service — запуск через systemctl...")
-			cmd := exec.Command("systemctl", "restart", "firemq.service")
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("не удалось запустить %s через systemctl: %w", name, err)
-			}
-			log.Printf("%s успешно запущен через systemctl.", name)
-			return nil
+	// Проверяет, существует ли systemd unit для FiReMQ
+	// Ищет в /lib/systemd/system (из deb пакета) или /etc/systemd/system (пользовательский)
+	if _, err := os.Stat("/lib/systemd/system/firemq.service"); err == nil {
+		log.Printf("Обнаружен systemd сервис firemq.service — запуск через systemctl...")
+		cmd := exec.Command("systemctl", "restart", "firemq.service")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("не удалось запустить %s через systemctl: %w", name, err)
 		}
-
-		// systemd unit отсутствует — fallback на прямой запуск
-		log.Printf("systemd сервис не найден. Запуск напрямую...")
-
-		cmd := exec.Command(destExe)
-		if err := cmd.Start(); err != nil {
-			return fmt.Errorf("не удалось запустить %s: %w", name, err)
-		}
-		log.Printf("Запущен %s (PID=%d).", name, cmd.Process.Pid)
+		log.Printf("%s успешно запущен через systemctl.", name)
 		return nil
 	}
 
-	// Windows
+	if _, err := os.Stat("/etc/systemd/system/firemq.service"); err == nil {
+		log.Printf("Обнаружен systemd сервис firemq.service — запуск через systemctl...")
+		cmd := exec.Command("systemctl", "restart", "firemq.service")
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("не удалось запустить %s через systemctl: %w", name, err)
+		}
+		log.Printf("%s успешно запущен через systemctl.", name)
+		return nil
+	}
+
+	// systemd unit отсутствует — fallback на прямой запуск
+	log.Printf("systemd сервис не найден. Запуск напрямую...")
+
 	cmd := exec.Command(destExe)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("не удалось запустить %s: %w", name, err)
 	}
+
 	log.Printf("Запущен %s (PID=%d).", name, cmd.Process.Pid)
 	return nil
 }
 
-// exeName возвращает имя исполняемого файла FiReMQ в зависимости от ОС
+// exeName возвращает имя исполняемого файла FiReMQ
 func exeName() string {
-	if runtime.GOOS == "windows" {
-		return "FiReMQ.exe"
-	}
 	return "FiReMQ"
 }
 
-// updaterName возвращает имя исполняемого файла апдейтера в зависимости от ОС
+// updaterName возвращает имя исполняемого файла апдейтера
 func updaterName() string {
-	if runtime.GOOS == "windows" {
-		return "ServerUpdater.exe"
-	}
 	return "ServerUpdater"
 }

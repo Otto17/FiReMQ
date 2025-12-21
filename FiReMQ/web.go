@@ -6,10 +6,12 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"net"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
@@ -23,12 +25,13 @@ import (
 // CorazaMiddleware Middleware для Coraza WAF
 func CorazaMiddleware(getWAF func() coraza.WAF, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Сначала проверяется CSRF для POST
 		if r.Method == http.MethodPost {
 			if ok, _, _, wasPrev := protection.ValidateCSRFForRequestDetailed(r); ok {
 				// log.Printf("[CSRF][OK] %s %s (%s)", r.Method, r.URL.Path, dbg)
 
 				// После успешной проверки — выдаётся новый токен.
-				// Если запрос пришёл со старым (prev), не вращаем повторно, а отдаём текущий.
+				// Если запрос пришёл со старым (prev), не вращает повторно, а отдаёт текущий.
 				if login, sid, err := protection.GetLoginAndSessionIDFromCookie(r); err == nil {
 					var newTok string
 					if wasPrev {
@@ -38,9 +41,6 @@ func CorazaMiddleware(getWAF func() coraza.WAF, next http.Handler) http.Handler 
 					}
 					w.Header().Set("X-CSRF-Token", newTok)
 				}
-
-				next.ServeHTTP(w, r)
-				return
 			} else {
 				// log.Printf("[CSRF][ОШИБКА] %s %s reason=%s", r.Method, r.URL.Path, reason)
 				http.Error(w, "CSRF токен недействителен!", http.StatusForbidden)
@@ -51,41 +51,78 @@ func CorazaMiddleware(getWAF func() coraza.WAF, next http.Handler) http.Handler 
 		// Иначе — стандартная проверка через WAF
 		waf := getWAF() // Получение текущего экземпляра Coraza WAF
 
-		// Если проверка не пройдена, выполняем стандартную проверку через WAF
+		// Если проверка не пройдена, выполняет стандартную проверку через WAF
 		transaction := waf.NewTransaction()
 		defer transaction.Close() // Очистка транзакции после завершения
 
-		// Обработка соединения
-		transaction.ProcessConnection(r.RemoteAddr, 0, r.Host, 0)
+		// Разделение IP-адреса и порта
+		clientIP, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			clientIP = r.RemoteAddr
+		}
 
-		// Обработка URI
-		transaction.ProcessURI(r.URL.Path, r.Method, "HTTP/1.1")
+		// Обработка соединения
+		transaction.ProcessConnection(clientIP, 0, r.Host, 0)
+
+		// Обработка URI (используется реальный протокол из запроса, например, "HTTP/2.0")
+		transaction.ProcessURI(r.URL.Path, r.Method, r.Proto)
+
+		// Добавляет в транзакцию реальные HTTP-заголовки запроса
+		if r.Host != "" {
+			transaction.AddRequestHeader("Host", r.Host)
+		}
+
+		// Остальные заголовки берутся из r.Header, в контекст WAF для анализа
+		for k, vv := range r.Header {
+			for _, v := range vv {
+				transaction.AddRequestHeader(k, v)
+			}
+		}
 
 		// Обработка заголовков запроса
 		transaction.ProcessRequestHeaders()
 
 		// Обработка тела запроса
 		if _, err := transaction.ProcessRequestBody(); err != nil {
-			log.Printf("Ошибка в теле запроса \"ProcessRequestBody\" на обработку: %v", err)
+			logging.LogError("WAF: Ошибка в теле запроса \"ProcessRequestBody\" на обработку: %v", err)
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			return
 		}
 
 		// Проверка на прерывание (если запрос заблокирован)
 		if interruption := transaction.Interruption(); interruption != nil {
-			log.Printf("Прерывание Coraza WAF: %v", interruption)
+			// Получает IP для лога
+			clientIP, _, _ := net.SplitHostPort(r.RemoteAddr)
+			logging.LogSecurity("WAF: заблокировал запрос от %s. Причина: %v", clientIP, interruption)
 			http.Error(w, "Запрещено!", http.StatusForbidden)
 			return
 		}
 
-		// Если запрос не заблокирован, передаём его дальше
+		/* * * * * * * * * * * * * * * * * * * * * */
+		// ДЛЯ ОТЛАДКИ. Проверка на прерывание (если запрос заблокирован)
+		// if interruption := transaction.Interruption(); interruption != nil {
+		// 	log.Printf("Прерывание Coraza WAF: %v", interruption)
+
+		// 	// Вывод причины блокировки
+		// 	for _, mr := range transaction.MatchedRules() {
+		// 		r := mr.Rule()
+		// 		log.Printf("Сработало правило ID: %d | Tag: %s | Msg: %s", r.ID(), r.Tags(), mr.Message())
+		// 		log.Printf("Данные: %s", mr.Data()) // Покажет, какая часть запроса вызвала сработку
+		// 	}
+
+		// 	http.Error(w, "Запрещено!", http.StatusForbidden)
+		// 	return
+		// }
+		/* * * * * * * * * * * * * * * * * * * * * */
+
+		// Если запрос не заблокирован, передаёт его дальше
 		next.ServeHTTP(w, r)
 	})
 }
 
 // RenderWebPage обработка HTML страницы
 func renderWebPage(w http.ResponseWriter, r *http.Request) {
-	// Устанавливаем заголовки безопасности
+	// Устанавливает заголовки безопасности
 	protection.SetSecurityHeaders(w)
 
 	if r.URL.Path == "/get-all-groups-and-sub-groups" {
@@ -111,14 +148,14 @@ func StartWebServer(getWAF func() coraza.WAF) {
 
 	// Генерация капчи (1 запрос каждые 6 секунд = 10 запросов в минуту)
 	http.HandleFunc("/captcha", protection.RateLimitMiddleware(rate.Every(time.Minute/10), 20)(func(w http.ResponseWriter, r *http.Request) {
-		// Устанавливаем заголовки безопасности
+		// Устанавливает заголовки безопасности
 		protection.SetSecurityHeaders(w)
 
-		// Генерируем капчу
+		// Генерирует капчу
 		id, b64s, err := protection.GenerateCaptcha()
 		if err != nil {
-			log.Printf("Ошибка генерации капчи: %v", err)
-			// Отправлять в ответ будем будем другое сообщение, что бы не раскрывать деталей сервера
+			logging.LogError("Ошибка генерации капчи: %v", err)
+			// Отправлять в ответ будет другое сообщение, что бы не раскрывать деталей сервера
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			return
 		}
@@ -131,7 +168,7 @@ func StartWebServer(getWAF func() coraza.WAF) {
 
 	// Проверка необходимости показа капчи для конкретного IP (1 запрос каждые 7,5 секунд = 8 запросов в минуту)
 	http.HandleFunc("/check-captcha", protection.RateLimitMiddleware(rate.Every(time.Minute/8), 8)(func(w http.ResponseWriter, r *http.Request) {
-		// Устанавливаем заголовки безопасности
+		// Устанавливает заголовки безопасности
 		protection.SetSecurityHeaders(w)
 
 		// Получение IP-адрес клиента
@@ -144,7 +181,7 @@ func StartWebServer(getWAF func() coraza.WAF) {
 		})
 	}))
 
-	// Авторизация (применяем Middleware для проверки авторизации и Coraza WAF)
+	// Авторизация (применяет Middleware для проверки авторизации и Coraza WAF)
 	http.HandleFunc("/auth", protection.RateLimitMiddleware(rate.Every(6*time.Second), 10)(AuthHandler)) // POST команда для авторизации (1 запрос каждые 6 секунд = 10 запросов в минуту)
 	http.HandleFunc("/logout", LogoutHandler)                                                            // GET команда для разлогинивания
 	http.HandleFunc("/check-auth", CheckAuthHandler)                                                     // GET Проверка авторизации
@@ -240,15 +277,23 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	protectedMux.HandleFunc("/update-FiReMQ", update.UpdateHandler)            // POST команда скачивает, проверяет, запускает утилиту "ServerUpdater" и корректно завершает работу FiReMQ
 	protectedMux.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler) // POST команда для отката версии FiReMQ на предыдущий релиз (через утилиту ServerUpdater)
 
+	// Маршруты для просмотра и/или скачивания HTML лога сервера
+	protectedMux.HandleFunc("/getServer-log", protection.RateLimitMiddleware(rate.Every(1500*time.Millisecond), 1)(logging.HandleLogFileRequest)) // POST команда для создания одноразовой ссылки на просмотр или скачивание файла лога (1 запрос каждые 1,5 секунды = 40 запросов в минуту)
+	protectedMux.HandleFunc("/log-view/", logging.LogViewHandler)                                                                                 // GET команда от открытия страницы лога по одноразовой ссылке
+
 	/* * * * * * * * * * * * * * * * * * * * * */
 	// ДЛЯ ТЕСТА!!! Временный обход проверок Coraza WAF для тестирования запроса с пропуском CSRF
-	// http.HandleFunc("/check-FiReMQ", update.CheckHandler)
-	// http.HandleFunc("/update-FiReMQ", update.UpdateHandler)
-	// http.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler)
+	//http.HandleFunc("/getServer-log", logging.HandleLogFileRequest)
+	//http.HandleFunc("/log-view/", logging.LogViewHandler)
+	//http.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler)
 	/* * * * * * * * * * * * * * * * * * * * * */
 
 	// Обработка всех маршрутов
 	http.Handle("/", protection.SecurityHeadersMiddleware(protection.OriginCheckMiddleware(CorazaMiddleware(getWAF, AuthMiddleware(protectedMux)))))
 
-	log.Fatal(http.ListenAndServeTLS(pathsOS.Web_Host+":"+pathsOS.Web_Port, pathsOS.Path_Web_Cert, pathsOS.Path_Web_Key, nil))
+	if err := http.ListenAndServeTLS(pathsOS.Web_Host+":"+pathsOS.Web_Port, pathsOS.Path_Web_Cert, pathsOS.Path_Web_Key, nil); err != nil {
+		logging.LogError("WEB: Критическая ошибка WEB-сервера: %v", err)
+		time.Sleep(100 * time.Millisecond) // Небольшая пауза для надёжности записи лога
+		log.Fatal(err)                     // Дублирование в stderr и выход с кодом 1
+	}
 }

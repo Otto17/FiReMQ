@@ -65,7 +65,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно перемещения выделенных клиентов -->
+  <!-- Модальное окно массового перемещения клиентов -->
   <div id="moveCheckClientsModal" class="modal-window">
     <div class="modal-window-content move-client">
       <span class="close" id="closeMoveCheckModal">&times;</span>
@@ -328,6 +328,15 @@
 		  <!-- PowerShell команды -->
 			<div class="cheatsheet-panel" id="cheat-tab-powershell">
 			  <div class="cheatsheet-list">
+				<div class="cheat-row">
+				  <button type="button" class="cheat-insert-btn">⮕</button>
+				  <div class="cheat-cmd"><code>$UserName = "User"
+$Passwd = "12345"
+
+$SecurePassword = ConvertTo-SecureString $Passwd -AsPlainText -Force
+Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
+				  <div class="cheat-desc">Смена пароля локальной учётной записи. Указать действующую учётную запись и новый пароль (требуются права администратора).</div>
+				</div>
 				<div class="cheat-row">
 				  <button type="button" class="cheat-insert-btn">⮕</button>
 				  <div class="cheat-cmd"><code>Get-ComputerInfo</code></div>
@@ -679,9 +688,7 @@
 		<div class="owasp-crs-section">
 		  <div class="owasp-crs-row">
 			<div class="owasp-crs-left">
-			  <span
-				class="owasp-crs-title has-tooltip"
-				data-tooltip="OWASP CRS (Core Rule Set) — это набор универсальных правил обнаружения атак, предназначенных для защиты веб-приложений через веб-брандмауэр Coraza WAF. Не забывайте своевременно обновлять правила для поддержания эффективной защиты!">Правила OWASP CRS</span>
+			  <a href="https://github.com/coreruleset/coreruleset/releases/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="OWASP CRS (Core Rule Set) — это набор универсальных правил обнаружения атак, предназначенных для защиты веб-приложений через веб-брандмауэр Coraza WAF. Не забывайте своевременно обновлять правила для поддержания эффективной защиты!">Правила OWASP CRS</a>
 			  <span class="owasp-crs-versions">
 				Текущая: <span id="owaspCRSCurrentVersion">—</span>
 				<span class="owasp-crs-sep">|</span>
@@ -703,9 +710,7 @@
 		<div class="owasp-crs-section">
 		  <div class="owasp-crs-row">
 			<div class="owasp-crs-left">
-			  <span
-				class="owasp-crs-title has-tooltip"
-				data-tooltip="Обновление серверной части 'FiReMQ' из репозитория GitFlic/GitHub. При обновлении сервер корректно завершится, будет заменён новым релизом и автоматически запущен.">Обновление FiReMQ</span>
+			  <a href="https://gitflic.ru/project/otto/firemq/release/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="Обновление серверной части 'FiReMQ' из репозитория GitFlic/GitHub. При обновлении сервер корректно завершится, будет заменён новым релизом и автоматически запущен.">Обновление FiReMQ</a>
 			  <span class="owasp-crs-versions firemq">
 				Текущая: <span id="firemqCurrentVersion">—</span>
 				<span class="owasp-crs-sep">|</span>
@@ -762,7 +767,7 @@
     <div class="dropdown">
       <button class="dropbtn" id="menuButton">Меню</button>
       <div class="dropdown-content" id="myDropdown">
-       <!-- <a href="#" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a> -->
+        <a id="logsLink" href="#" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a>
         <a id="accountsMQTT" class="menu-item-with-icon removeFiReAgent-button"><img src="../icon/Mqtt.svg" alt="MQTT авторизация" class="menu-icon"><span>MQTT авторизация</span></a>
        <a id="removeFiReAgent" href="#" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
         <a id="accountsLink" class="menu-item-with-icon"><img src="../icon/AccountsAdmin.svg" alt="Учётные записи Админов" class="menu-icon"><span>Учётные записи Админов</span></a>

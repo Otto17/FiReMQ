@@ -3163,9 +3163,22 @@ document.addEventListener("DOMContentLoaded", function() {
 		elFiCurrent.textContent = current;
 
 		if (latest && String(latest).trim()) {
-			// Пришла равная ил�� более новая версия
+			// Пришла равная или более новая версия
 			elFiNew.textContent = latest;
-			setFiUpdateEnabled(compareVersions(latest, current) > 0);
+			
+			 // Преобразование "дд.мм.гг" в "гг.мм.дд" для корректного сравнения
+            const toSortable = (v) => {
+                const parts = String(v).split('.');
+                // Если это дата из 3 частей, меняет порядок на Год.Месяц.День
+                if (parts.length === 3) {
+                    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+                }
+                return v;
+            };
+			
+			// Сравнение нормализованных версий
+            setFiUpdateEnabled(compareVersions(toSortable(latest), toSortable(current)) > 0);
+
 		} else {
 			// Нет новой версии для показа (старее или релизов нет)
 			elFiNew.textContent = "—";

@@ -77,7 +77,7 @@ func IssueOrGetCSRF(sessionID, login string) string {
 			Expires: now.Add(CookieTime),
 		}
 		csrfStore.bySession[sessionID] = e
-		// log.Printf("[CSRF] Выдан новый токен для %s (sid=%s)", login, sessionID)
+		// log.Printf("[CSRF] Выдан новый токен для %s (sid=%s)", login, sessionID) // ДЛЯ ОТЛАДКИ
 		return e.Current
 	}
 
@@ -104,7 +104,7 @@ func RotateCSRF(sessionID, login string) string {
 	e.Expires = now.Add(CookieTime)
 
 	csrfStore.bySession[sessionID] = e
-	// log.Printf("[CSRF] Ротация токена для %s (sid=%s)", login, sessionID)
+	// log.Printf("[CSRF] Ротация токена для %s (sid=%s)", login, sessionID) // ДЛЯ ОТЛАДКИ
 	return newTok
 }
 
@@ -165,7 +165,7 @@ func DropCSRFForRequest(r *http.Request) {
 		csrfStore.mu.Lock()
 		delete(csrfStore.bySession, sid) // Удаляет запись токена из памяти
 		csrfStore.mu.Unlock()
-		// log.Printf("[CSRF] Токен удалён для sid=%s", sid)
+		// log.Printf("[CSRF] Токен удалён для sid=%s", sid) // ДЛЯ ОТЛАДКИ
 	}
 }
 

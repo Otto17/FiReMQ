@@ -5,8 +5,9 @@ package mqtt_server
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
+
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 )
 
 // GetTopicData настраивает обработчик входящих MQTT-публикаций
@@ -22,11 +23,11 @@ func GetTopicData() {
 		if strings.HasPrefix(topic, "Client/ModuleInfo/") {
 			// Проверяет минимальный размер полезной нагрузки, включая метаданные
 			if len(payload) < 34 { // 2 байта флаги + 32 байта метаданные
-				log.Printf("Некорректный размер чанка")
+				logging.LogError("MQTT Info_Files: Некорректный размер чанка от %s", clientIP)
 				return
 			}
 
-			// Читаем метаданные для проверки (ЭТА ЧАСТЬ МОЖЕТ ВЫЗЫВАТЬ ПРОБЛЕМЫ С ЗАДЕРЖКАМИ ИЗ-ЗА РУЧНОГО ЗАПУСКА runtime.GC(), ПОКА ОТКЛЮЧЕНО)
+			// Читает метаданные для проверки (ЭТА ЧАСТЬ МОЖЕТ ВЫЗЫВАТЬ ПРОБЛЕМЫ С ЗАДЕРЖКАМИ ИЗ-ЗА РУЧНОГО ЗАПУСКА runtime.GC(), ПОКА ОТКЛЮЧЕНО)
 			//chunkNum := binary.LittleEndian.Uint64(payload[18:26])
 			//totalChunks := binary.LittleEndian.Uint64(payload[26:34])
 			//isLastChunk := chunkNum == totalChunks-1 // Определяем по номеру чанка
@@ -46,7 +47,7 @@ func GetTopicData() {
 
 		// Устанавливает жёсткое ограничение на размер сообщения для защиты от переполнения
 		if len(payload) > 1024 { // 1КБ максимум
-			log.Printf("Сообщение от клиента %s (%d байт) превышает допустимый размер в 1024 байта. Добавление пользователя в БД отклонено!", clientID, len(payload))
+			logging.LogSecurity("MQTT от Info_Files: Сообщение от клиента %s (%d байт) превышает допустимый размер в 1024 байта. Добавление пользователя в БД отклонено!", clientID, len(payload))
 			return
 		}
 
@@ -57,9 +58,10 @@ func GetTopicData() {
 				Date_Of_Creation string `json:"Date_Of_Creation"`
 				Answer           string `json:"Answer"`
 			}
+
 			if err := json.Unmarshal(payload, &test); err == nil && test.Answer != "" && test.Date_Of_Creation != "" {
 				// Это сообщение ответа, вызывает внешний обработчик
-				log.Printf("Получен ответ от клиента %s в топике %s: %s", clientID, topic, payload)
+				logging.LogSystem("ModuleCommand: Получен ответ от клиента %s в топике %s", clientID, topic)
 				if HandleAnswerMessage != nil {
 					HandleAnswerMessage(clientID, payload)
 				}
@@ -76,8 +78,9 @@ func GetTopicData() {
 				Attempts         string `json:"Attempts"`
 				Description      string `json:"Description"`
 			}
+
 			if err := json.Unmarshal(payload, &resp); err == nil && resp.Date_Of_Creation != "" && resp.Answer != "" {
-				log.Printf("Получен ответ от клиента %s в топике %s: %s", clientID, topic, payload)
+				logging.LogSystem("ModuleQUIC: Получен ответ от клиента %s в топике %s", clientID, topic)
 				if HandleQUICAnswerMessage != nil {
 					HandleQUICAnswerMessage(clientID, resp.Date_Of_Creation, resp.Answer, resp.QUIC_Execution, resp.Attempts, resp.Description)
 				}
@@ -89,18 +92,18 @@ func GetTopicData() {
 		if topic == "Data/DB" {
 			localIP, err := ParseMessage(payload)
 			if err != nil {
-				log.Printf("Ошибка парсинга JSON: %v", err)
+				logging.LogError("Новый клиеет в БД: Ошибка парсинга JSON: %v", err)
 				return
 			}
 
-			// log.Printf("Клиент %s: clientIP='%s', localIP='%s'", clientID, clientIP, localIP) // Для отладки
+			// log.Printf("Клиент %s: clientIP='%s', localIP='%s'", clientID, clientIP, localIP) // ДЛЯ ОТЛАДКИ
 
 			// Вызывает внешнюю функцию сохранения, если она инжектирована
 			if SaveClientInfo != nil {
 				err = SaveClientInfo("On", "", clientIP, localIP, clientID)
 			}
 			if err != nil {
-				log.Printf("Ошибка сохранения данных клиента: %v", err)
+				logging.LogError("Новый клиеет в БД: Ошибка сохранения данных клиента: %v", err)
 			}
 			return
 		}

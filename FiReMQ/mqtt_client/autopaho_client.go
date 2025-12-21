@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 
 	"github.com/eclipse/paho.golang/autopaho"
@@ -155,13 +155,15 @@ func StartMQTTClient() *MQTTService {
 	ctx := context.Background()
 	tlsConfig, brokerHost, brokerPort, login, password, clientID, err := createTLSConfig()
 	if err != nil {
-		log.Fatalf("Ошибка создания TLS: %v", err)
+		logging.LogError("MQTT localhost: Ошибка создания TLS для локального MQTT клиента: %v", err)
+		os.Exit(1)
 	}
 
 	// Формирует URL для подключения к брокеру
 	brokerURL, err := url.Parse(fmt.Sprintf("tls://%s:%s", brokerHost, brokerPort))
 	if err != nil {
-		log.Fatalf("Ошибка парсинга брокера: %v", err)
+		logging.LogError("MQTT localhost: Ошибка парсинга брокера для локального MQTT клиента: %v", err)
+		os.Exit(1)
 	}
 
 	cfg := autopaho.ClientConfig{
@@ -175,7 +177,7 @@ func StartMQTTClient() *MQTTService {
 		ClientConfig: paho.ClientConfig{
 			ClientID: clientID,
 			OnClientError: func(err error) {
-				log.Printf("Клиентская ошибка MQTT: %v", err)
+				logging.LogError("MQTT localhost: Клиентская ошибка локального MQTT клиента: %v", err)
 			},
 			OnPublishReceived: []func(paho.PublishReceived) (bool, error){
 				handleIncoming,
@@ -187,17 +189,18 @@ func StartMQTTClient() *MQTTService {
 				{Topic: "Client/ModuleInfo/#", QoS: 2},
 			}
 			if _, err := cm.Subscribe(context.Background(), &paho.Subscribe{Subscriptions: subs}); err != nil {
-				log.Printf("Ошибка подписки: %v", err)
+				logging.LogError("MQTT localhost: Ошибка подписки: %v", err)
 			}
 		},
 		OnConnectError: func(err error) {
-			log.Printf("Ошибка подключения: %v", err)
+			logging.LogError("MQTT localhost: Ошибка подключения: %v", err)
 		},
 	}
 
 	conn, err := autopaho.NewConnection(ctx, cfg)
 	if err != nil {
-		log.Fatalf("Начальное подключение не удалось: %v", err)
+		logging.LogError("MQTT localhost: Начальное подключение не удалось: %v", err)
+		os.Exit(1)
 	}
 
 	svc := &MQTTService{client: conn}
@@ -225,8 +228,7 @@ func processChunk(task chunkTask) {
 
 	// Сбрасывает буфер, если метаданные файла изменились
 	if fb.TotalChunks != task.totalChunks {
-		log.Printf("Предупреждение: изменилось количество чанков для клиента %s: было %d, стало %d",
-			task.fileKey, fb.TotalChunks, task.totalChunks)
+		logging.LogError("MQTT localhost: Предупреждение! Изменилось количество чанков для клиента %s: было %d, стало %d", task.fileKey, fb.TotalChunks, task.totalChunks)
 		fb.TotalChunks = task.totalChunks
 		fb.Received = make([][]byte, task.totalChunks)
 		fb.ReceivedCount = 0
@@ -272,7 +274,7 @@ func assembleFile(fileKey string, fb *FileBuffer) {
 
 	// Создает директорию, если она ещё не существует
 	if err := pathsOS.EnsureDir(fileDir); err != nil {
-		log.Printf("Ошибка создания директории %s: %v", fileDir, err)
+		logging.LogError("MQTT localhost: Ошибка создания директории %s: %v", fileDir, err)
 		return
 	}
 
@@ -282,9 +284,9 @@ func assembleFile(fileKey string, fb *FileBuffer) {
 
 	// Записывает собранный файл на диск
 	if err := pathsOS.WriteFile(filePath, fullFile, pathsOS.FilePerm); err != nil {
-		log.Printf("Ошибка сохранения файла %s: %v", filePath, err)
+		logging.LogError("MQTT localhost: Ошибка сохранения файла %s: %v", filePath, err)
 	} else {
-		// log.Printf("Файл для клиента %s успешно собран и сохранён в %s (%d чанков, %d байт)", fileKey, filePath, fb.TotalChunks, len(fullFile))
+		// log.Printf("Файл для клиента %s успешно собран и сохранён в %s (%d чанков, %d байт)", fileKey, filePath, fb.TotalChunks, len(fullFile)) // ДЛЯ ОТЛАДКИ
 	}
 
 	// Очищает буферы памяти
@@ -304,7 +306,7 @@ func cleanupOldBuffers() {
 			fb := value.(*FileBuffer)
 			if now.Sub(fb.LastUpdated) > fileTimeout {
 				fileBuffers.Delete(key)
-				log.Printf("Удалён буфер %v (таймаут)", key)
+				logging.LogSystem("MQTT localhost: Удалён буфер %v (таймаут)", key)
 			}
 			return true
 		})
@@ -323,7 +325,7 @@ func handleIncoming(pr paho.PublishReceived) (bool, error) {
 	// Разделяет топик для извлечения типа отчёта и clientID
 	topicParts := strings.Split(packet.Topic, "/")
 	if len(topicParts) != 4 || (topicParts[2] != "Lite" && topicParts[2] != "Aida") {
-		log.Printf("Некорректный топик: %s", packet.Topic)
+		logging.LogError("MQTT localhost: Некорректный топик: %s", packet.Topic)
 		return true, nil
 	}
 	typeStr := topicParts[2]
@@ -332,7 +334,7 @@ func handleIncoming(pr paho.PublishReceived) (bool, error) {
 
 	// Проверяет минимальный размер, так как метаданные занимают 34 байта
 	if len(packet.Payload) < 34 {
-		log.Println("Некорректный размер чанка")
+		logging.LogError("MQTT localhost: Некорректный размер чанка")
 		return true, nil
 	}
 
@@ -341,7 +343,7 @@ func handleIncoming(pr paho.PublishReceived) (bool, error) {
 	fileIDBytes := packet.Payload[2:18]
 	_, err := uuid.FromBytes(fileIDBytes) // Проверяет корректность UUID
 	if err != nil {
-		log.Printf("Ошибка парсинга UUID: %v", err)
+		logging.LogError("MQTT localhost: Ошибка парсинга UUID: %v", err)
 		return true, nil
 	}
 
@@ -352,8 +354,7 @@ func handleIncoming(pr paho.PublishReceived) (bool, error) {
 
 	// Отклоняет чанки с невалидными номерами или размером
 	if totalChunks == 0 || totalChunks > 1e6 || chunkNum >= totalChunks || len(chunkData) == 0 {
-		log.Printf("Некорректные данные чанка: fileKey=%v, chunk=%d/%d, size=%d",
-			fileKey, chunkNum, totalChunks, len(chunkData))
+		logging.LogError("MQTT localhost: Некорректные данные чанка: fileKey=%v, chunk=%d/%d, size=%d", fileKey, chunkNum, totalChunks, len(chunkData))
 		return true, nil
 	}
 
@@ -415,9 +416,9 @@ func (svc *MQTTService) StopMQTTClient() {
 		ctx, cancel := context.WithTimeout(context.Background(), 80*time.Millisecond)
 		defer cancel()
 		if err := svc.client.Disconnect(ctx); err != nil {
-			log.Printf("Ошибка отключения MQTT: %v", err)
+			logging.LogError("MQTT localhost: Ошибка отключения MQTT: %v", err)
 		} else {
-			// log.Println("Локальный MQTT клиент AutoPaho отключён")
+			// log.Println("Локальный MQTT клиент AutoPaho отключён") // ДЛЯ ОТЛАДКИ
 		}
 	}
 }

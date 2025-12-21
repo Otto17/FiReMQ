@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"FiReMQ/db"         // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 
 	"github.com/dgraph-io/badger/v4"
@@ -88,7 +89,7 @@ func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		// Изменяем и сохраняем
+		// Изменяет и сохраняет
 		current["name"] = name
 		jsonData, err := json.Marshal(current)
 		if err != nil {
@@ -107,6 +108,7 @@ func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nameChanged {
+		logging.LogAction("Клиенты: Имя клиента %s изменено на '%s'", clientID, name)
 		w.Write([]byte("Имя клиента обновлено"))
 	} else {
 		w.Write([]byte("Имя клиента не изменено"))
@@ -130,10 +132,12 @@ func DeleteClientHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := fullyRemoveClientAndData([]string{data.ClientID}); err != nil {
+		logging.LogError("Клиенты: Ошибка удаления клиента %s: %v", data.ClientID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	logging.LogAction("Клиенты: Клиент %s успешно удалён из БД", data.ClientID)
 	w.Write([]byte("Клиент удалён"))
 }
 
@@ -158,10 +162,12 @@ func DeleteSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Вызов единой функции для полного удаления всех связанных данных
 	if err := fullyRemoveClientAndData(clientIDs); err != nil {
+		logging.LogError("Клиенты: Ошибка массового удаления клиентов %v: %v", clientIDs, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	logging.LogAction("Клиенты: Массовое удаление клиентов выполнено. Удалены ID: %v", clientIDs)
 	w.Write([]byte("Клиенты успешно удалены"))
 }
 
@@ -217,7 +223,7 @@ func FetchClientsByGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отправляем ответ в формате JSON
+	// Отправляет ответ в формате JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(clients)
 }

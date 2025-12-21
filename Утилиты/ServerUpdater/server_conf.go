@@ -1,25 +1,23 @@
 // Copyright (c) 2025 Otto
 // Лицензия: MIT (см. LICENSE)
 
+//go:build linux
+
 package main
 
 import (
 	"bufio"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
 // defaultServerConfPath определяет путь к файлу server.conf
-func defaultServerConfPath(exeDir string) string {
+func defaultServerConfPath(string) string {
 	if v := os.Getenv("FIREMQ_SERVER_CONF"); v != "" {
 		return v
 	}
-	if runtime.GOOS == "linux" {
-		return "/etc/firemq/config/server.conf"
-	}
-	return filepath.Join(exeDir, "config", "server.conf")
+	return "/etc/firemq/config/server.conf"
 }
 
 // loadServerConfMap загружает ключи и значения из server.conf в виде карты

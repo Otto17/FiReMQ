@@ -6,12 +6,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"slices"
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет с MQTT клиентом AutoPaho
 
 	"github.com/dgraph-io/badger/v4"
@@ -53,13 +53,13 @@ func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Загружаем текущих админов
+	// Загружает текущих админов
 	usersMap, err := loadAdminsMap()
 	if err != nil {
-		log.Printf("Ошибка загрузки админов: %v", err)
+		logging.LogError("CMD/PowerShell: Ошибка загрузки админов: %v", err)
 	}
 
-	// Перебираем все записи команд в БД
+	// Перебирает все записи команд в БД
 	var results []map[string]any
 	err = db.DBInstance.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
@@ -77,15 +77,15 @@ func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Проверяем обновление имени админа
+			// Проверяет обновление имени админа
 			if login, ok := record["Created_By_Login"].(string); ok && usersMap != nil {
 				if user, exists := usersMap[login]; exists {
-					// Просто подменяем имя в ответе, не меняя запись в БД
+					// Просто подменяет имя в ответе, не меняя запись в БД
 					record["Created_By"] = user.Auth_Name
 				}
 			}
 
-			// Удаляем "Password" и ненужный дублирующий "Date_Of_Creation"
+			// Удаляет "Password" и ненужный дублирующий "Date_Of_Creation"
 			if teamCommandStr, ok := record["Team_Command"].(string); ok {
 				var teamCommandMap map[string]any
 				if err := json.Unmarshal([]byte(teamCommandStr), &teamCommandMap); err == nil {
@@ -97,12 +97,12 @@ func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Формируем ответ, поле "ClientID_Command" уже содержит вложенную структуру с Answer для каждого клиента
+			// Формирует ответ, поле "ClientID_Command" уже содержит вложенную структуру с Answer для каждого клиента
 			itemResponse := map[string]any{
 				"Date_Of_Creation": record["Date_Of_Creation"],
 				"Team_Command":     record["Team_Command"],
 				"ClientID_Command": record["ClientID_Command"],
-				"Created_By":       record["Created_By"], // Отправляем имя админа, создавшего запрос
+				"Created_By":       record["Created_By"], // Отправляет имя админа, создавшего запрос
 			}
 			results = append(results, itemResponse)
 		}
@@ -125,7 +125,7 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ожидаем JSON: {"Date_Of_Creation": "02.01.06(15:04:05)"}
+	// Ожидает JSON: {"Date_Of_Creation": "02.01.06(15:04:05)"}
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
 	}
@@ -191,7 +191,7 @@ func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Ожидаем JSON: {"Date_Of_Creation": "<timestamp>", "client_id": "id"}
+	// Ожидает JSON: {"Date_Of_Creation": "<timestamp>", "client_id": "id"}
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
 		ClientID         string `json:"client_id"`
@@ -235,13 +235,13 @@ func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request
 					continue
 				}
 
-				// Удаляем указанный "client_id" из карты
+				// Удаляет указанный "client_id" из карты
 				if _, exists := mapping[req.ClientID]; exists {
 					delete(mapping, req.ClientID)
 					deletedCount++
 				}
 
-				// Если после удаления карта пустая, удаляем весь запрос
+				// Если после удаления карта пустая, удаляет весь запрос
 				if len(mapping) == 0 {
 					if err := txn.Delete(key); err != nil {
 						return err
@@ -292,7 +292,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ожидаем JSON с двумя параметрами: "client_id" и "Date_Of_Creation"
+	// Ожидает JSON с двумя параметрами: "client_id" и "Date_Of_Creation"
 	var req struct {
 		ClientID         string `json:"client_id"`
 		Date_Of_Creation string `json:"Date_Of_Creation"`
@@ -311,7 +311,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		waitSeconds      int  // Время ожидания истичения лимита
 	)
 
-	// Формируем ключ в БД: "FiReMQ_Command:" + Date_Of_Creation
+	// Формирует ключ в БД: "FiReMQ_Command:" + Date_Of_Creation
 	dbKey := "FiReMQ_Command:" + req.Date_Of_Creation
 
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
@@ -328,7 +328,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		// Проверяем наличие client_id в карте ClientID_Command
+		// Проверяет наличие client_id в карте ClientID_Command
 		mapping, ok := record["ClientID_Command"].(map[string]any)
 		if !ok || mapping[req.ClientID] == nil {
 			return nil // Клиент не найден
@@ -339,7 +339,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		// Проверяем, онлайн ли клиент
+		// Проверяет, онлайн ли клиент
 		online, err := isClientOnline(req.ClientID)
 		if err != nil {
 			return nil
@@ -372,9 +372,9 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			// Отправка в топик через клиента AutoPaho
 			topic := fmt.Sprintf("Client/%s/ModuleCommand", req.ClientID)
 			if err := mqtt_client.Publish(topic, []byte(cmdPayload), 2); err != nil {
-				log.Printf("Ошибка повторной публикации команды в топик %s: %v", topic, err)
+				logging.LogError("CMD/PowerShell: Ошибка повторной публикации команды в топик %s: %v", topic, err)
 			} else {
-				log.Printf("Повторная отправка команды клиенту %s выполнена", req.ClientID)
+				logging.LogAction("CMD/PowerShell: Повторная отправка команды клиенту %s выполнена", req.ClientID)
 				commandSent = true // Команда отправлена
 			}
 
@@ -415,7 +415,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				rr[req.ClientID] = true
 				record["ResendRequested"] = rr
-				log.Printf("Установлен флаг повторной отправки для клиента %s", req.ClientID)
+				logging.LogAction("CMD/PowerShell: Установлен флаг повторной отправки для клиента %s", req.ClientID)
 				processed = true
 
 				// Очистка Answer, только при первом выставлении флага
@@ -543,20 +543,20 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем информацию о админе
+	// Получает информацию о админе
 	authInfo, err := getAuthInfoFromRequest(r)
 	if err != nil {
-		log.Printf("Ошибка получения информации о админах: %v", err)
+		logging.LogError("CMD/PowerShell: Ошибка получения информации о админах: %v", err)
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
-	// Формируем карту для ClientID_Command: id -> { "ClientName": <client name>, "Answer": "" }
+	// Формирует карту для ClientID_Command: id -> { "ClientName": <client name>, "Answer": "" }
 	clientMapping := map[string]any{}
 	for _, cid := range cmdReq.ClientIDs {
 		name, err := getClientName(cid)
 		if err != nil {
-			log.Printf("Ошибка получения имени для клиента %s: %v", cid, err)
+			logging.LogError("CMD/PowerShell: Ошибка получения имени для клиента %s: %v", cid, err)
 			clientMapping[cid] = map[string]string{
 				"ClientName": "",
 				"Answer":     "",
@@ -569,7 +569,7 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Подготавливаем данные для записи в БД
+	// Подготавливает данные для записи в БД
 	entry := map[string]any{
 		"Date_Of_Creation": dateOfCreation,
 		"Team_Command":     string(payload),
@@ -586,12 +586,12 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Формируем ключ и подготавливаем запись
+	// Формирует ключ и подготавливает запись
 	dbKey := "FiReMQ_Command:" + dateOfCreation
 
 	// Запись в BadgerDB с использованием батчи
 	wb := db.DBInstance.NewWriteBatch()
-	defer wb.Cancel() // Отменяем батч, если не произойдёт Flush
+	defer wb.Cancel() // Отменяет батч, если не произойдёт Flush
 
 	if err := wb.Set([]byte(dbKey), entryBytes); err != nil {
 		http.Error(w, "Ошибка записи в БД: "+err.Error(), http.StatusInternalServerError)
@@ -608,18 +608,18 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 	for _, clientID := range cmdReq.ClientIDs {
 		online, err := isClientOnline(clientID)
 		if err != nil {
-			log.Printf("Ошибка проверки статуса клиента %s: %v", clientID, err)
+			logging.LogError("CMD/PowerShell: Ошибка проверки статуса клиента %s: %v", clientID, err)
 			continue
 		}
 		if online {
 			topic := fmt.Sprintf("Client/%s/ModuleCommand", clientID)
 			if err := mqtt_client.Publish(topic, payload, 2); err != nil {
-				log.Printf("Не удалось опубликовать в топик %s: %v", topic, err)
+				logging.LogError("CMD/PowerShell: Не удалось опубликовать в топик %s: %v", topic, err)
 				continue
 			}
 			sentTo = append(sentTo, clientID)
 
-			// Синхронизируем очередь: считаем, что мы только что отправили → выдержим паузу 10 сек до следующей отправки
+			// Синхронизирует очередь: считает, что мы только что отправили → выдержим паузу 10 сек до следующей отправки
 			val, _ := cmdSendQueues.LoadOrStore(clientID, &cmdClientQueue{})
 			q := val.(*cmdClientQueue)
 			q.mu.Lock()
@@ -628,7 +628,7 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Обновляем SentFor в записи — чтобы очередь не переслала дубликаты
+	// Обновляет SentFor в записи — чтобы очередь не переслала дубликаты
 	if len(sentTo) > 0 {
 		if err := db.DBInstance.Update(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(dbKey))
@@ -642,7 +642,7 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			// Считываем текущий SentFor
+			// Считывает текущий SentFor
 			var sentFor []string
 			if s, exists := record["SentFor"]; exists {
 				if arr, ok := s.([]any); ok {
@@ -653,7 +653,7 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			// Объединяем с sentTo (без дублей)
+			// Объединяет с sentTo (без дублей)
 			for _, id := range sentTo {
 				found := slices.Contains(sentFor, id)
 				if !found {
@@ -668,11 +668,11 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return txn.Set([]byte(dbKey), newBytes)
 		}); err != nil {
-			log.Printf("Ошибка обновления SentFor в БД: %v", err)
+			logging.LogError("CMD/PowerShell: Ошибка обновления SentFor в БД: %v", err)
 		}
 	}
 
-	// Отправляем ответ, что команда сохранена и отправлена онлайн клиентам
+	// Отправляет ответ, что команда сохранена и отправлена онлайн клиентам
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":  "Успех",

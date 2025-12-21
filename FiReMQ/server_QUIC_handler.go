@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
 
@@ -73,7 +73,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Создаём директорию для загрузки исполняемых файлов, если её нет
+	// Создаёт директорию для загрузки исполняемых файлов, если её нет
 	if err := pathsOS.EnsureDir(pathsOS.Path_QUIC_Downloads); err != nil {
 		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка создания папки для загрузки исполняемых файлов QUIC-сервера")
 		return
@@ -107,11 +107,11 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tempFilePath = tempFile.Name()
-			// Инициализируем хеш-функцию методом "XXH3"
+			// Инициализирует хеш-функцию методом "XXH3"
 			hash := xxh3.New()
-			// Создаем MultiWriter для одновременной записи в файл и хеш
+			// Создаёт MultiWriter для одновременной записи в файл и хеш
 			multiWriter := io.MultiWriter(tempFile, hash)
-			// Копируем данные в MultiWriter
+			// Копирует данные в MultiWriter
 			if _, err := io.Copy(multiWriter, part); err != nil {
 				tempFile.Close()
 				os.Remove(tempFilePath)
@@ -119,28 +119,28 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tempFile.Close()
-			// Перемещаем файл в финальное место
+			// Перемещает файл в финальное место
 			finalFilePath := filepath.Join(pathsOS.Path_QUIC_Downloads, fileName)
 			if err := os.Rename(tempFilePath, finalFilePath); err != nil {
 				os.Remove(tempFilePath)
 				sendErrorResponse(w, http.StatusInternalServerError, "Ошибка перемещения загруженного на сервер файла")
 				return
 			}
-			// Сохраняем хеш в hashMap
+			// Сохраняёт хеш в hashMap
 			hashSum := fmt.Sprintf("%016x", hash.Sum64())
 			hr := &HashResult{
 				hash:   hashSum,
 				cancel: make(chan struct{}),
 			}
 			hashMap.Store(fileName, hr)
-			fmt.Printf("Файл %s загружен, хеш: %s\n", fileName, hashSum)
+			logging.LogAction("QUIC WEB: Файл %s загружен, хеш XXH3: %s\n", fileName, hashSum)
 		}
 	}
 
 	// Формирование ответа
 	response := map[string]string{
 		"status":   "Успех",
-		"filePath": fileName, // Возвращаем только имя файла (без пути)
+		"filePath": fileName, // Возвращает только имя файла (без пути)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -165,7 +165,7 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Парсим полученный JSON
+	// Парсит полученный JSON
 	var data InstallProgramRequest
 	if err := json.Unmarshal(body, &data); err != nil {
 		sendErrorResponse(w, http.StatusBadRequest, "Ошибка декодирования JSON")
@@ -189,10 +189,10 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	default:
 		data.XXH3 = hr.hash
-		// fmt.Printf("Используем хеш для %s: %s\n", fileName, hr.hash)
+		// fmt.Printf("Использует хеш для %s: %s\n", fileName, hr.hash)
 	}
 
-	// Если имя пользователя не указано, ставим значение по умолчанию "СИСТЕМА"
+	// Если имя пользователя не указано, ставит значение по умолчанию "СИСТЕМА"
 	if data.UserName == "" {
 		data.UserName = "СИСТЕМА"
 	}
@@ -202,11 +202,11 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		data.NotDeleteAfterInstallation = true
 	}
 
-	// Генерируем "Date_Of_Creation" перед формированием ответа
+	// Генерирует "Date_Of_Creation" перед формированием ответа
 	now := time.Now()
 	dateOfCreation := getTimestampWithMs(now)
 
-	// Формируем payload без токена (токен формируется и добавляется при отправке)
+	// Формирует payload без токена (токен формируется и добавляется при отправке)
 	payloadData := QUICPayload{
 		DateOfCreation:                dateOfCreation,
 		OnlyDownload:                  data.OnlyDownload,
@@ -226,20 +226,20 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем информацию о админе
+	// Получает информацию о админе
 	authInfo, err := getAuthInfoFromRequest(r)
 	if err != nil {
-		log.Printf("Ошибка получения информации о админе: %v", err)
+		logging.LogError("QUIC WEB: Ошибка получения информации о админе: %v", err)
 		sendErrorResponse(w, http.StatusUnauthorized, "Ошибка авторизации")
 		return
 	}
 
-	// Формируем clientMapping
+	// Формирует clientMapping
 	clientMapping := make(map[string]map[string]string)
 	for _, cid := range data.ClientIDs {
 		name, err := getClientName(cid)
 		if err != nil {
-			log.Printf("Ошибка получения имени для клиента %s: %v", cid, err)
+			logging.LogError("QUIC: Ошибка получения имени для клиента %s: %v", cid, err)
 			name = ""
 		}
 		clientMapping[cid] = map[string]string{
@@ -251,7 +251,7 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Подготавливаем запись для BadgerDB
+	// Подготавливает запись для BadgerDB
 	entry := map[string]any{
 		"Date_Of_Creation": dateOfCreation,
 		"QUIC_Command":     string(payload),
@@ -267,7 +267,7 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Формируем ключ и подготавливаем запись
+	// Формирует ключ и подготавливает запись
 	dbKey := "FiReMQ_QUIC:" + dateOfCreation
 
 	// Запись в BadgerDB с использованием батчи
@@ -282,46 +282,49 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Разрешаем доступ к QUIC, чтобы клиенты могли подключаться
+	// Разрешает доступ к QUIC, чтобы клиенты могли подключаться
 	EnsureQUICOpen("создан новый запрос установки ПО")
 
-	// Отправляем онлайн клиентам с индивидуальным токеном
+	// Отправляет онлайн клиентам с индивидуальным токеном
 	var sentTo []string
 	for _, clientID := range data.ClientIDs {
 		online, err := isClientOnline(clientID)
 		if err != nil {
-			log.Printf("Ошибка проверки статуса клиента %s: %v", clientID, err)
+			logging.LogError("QUIC: Ошибка проверки статуса клиента %s: %v", clientID, err)
 			continue
 		}
 		if online {
-			// Перед немедленной отправкой онлайн-клиенту — проверим активную загрузку
+			// Перед немедленной отправкой онлайн-клиенту — проверит активную загрузку
 			if isQUICActive(clientID) {
-				log.Printf("Клиент %s уже выполняет загрузку — откладываем немедленную отправку и добавляем в очередь", clientID)
-				// Не публикуем сейчас: просто оставим запись в БД (SentFor не пополнится), очередь подхватит и отправит позже
+				logging.LogError("QUIC: Клиент %s уже выполняет загрузку — немедленная отправка откладывается и добавляется в очередь", clientID)
+				// Не публикуется сейчас: просто оставляется запись в БД (SentFor не пополнится), очередь подхватит и отправит позже
 				go checkAndResendQUIC(clientID)
 				continue
 			}
-			// Генерируем токен с привязкой к файлу
+
+			// Генерирует токен с привязкой к файлу
 			token := generateQUICTokenForFile(clientID, payloadData.DownloadRunPath, dateOfCreation)
-			clientPayload := payloadData                                        // Создаем копию payload для клиента с его индивидуальным токеном
-			clientPayload.Token = token                                         // Устанавливаем токен
-			log.Printf("Сгенерирован токен %s для клиента %s", token, clientID) // ДЛЯ ОТЛАДКИ
-			// Сериализуем с токеном
+			clientPayload := payloadData // Создаёт копию payload для клиента с его индивидуальным токеном
+			clientPayload.Token = token  // Устанавливает токен
+			//log.Printf("Сгенерирован токен %s для клиента %s", token, clientID) // ДЛЯ ОТЛАДКИ
+
+			// Сериализует с токеном
 			clientPayloadBytes, err := json.Marshal(clientPayload)
 			if err != nil {
-				log.Printf("Ошибка сериализации QUIC_Command для клиента %s: %v", clientID, err)
+				logging.LogError("QUIC: Ошибка сериализации QUIC_Command для клиента %s: %v", clientID, err)
 				continue
 			}
+
 			topic := "Client/" + clientID + "/ModuleQUIC"
 			if err := mqtt_client.Publish(topic, clientPayloadBytes, 2); err == nil {
 				sentTo = append(sentTo, clientID)
 			} else {
-				log.Printf("Ошибка публикации в топик %s: %v", topic, err)
+				logging.LogError("QUIC: Ошибка публикации в топик %s: %v", topic, err)
 			}
 		}
 	}
 
-	// Обновляем SentFor
+	// Обновление SentFor
 	if len(sentTo) > 0 {
 		entry["SentFor"] = sentTo
 		updatedEntryBytes, err := json.Marshal(entry)
@@ -329,12 +332,12 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 			if err := db.DBInstance.Update(func(txn *badger.Txn) error {
 				return txn.Set([]byte(dbKey), updatedEntryBytes)
 			}); err != nil {
-				log.Printf("Ошибка обновления SentFor в БД: %v", err)
+				logging.LogError("QUIC: Ошибка обновления SentFor в БД: %v", err)
 			}
 		}
 	}
 
-	// Формируем ответ
+	// Формирование ответа
 	response := map[string]string{
 		"status":  "Успех",
 		"message": "Запрос сохранён и отправлен онлайн клиентам",
@@ -355,7 +358,7 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Читаем тело запроса
+	// Чтение тела запроса
 	var requestData struct {
 		Filename string `json:"filename"`
 	}
@@ -365,34 +368,34 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем безопасность имени файла
+	// Проверяет безопасность имени файла
 	if requestData.Filename == "" || strings.Contains(requestData.Filename, "..") {
 		sendErrorResponse(w, http.StatusBadRequest, "Недопустимое имя файла")
 		return
 	}
 
-	// Формируем путь к файлу
+	// Формирование пути к файлу
 	filePath := filepath.Join(pathsOS.Path_QUIC_Downloads, requestData.Filename)
-	// fmt.Printf("Попытка удаления файла: %s\n", filePath)
+	// fmt.Printf("Попытка удаления файла: %s\n", filePath) // ДЛЯ ОТЛАДКИ
 
-	// Проверяем hashMap и сигнализируем об отмене
+	// Проверяет hashMap и сигнализирует об отмене
 	if hrInterface, ok := hashMap.Load(requestData.Filename); ok {
 		hr := hrInterface.(*HashResult)
-		// fmt.Printf("Сигнализируем об отмене для файла: %s\n", requestData.Filename)
+		// fmt.Printf("Сигнализирует об отмене для файла: %s\n", requestData.Filename) // ДЛЯ ОТЛАДКИ
 		close(hr.cancel)
 		hashMap.Delete(requestData.Filename)
-		// fmt.Printf("Файл %s удален из hashMap\n", requestData.Filename)
+		// fmt.Printf("Файл %s удален из hashMap\n", requestData.Filename) // ДЛЯ ОТЛАДКИ
 	}
 
 	// Удаление файла (до 3-х попыток при неудачах)
 	maxRetries := 3
 	for i := range 3 {
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			// fmt.Printf("Файл %s не существует, удаление не требуется\n", filePath)
+			// fmt.Printf("Файл %s не существует, удаление не требуется\n", filePath) // ДЛЯ ОТЛАДКИ
 			break
 		}
 		if err := os.Remove(filePath); err != nil {
-			fmt.Printf("Попытка %d: Ошибка удаления файла %s: %v\n", i+1, filePath, err)
+			logging.LogError("QUIC: Попытка %d: Ошибка удаления файла %s: %v\n", i+1, filePath, err)
 			if i < maxRetries-1 {
 				time.Sleep(100 * time.Millisecond)
 				continue
@@ -400,11 +403,11 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 			sendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Не удалось удалить файл: %v", err))
 			return
 		}
-		fmt.Printf("Файл %s успешно удален\n", filePath)
+		logging.LogAction("QUIC: Файл %s успешно удален\n", filePath)
 		break
 	}
 
-	// Формируем ответ
+	// Формирование ответа
 	response := map[string]string{
 		"status":  "Успех",
 		"message": "Файл успешно удалён",
@@ -421,10 +424,10 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Загружаем текущих админов
+	// Загружает текущих админов
 	usersMap, err := loadAdminsMap()
 	if err != nil {
-		log.Printf("Ошибка загрузки админов: %v", err)
+		logging.LogError("QUIC: Ошибка загрузки админов: %v", err)
 	}
 
 	downloadsDir := pathsOS.Path_QUIC_Downloads
@@ -445,17 +448,16 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Проверяем обновление имени админа
+			// Проверяет обновление имени админа
 			if login, ok := record["Created_By_Login"].(string); ok && usersMap != nil {
 				if user, exists := usersMap[login]; exists {
 					currentName := user.Auth_Name
 					savedName, nameExists := record["Created_By"].(string)
-					// Если имя изменилось - обновляем запись
+					// Если имя изменилось - обновляет запись
 					if nameExists && savedName != currentName {
 						record["Created_By"] = currentName
 						newData, err := json.Marshal(record)
 						if err == nil {
-							// NB: badger.View обычно ReadOnly; предполагается текущая логика проекта
 							txn.Set(key, newData)
 						}
 					}
@@ -464,13 +466,15 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 
 			// Размер файла
 			var fileSize int64 = 0
-			// Удаляем "UserPassword", "Token" и ненужный дублирующий "Date_Of_Creation"
+			// Удаляет "UserPassword", "Token" и ненужный дублирующий "Date_Of_Creation"
 			if quicStr, ok := record["QUIC_Command"].(string); ok {
 				var quicMap map[string]any
+
 				if err := json.Unmarshal([]byte(quicStr), &quicMap); err == nil {
 					delete(quicMap, "UserPassword")
 					delete(quicMap, "Token")
 					delete(quicMap, "Date_Of_Creation")
+
 					// Размер файла + дополнение пути (только для ответа)
 					if drp, ok := quicMap["DownloadRunPath"].(string); ok {
 						orig := strings.TrimSpace(drp)
@@ -485,6 +489,7 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 							}
 						}
 					}
+
 					if updatedQuic, err := json.Marshal(quicMap); err == nil {
 						record["QUIC_Command"] = string(updatedQuic)
 					}
@@ -545,6 +550,7 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		commandSent      bool // Была ли отправлена команда
 		throttled        bool // Флаг ограничения лимита запросов
 		waitSeconds      int  // Время ожидания истичения лимита
+
 		// Подготовка публикации и открытие порта после коммита транзакции
 		topic            string
 		payloadToPublish []byte
@@ -628,7 +634,7 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			// Сохраняем для публикации после коммита
+			// Сохраняет для публикации после коммита
 			payloadToPublish = buf
 			topic = "Client/" + req.ClientID + "/ModuleQUIC"
 			needOpen = true
@@ -660,7 +666,7 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				rr[req.ClientID] = true
 				record["ResendRequested"] = rr
-				log.Printf("Установлен флаг повторной отправки для клиента %s", req.ClientID)
+				logging.LogAction("QUIC: Установлен флаг повторной отправки для клиента %s", req.ClientID)
 				processed = true
 				// Очистка Answer, только при первом выставлении флага
 				if s, _ := clientEntry["Answer"].(string); s != "" {
@@ -711,9 +717,9 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		// ВАЖНО: теперь в БД Answer уже очищен -> hasReadyQUICTasks() вернёт true
 		EnsureQUICOpen("повторная отправка для клиента " + req.ClientID)
 		if err := mqtt_client.Publish(topic, payloadToPublish, 2); err != nil {
-			log.Printf("Ошибка повторной публикации QUIC команды в топик %s: %v", topic, err)
+			logging.LogError("QUIC: Ошибка повторной публикации QUIC команды в топик %s: %v", topic, err)
 		} else {
-			log.Printf("Повторная отправка QUIC команды клиенту %s выполнена", req.ClientID)
+			logging.LogAction("QUIC: Повторная отправка QUIC команды клиенту %s выполнена", req.ClientID)
 			commandSent = true
 		}
 	}
@@ -758,6 +764,7 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		opts.Prefix = []byte("FiReMQ_QUIC:")
 		it := txn.NewIterator(opts)
 		defer it.Close()
+
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			var record map[string]any
@@ -766,13 +773,14 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 			}); err != nil {
 				continue
 			}
+
 			if record["Date_Of_Creation"] == req.Date_Of_Creation {
 				found = true
-				// Сохраним имя файла, чтобы удалить его после коммита транзакции
+				// Сохранит имя файла, чтобы удалить его после коммита транзакции
 				if fn, err := extractFileNameFromQUICRecord(record); err == nil && fn != "" {
 					filesToMaybeDelete = append(filesToMaybeDelete, fn)
 				} else if err != nil {
-					log.Printf("Не удалось извлечь имя файла из записи для удаления: %v", err)
+					logging.LogError("QUIC: Не удалось извлечь имя файла из записи для удаления: %v", err)
 				}
 				if err := txn.Delete(item.Key()); err != nil {
 					return err
@@ -795,7 +803,7 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Удаляем связанные файлы, которые больше не используются другими запросами
+	// Удаляет связанные файлы, которые больше не используются другими запросами
 	if len(filesToMaybeDelete) > 0 {
 		uniq := make(map[string]struct{}, len(filesToMaybeDelete))
 		for _, f := range filesToMaybeDelete {
@@ -812,7 +820,7 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Запрос удалён",
 	})
 
-	// После удаления — пересчитываем доступ
+	// После удаления — пересчитывает доступ
 	RecalculateQUICAccess("удаление запроса по дате")
 }
 
@@ -867,11 +875,11 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 					deletedCount++
 				}
 				if len(mapping) == 0 {
-					// Запись будет удалена целиком — сохраним имя файла для последующего удаления
+					// Запись будет удалена целиком — сохранение имени файла для последующего удаления
 					if fn, err := extractFileNameFromQUICRecord(record); err == nil && fn != "" {
 						filesToMaybeDelete = append(filesToMaybeDelete, fn)
 					} else if err != nil {
-						log.Printf("Не удалось извлечь имя файла из записи при удалении последнего клиента: %v", err)
+						logging.LogError("QUIC: Не удалось извлечь имя файла из записи при удалении последнего клиента: %v", err)
 					}
 					if err := txn.Delete(key); err != nil {
 						return err
@@ -904,7 +912,7 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Если запись была удалена (последний клиент), удалим файл, если он больше не используется
+	// Если запись была удалена (последний клиент), удаление файла, если он больше не используется
 	if len(filesToMaybeDelete) > 0 {
 		uniq := make(map[string]struct{}, len(filesToMaybeDelete))
 		for _, f := range filesToMaybeDelete {
@@ -921,7 +929,7 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Клиент удалён из запроса",
 	})
 
-	// После удаления клиента — пересчитываем доступ
+	// После удаления клиента — пересчитывает доступ
 	RecalculateQUICAccess("удаление клиента из запроса")
 }
 
@@ -957,9 +965,10 @@ func baseNameAnyOS(p string) string {
 	if p == "" {
 		return ""
 	}
-	// Уберём возможные кавычки, если путь вставлен в кавычках
+
+	// Уберёт возможные кавычки, если путь вставлен в кавычках
 	p = strings.Trim(p, `"'`)
-	// Нормализуем разделители
+	// Нормализует разделители
 	p = strings.ReplaceAll(p, "\\", "/")
 	return filepath.Base(p)
 }

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 )
 
@@ -74,10 +75,12 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = MoveClient(clientID, newGroup, newSubgroup)
 	if err != nil {
+		logging.LogError("Группы: Ошибка перемещения клиента [%s] в %s/%s: %v", clientID, newGroup, newSubgroup, err)
 		http.Error(w, "Ошибка перемещения клиента", http.StatusInternalServerError)
 		return
 	}
 
+	logging.LogAction("Группы: Клиент [%s] перемещён в группу '%s', подгруппу '%s'", clientID, newGroup, newSubgroup)
 	w.Write([]byte("Клиент перемещён"))
 }
 
@@ -88,7 +91,7 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Читаем тело запроса
+	// Читает тело запроса
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Ошибка чтения тела запроса", http.StatusInternalServerError)
@@ -152,11 +155,12 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	// Перемещение клиентов
 	notFoundIDs, err := MoveSelectedClients(payload.ClientIDs, payload.NewGroup, payload.NewSubgroup)
 	if err != nil {
+		logging.LogError("Группы: Массовое перемещение клиентов в %s/%s завершилось ошибкой: %v", payload.NewGroup, payload.NewSubgroup, err)
 		http.Error(w, "Ошибка перемещения клиентов: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Формируем умный ответ
+	// Формирует умный ответ
 	if len(notFoundIDs) > 0 {
 		// Если некоторые клиенты не были найдены
 		message := fmt.Sprintf("Операция завершена. %d клиент(ов) успешно перемещено. Не найдены: %s", len(payload.ClientIDs)-len(notFoundIDs), strings.Join(notFoundIDs, ", "))
@@ -167,6 +171,15 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
+	}
+
+	// Логирует успешное действие
+	movedCount := len(payload.ClientIDs) - len(notFoundIDs)
+	if movedCount > 0 {
+		logging.LogAction("Группы: Перемещено %d клиентов в группу '%s', подгруппу '%s'", movedCount, payload.NewGroup, payload.NewSubgroup)
+	}
+	if len(notFoundIDs) > 0 {
+		logging.LogError("Группы: При массовом перемещении не найдены ID: %v", notFoundIDs)
 	}
 
 	// Если все прошло идеально

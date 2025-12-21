@@ -7,9 +7,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"log"
 	"os"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 
 	mqtt "github.com/mochi-mqtt/server/v2"
@@ -58,15 +58,18 @@ func (h *versionHook) OnConnect(cl *mqtt.Client, pk packets.Packet) error {
 
 // Mqtt_serv инициализирует и запускает MQTT-сервер
 func Mqtt_serv() {
-	// Читает конфигурацию сервера из файла
+	// Чтение конфига сервера из файла
 	configBytes, err := os.ReadFile(pathsOS.Path_Config_MQTT)
 	if err != nil {
-		log.Fatalf("Ошибка при чтении mqtt_config.json: %v", err)
+		logging.LogError("MQTT Serv: Ошибка при чтении \"mqtt_config.json\": %v", err)
+		os.Exit(1)
 	}
 
 	options, err := config.FromBytes(configBytes)
+	// Парсинг конфига
 	if err != nil {
-		log.Fatalf("Ошибка при парсинге mqtt_config.json: %v", err)
+		logging.LogError("MQTT Serv: Ошибка при парсинге \"mqtt_config.json\": %v", err)
+		os.Exit(1)
 	}
 
 	// Явно отключает встроенный клиент Mochi-MQTT (используется AutoPaho)
@@ -83,18 +86,21 @@ func Mqtt_serv() {
 	// Загружает сертификат и ключ сервера
 	cert, err := tls.LoadX509KeyPair(pathsOS.Path_Server_MQTT_Cert, pathsOS.Path_Server_MQTT_Key)
 	if err != nil {
-		log.Fatalf("Ошибка загрузки сертификатов: %v", err)
+		logging.LogError("MQTT Serv: Ошибка загрузки сертификатов: %v", err)
+		os.Exit(1)
 	}
 
 	// Читает клиентский CA сертификат и добавляет его в пул доверенных сертификатов
 	ClientCaCert, err := os.ReadFile(pathsOS.Path_Client_MQTT_CA)
 	if err != nil {
-		log.Fatalf("Ошибка загрузки клиентского CA: %v", err)
+		logging.LogError("MQTT Serv: Ошибка загрузки клиентского CA: %v", err)
+		os.Exit(1)
 	}
 
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(ClientCaCert) {
-		log.Fatal("Не удалось добавить корневой сертификат в пул")
+		logging.LogError("MQTT Serv: Не удалось добавить корневой сертификат в пул")
+		os.Exit(1)
 	}
 
 	// Настраивает TLS с обязательной проверкой клиентских сертификатов (mTLS)
@@ -112,15 +118,17 @@ func Mqtt_serv() {
 		TLSConfig: tlsConfig,
 	})
 	err = Server.AddListener(tcpListener)
+
 	if err != nil {
-		log.Fatalf("Ошибка добавления TCP слушателя: %v", err)
+		logging.LogError("MQTT Serv: Ошибка добавления TCP слушателя MQTT: %v", err)
+		os.Exit(1)
 	}
 
 	// Запускает сервер в отдельной горутине
 	go func() {
 		err := Server.Serve()
 		if err != nil {
-			log.Fatalf("Ошибка при запуске сервера: %v", err)
+			logging.LogError("MQTT Serv: Критическая ошибка при запуске сервера: %v", err)
 		}
 	}()
 

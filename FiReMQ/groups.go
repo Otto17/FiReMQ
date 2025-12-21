@@ -48,7 +48,7 @@ func MoveSelectedClients(clientIDs []string, newGroup, newSubgroup string) ([]st
 			item, err := txn.Get(key)
 			if err != nil {
 				if err == badger.ErrKeyNotFound {
-					// Клиент не найден. Добавляем его ID в список и продолжаем
+					// Клиент не найден. Добавляет его ID в список и продолжает
 					notFoundIDs = append(notFoundIDs, clientID)
 					continue
 				}
@@ -78,7 +78,7 @@ func MoveSelectedClients(clientIDs []string, newGroup, newSubgroup string) ([]st
 		return nil
 	})
 
-	// Возвращаем список ненайденных ID и возможную ошибку транзакции
+	// Возвращат список ненайденных ID и возможную ошибку транзакции
 	return notFoundIDs, err
 }
 
@@ -154,7 +154,7 @@ func GetAllGroupsAndSubgroups() (map[string][]string, error) {
 		return nil
 	})
 
-	// Убираем дубли подгрупп для каждой группы
+	// Убирает дубли подгрупп для каждой группы
 	for group := range groups {
 		groups[group] = unique(groups[group])
 	}

@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Otto
 // Лицензия: MIT (см. LICENSE)
 
+//go:build linux
+
 package main
 
 import (

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -29,7 +28,8 @@ import (
 	"syscall"
 	"time"
 
-	"FiReMQ/pathsOS"
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
+	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 
 	"golang.org/x/net/idna"
 )
@@ -81,25 +81,25 @@ func EnsureMTLSCerts(ctx context.Context, interactiveAllowed bool) error {
 	switch {
 	case allMissing:
 		if interactiveAllowed {
-			log.Println("Сертификаты отсутствуют, генерация нового комплекта в интерактивном режиме")
+			logging.LogSystem("Cert: Сертификаты отсутствуют, генерация нового комплекта в интерактивном режиме")
 		} else {
-			log.Println("Сертификаты отсутствуют")
+			logging.LogSystem("Cert: Сертификаты отсутствуют")
 		}
 	case missCnt > 0 && len(broken) == 0:
-		log.Printf("Неполный набор сертификатов (нет %d из 6) — генерирует новый комплект...", missCnt)
+		logging.LogSystem("Cert: Неполный набор сертификатов (нет %d из 6) — генерирует новый комплект...", missCnt)
 	case missCnt == 0 && len(broken) > 0:
-		log.Printf("Обнаружены повреждённые файлы: %s — генерирует новый комплект...", compactList(broken, 3))
+		logging.LogSystem("Cert: Обнаружены повреждённые файлы: %s — генерирует новый комплект...", compactList(broken, 3))
 	default:
-		log.Printf("Проблемы с сертификатами: нет: %d, повреждены: %s — генерирует новый комплект...", missCnt, compactList(broken, 3))
+		logging.LogSystem("Cert: Проблемы с сертификатами: нет: %d, повреждены: %s — генерирует новый комплект...", missCnt, compactList(broken, 3))
 	}
 
 	// Архивирует старые файлы перед удалением
 	if err := archiveExisting(certsDir); err != nil {
-		log.Printf("Не удалось заархивировать старые сертификаты: %v", err)
+		logging.LogError("Cert: Не удалось заархивировать старые сертификаты: %v", err)
 	}
 	// Удаляет все старые сертификаты и артефакты, чтобы предотвратить дублирование при рестарте
 	if n := deleteAllCertArtifacts(certsDir); n > 0 {
-		log.Printf("Удалены старые сертификаты и артефакты: %d шт", n)
+		logging.LogSystem("Cert: Удалены старые сертификаты и артефакты: %d шт", n)
 	}
 	if err := ctxErr(ctx); err != nil {
 		return err
@@ -135,7 +135,7 @@ func EnsureMTLSCerts(ctx context.Context, interactiveAllowed bool) error {
 		return fmt.Errorf("после генерации всё ещё проблемы (нет: %d, повреждены: %s)", missCnt, compactList(broken, 6))
 	}
 
-	log.Println("Новые сертификаты успешно созданы")
+	logging.LogSystem("Cert: Новые сертификаты успешно созданы")
 	return nil
 }
 
@@ -166,15 +166,15 @@ func resolveSAN(ctx context.Context, showHelp bool, allowInteractive bool) (sanV
 			return parseSANString(v)
 		}
 		// Переменная не задана — печатает короткую подсказку и выходит
-		log.Println("Не обнаружена переменная в юните (systemd):")
-		log.Println("- Откройте 'sudo systemctl edit --full firemq.service'")
-		log.Println("- Добавьте в секцию после [Service] строку: 'Environment=FIREMQ_SAN=77.77.77.77'")
-		log.Println("- Перезапустите демона и FiReMQ: 'sudo systemctl daemon-reload && sudo systemctl restart firemq.service'")
+		fmt.Println("Не обнаружена переменная в юните (systemd):")
+		fmt.Println("- Откройте 'sudo systemctl edit --full firemq.service'")
+		fmt.Println("- Добавьте в секцию после [Service] строку: 'Environment=FIREMQ_SAN=77.77.77.77'")
+		fmt.Println("- Перезапустите демона и FiReMQ: 'sudo systemctl daemon-reload && sudo systemctl restart firemq.service'")
 		return sanValue{}, errors.New("переменная FIREMQ_SAN не установлена в unit (systemd)")
 	}
 
 	// Возврат к значению по умолчанию, если SAN не определён
-	log.Println("Предупреждение: SAN не задан, используем localhost/127.0.0.1")
+	logging.LogSystem("Cert: Предупреждение: SAN не задан, используем localhost/127.0.0.1")
 	return sanValue{Kind: "DNS", Value: "localhost"}, nil
 }
 
@@ -232,7 +232,7 @@ func parseSANString(s string) (sanValue, error) {
 	}
 
 	if ascii != host {
-		log.Printf("SAN (DNS) преобразован в Punycode: %s", ascii)
+		logging.LogSystem("Cert: SAN (DNS) преобразован в Punycode: %s", ascii)
 	}
 	return sanValue{Kind: "DNS", Value: ascii}, nil
 }
@@ -448,7 +448,7 @@ func archiveExisting(dir string) error {
 	if err := zw.Close(); err != nil {
 		return err
 	}
-	log.Printf("Архив старых сертификатов: %s", zipPath)
+	logging.LogSystem("Cert: Архив старых сертификатов: %s", zipPath)
 	return nil
 }
 
@@ -818,9 +818,9 @@ func InitAndCheckMTLS() {
 	// Запускает проверку и создание mTLS сертификатов
 	if err := EnsureMTLSCerts(ctxCert, interactiveAllowed); err != nil {
 		if errors.Is(err, context.Canceled) {
-			log.Println("Создание сертификатов отменено по сигналу")
+			logging.LogSystem("Cert: Создание сертификатов отменено по сигналу")
 			os.Exit(0)
 		}
-		log.Fatalf("Ошибка проверки/создания сертификатов для mTLS: %v", err)
+		logging.LogError("Cert: Ошибка проверки/создания сертификатов для mTLS: %v", err)
 	}
 }

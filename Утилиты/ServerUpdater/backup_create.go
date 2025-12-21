@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Otto
 // Лицензия: MIT (см. LICENSE)
 
+//go:build linux
+
 package main
 
 import (
@@ -12,7 +14,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -86,7 +87,7 @@ func CreateFullBackup(exeDir, currentVersion string, conf map[string]string, ser
 		}
 
 		ext := strings.ToLower(filepath.Ext(absPath))
-		h := sha256.Sum256([]byte(normalizeCaseForOS(absPath)))
+		h := sha256.Sum256([]byte(absPath))
 		name := hex.EncodeToString(h[:])
 		zipRel := filepath.ToSlash(filepath.Join("payload", "f", name+ext))
 
@@ -310,25 +311,14 @@ func isPathWithin(child, base string) bool {
 	return !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && rel != ".."
 }
 
-// samePath проверяет, указывают ли два пути A и B на одну и ту же локацию файловой системы, игнорируя регистр на Windows
+// samePath проверяет, указывают ли два пути A и B на одну и ту же локацию файловой системы
 func samePath(a, b string) bool {
 	return equalFoldOS(filepath.Clean(a), filepath.Clean(b))
 }
 
-// equalFoldOS сравнивает две строки, используя сравнение без учета регистра на Windows
+// equalFoldOS сравнивает две строки
 func equalFoldOS(a, b string) bool {
-	if runtime.GOOS == "windows" {
-		return strings.EqualFold(a, b)
-	}
 	return a == b
-}
-
-// normalizeCaseForOS приводит строку к нижнему регистру только на Windows
-func normalizeCaseForOS(s string) string {
-	if runtime.GOOS == "windows" {
-		return strings.ToLower(s)
-	}
-	return s
 }
 
 // randSuffix генерирует суффикс, основанный на текущем Unix Nano времени

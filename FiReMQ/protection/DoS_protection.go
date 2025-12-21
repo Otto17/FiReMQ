@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
+
+// LogSecurity используется для логирования событий безопасности (защита от циклического импорта)
+var LogSecurity func(format string, args ...any)
 
 // IPRateLimiter хранит лимиты запросов для каждого IP-адреса
 type IPRateLimiter struct {
@@ -39,7 +43,7 @@ func (i *IPRateLimiter) AddIP(ip string) *rate.Limiter {
 	limiter := rate.NewLimiter(i.r, i.b)
 	i.ips[ip] = limiter
 
-	//log.Printf("Новый IP добавлен в лимитер: %s (лимит: %v запросов/сек, буфер: %d)", ip, i.r, i.b)
+	//log.Printf("DoS: Новый IP добавлен в лимитер: %s (лимит: %v запросов/сек, буфер: %d)", ip, i.r, i.b) // ДЛЯ ОТЛАДКИ
 
 	return limiter
 }
@@ -73,13 +77,13 @@ func RateLimitMiddleware(r rate.Limit, b int) func(next http.HandlerFunc) http.H
 
 			// Проверяет, разрешен ли запрос в соответствии с лимитом
 			if !limiter.Allow() {
-				//log.Printf("Превышен лимит запросов для IP: %s (время: %s)", ip, time.Now().Format(time.RFC3339))
+				LogSecurity("DoS: Превышен лимит запросов для IP: %s (время: %s)", ip, time.Now().Format(time.RFC3339))
 				http.Error(w, "Слишком много запросов", http.StatusTooManyRequests)
 				return
 			}
 
 			// Логирует успешный запрос
-			//log.Printf("Запрос разрешён для IP: %s (время: %s)", ip, time.Now().Format(time.RFC3339))
+			//log.Printf("Запрос разрешён для IP: %s (время: %s)", ip, time.Now().Format(time.RFC3339)) // ДЛЯ ОТЛАДКИ
 
 			// Передает управление следующему обработчику, если лимит не превышен
 			next(w, r)

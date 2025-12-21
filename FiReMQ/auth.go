@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"log"
 	"math/big"
 	"net/http"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 	"time"
 	"unicode"
 
+	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS"    // Локальный пакет с путями для разных платформ
 	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 )
@@ -69,10 +69,10 @@ func GetRandBase64(user *User) (string, error) {
 	user.Auth_Session_ID = result
 	err := saveAdmin(*user)
 	if err != nil {
-		log.Printf("Ошибка при сохранении токена в базу данных: %v", err)
+		logging.LogError("Авторизация: Ошибка при сохранении токена в базу данных: %v", err)
 		return "", err
 	}
-	//log.Printf("Токен %s успешно сохранен для админа %s", result, user.Auth_Login)
+	//log.Printf("Авторизация: Токен %s успешно сохранен для админа %s", result, user.Auth_Login) // ДЛЯ ОТЛАДКИ
 	return result, nil
 }
 
@@ -89,7 +89,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	// Динамически загружает учетные записи администраторов
 	users, err := loadAdmins()
 	if err != nil {
-		log.Printf("Ошибка загрузки админов: %v", err)
+		logging.LogError("Авторизация: Ошибка загрузки админов: %v", err)
 		// Предотвращает раскрытие внутренней структуры сервера
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -97,7 +97,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Проверяет наличие учетных записей администраторов
 	if len(users) == 0 {
-		log.Printf("В системе отсутствуют админы: %v", err)
+		logging.LogError("Авторизация: В системе отсутствуют админы: %v", err)
 		// Предотвращает раскрытие внутренней структуры сервера
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -116,14 +116,14 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	if isJSON {
 		if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-			log.Printf("Ошибка парсинга данных: %v", err)
+			logging.LogSecurity("Авторизация: Ошибка парсинга данных: %v", err)
 			// Предотвращает раскрытие внутренней структуры сервера
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusBadRequest)
 			return
 		}
 	} else {
 		if err := r.ParseForm(); err != nil {
-			log.Printf("Ошибка парсинга формы: %v", err)
+			logging.LogSecurity("Авторизация: Ошибка парсинга формы: %v", err)
 			// Предотвращает раскрытие внутренней структуры сервера
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusBadRequest)
 			return
@@ -161,7 +161,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	// Выполняет валидацию и санитизацию входных данных
 	sanitized, err := protection.ValidateFields(dataToValidate, rules)
 	if err != nil {
-		log.Printf("Ошибка валидации данных: %v", err)
+		logging.LogSecurity("Авторизация: Ошибка валидации данных: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 
@@ -246,7 +246,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 				// Генерирует новую капчу
 				id, b64s, err := protection.GenerateCaptcha()
 				if err != nil {
-					log.Printf("Ошибка генерации капчи: %v", err)
+					logging.LogError("Авторизация: Ошибка генерации капчи: %v", err)
 					// Предотвращает раскрытие внутренней структуры сервера
 					http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 					return
@@ -267,11 +267,13 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		// Генерирует и сохраняет новый токен сессии
 		newToken, err := GetRandBase64(&user) // Изменение токена требует передачи указателя
 		if err != nil {
-			log.Printf("Ошибка при генерации нового токена: %v", err)
+			logging.LogError("Авторизация: Ошибка при генерации нового токена: %v", err)
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			return
 		}
 		user.Auth_Session_ID = newToken
+
+		logging.LogSecurity("Авторизация: Успешная авторизация админа: \"%s\" (IP: %s)", user.Auth_Login, ip)
 
 		// Устанавливает куки сессии
 		setAuthCookie(w, user)
@@ -340,7 +342,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 			// Генерирует новую капчу
 			id, b64s, err := protection.GenerateCaptcha()
 			if err != nil {
-				log.Printf("Ошибка генерации капчи: %v", err)
+				logging.LogError("Авторизация: Ошибка генерации капчи: %v", err)
 				// Предотвращает раскрытие внутренней структуры сервера
 				http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 				return
@@ -351,7 +353,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 
 		if err := authTmpl.Execute(w, data); err != nil {
-			log.Printf("Ошибка рендеринга шаблона: %v", err)
+			logging.LogError("Авторизация: Ошибка рендеринга шаблона авторизации: %v", err)
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		}
 	}
@@ -365,9 +367,8 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Удаляет CSRF-токен из хранилища
 	protection.DropCSRFForRequest(r)
 
-	// Удаляет куки авторизации на стороне клиента
-	clearAuthCookie(w)
-
+	// Получение логина перед удалением кук для логирования
+	var loginForLog string
 	sessionCookie, err := r.Cookie("session_id")
 	if err == nil {
 		// Разделяет логин и токен сессии
@@ -375,22 +376,31 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		if len(parts) == 2 {
 			encryptedLogin := parts[0]
 
-			// Расшифровывает логин администратора
-			login, err := protection.DecryptLogin(encryptedLogin)
-			if err == nil {
-				users, err := loadAdmins()
-				if err == nil {
-					for _, user := range users {
-						if user.Auth_Login == login {
-							// Очищает токен сессии в записи администратора
-							user.Auth_Session_ID = ""
-							saveAdmin(user)
-							break
-						}
-					}
+			// Расшифровывает логин админа
+			if l, e := protection.DecryptLogin(encryptedLogin); e == nil {
+				loginForLog = l
+			}
+		}
+	}
+
+	// Удаляет куки авторизации на стороне клиента
+	clearAuthCookie(w)
+
+	// Очищает токен сессии в БД
+	if loginForLog != "" {
+		users, err := loadAdmins()
+		if err == nil {
+			for _, user := range users {
+				if user.Auth_Login == loginForLog {
+					user.Auth_Session_ID = ""
+					saveAdmin(user)
+					break
 				}
 			}
 		}
+
+		// Логование выхода админа
+		logging.LogSecurity("Авторизация: Админ \"%s\" вышел из системы", loginForLog)
 	}
 
 	// Останавливает таймер неактивности
@@ -453,7 +463,7 @@ func setAuthCookie(w http.ResponseWriter, user User) {
 	// Шифрует логин администратора для куки
 	encryptedLogin, err := protection.EncryptLogin(user.Auth_Login)
 	if err != nil {
-		log.Printf("Ошибка при шифровании логина: %v", err)
+		logging.LogError("Авторизация: Ошибка при шифровании логина для куки: %v", err)
 		// Предотвращает раскрытие внутренней структуры сервера
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 		return
@@ -470,7 +480,7 @@ func setAuthCookie(w http.ResponseWriter, user User) {
 		SameSite: http.SameSiteStrictMode,
 		Path:     "/",
 	})
-	log.Printf("Установлена кука 'session_id' для админа %s (%s) с токеном %s", user.Auth_Login, encryptedLogin, session_id)
+	// log.Printf("Авторизация: Авторизация: Установлена кука 'session_id' для админа %s (%s) с токеном %s", user.Auth_Login, encryptedLogin, session_id) // ДЛЯ ОТЛАДКИ
 }
 
 // refreshAuthCookie обновляет время жизни куки auth
@@ -478,14 +488,14 @@ func refreshAuthCookie(w http.ResponseWriter, r *http.Request) {
 	// Извлекает куку auth из запроса
 	authCookie, err := r.Cookie("auth")
 	if err != nil {
-		log.Printf("Кука 'auth' отсутствует: %v", err)
+		// log.Printf("Авторизация: Кука 'auth' отсутствует: %v", err) // ДЛЯ ОТЛАДКИ
 		return
 	}
 
 	// Парсит токен и проверяет его валидность
 	expiration, valid := protection.ParseAuthToken(authCookie.Value)
 	if !valid || time.Now().Unix() > expiration {
-		log.Printf("Токен 'auth' невалиден или истек")
+		// log.Printf("Авторизация: Токен 'auth' невалиден или истек") // ДЛЯ ОТЛАДКИ
 		return
 	}
 
@@ -557,7 +567,7 @@ func CheckAuthHandler(w http.ResponseWriter, r *http.Request) {
 func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	session_idCookie, err := r.Cookie("session_id")
 	if err != nil {
-		log.Printf("Кука 'session_id' отсутствует: %v", err)
+		logging.LogSecurity("Авторизация: Кука 'session_id' отсутствует: %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -565,7 +575,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Разделяет логин и токен сессии
 	parts := strings.Split(session_idCookie.Value, "|")
 	if len(parts) != 2 {
-		log.Printf("Неверный формат куки 'session_id': %s", session_idCookie.Value)
+		logging.LogSecurity("Авторизация: Неверный формат куки 'session_id': %s", session_idCookie.Value)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -575,7 +585,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Расшифровывает логин администратора
 	login, err := protection.DecryptLogin(encryptedLogin)
 	if err != nil {
-		log.Printf("Ошибка при расшифровке логина: %v", err)
+		logging.LogError("Авторизация: Ошибка при расшифровке логина: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -583,7 +593,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверяет существование пользователя по расшифрованному логину
 	users, err := loadAdmins()
 	if err != nil {
-		log.Printf("Ошибка при загрузке админов: %v", err)
+		logging.LogError("Авторизация: Ошибка при загрузке админов: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -597,7 +607,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if foundUser.Auth_Login == "" {
-		log.Printf("Админ с логином %s не найден", login)
+		logging.LogSecurity("Авторизация: Админ с логином %s не найден", login)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -605,14 +615,14 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Извлекает срок действия из куки auth
 	authCookie, err := r.Cookie("auth")
 	if err != nil {
-		log.Printf("Ошибка при получении куки 'auth': %v", err)
+		logging.LogError("Авторизация: Ошибка при получении куки 'auth': %v", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	expiration, valid := protection.ParseAuthToken(authCookie.Value)
 	if !valid {
-		log.Printf("Неверный токен 'auth'")
+		logging.LogSecurity("Авторизация: Неверный токен 'auth'")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -670,7 +680,7 @@ func AuthPageHandler(w http.ResponseWriter, r *http.Request) {
 		// Генерирует новую капчу
 		id, b64s, err := protection.GenerateCaptcha()
 		if err != nil {
-			log.Printf("Ошибка генерации капчи: %v", err)
+			logging.LogError("Авторизация: Ошибка генерации капчи: %v", err)
 			// Предотвращает раскрытие внутренней структуры сервера
 			http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 			return
@@ -686,7 +696,7 @@ func AuthPageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	if err := authTmpl.Execute(w, data); err != nil {
-		log.Printf("Ошибка рендеринга шаблона: %v", err)
+		logging.LogError("Авторизация: Ошибка рендеринга шаблона: %v", err)
 		http.Error(w, "Внутренняя ошибка сервера", http.StatusInternalServerError)
 	}
 }

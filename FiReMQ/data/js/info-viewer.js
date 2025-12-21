@@ -1,4 +1,5 @@
 // Кнопка "Скачать отчёт" на странице отчёта
+
 async function downloadFile() {
   try {
     const body = document.body;

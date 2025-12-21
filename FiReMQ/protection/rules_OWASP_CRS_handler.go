@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +26,10 @@ import (
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
+// LogSecurity используется для логирования событий безопасности (защита от циклического импорта)
+var LogSystem func(format string, args ...any)
+var LogError func(format string, args ...any)
+
 // currentWAF хранит текущий активный экземпляр Coraza WAF
 var currentWAF coraza.WAF
 
@@ -36,7 +40,7 @@ var wafMutex sync.RWMutex
 type GitHubRelease struct {
 	TagName string `json:"tag_name"` // Тег релиза
 	Assets  []struct {
-		Name        string `json:"name"`                   // Имя файла ассета
+		Name        string `json:"name"`                 // Имя файла ассета
 		DownloadURL string `json:"browser_download_url"` // URL для скачивания ассета
 	} `json:"assets"`
 }
@@ -57,9 +61,9 @@ type RollbackResponse struct {
 
 // UpdateResponse представляет структуру JSON ответа для обновления
 type UpdateResponse struct {
-	UpdateAnswer string `json:"UpdateAnswer"`            // Результат операции ("Успех", "Ошибка" или "Обновление не требуется")
-	Version      string `json:"Version,omitempty"`       // Версия, до которой было выполнено обновление
-	Description  string `json:"Description,omitempty"`   // Описание ошибки или результата
+	UpdateAnswer string `json:"UpdateAnswer"`          // Результат операции ("Успех", "Ошибка" или "Обновление не требуется")
+	Version      string `json:"Version,omitempty"`     // Версия, до которой было выполнено обновление
+	Description  string `json:"Description,omitempty"` // Описание ошибки или результата
 }
 
 // CheckOWASPHandler проверяет наличие новой версии правил OWASP CRS и возвращает JSON-ответ
@@ -294,7 +298,7 @@ func performUpdate(downloadURL string) error {
 	if err := createBackup(backupFile); err != nil {
 		return fmt.Errorf("ошибка создания нового бэкапа: %v", err)
 	}
-	log.Printf("Создан новый бэкап правил CRS: %s", backupFile)
+	LogSystem("OWASP CRS: Создан новый бэкап правил CRS: %s", backupFile)
 
 	// 2. Удаляет предыдущие старые бэкапы, оставляя только один свежий
 	entries, _ := os.ReadDir(pathsOS.Path_Backup)
@@ -308,9 +312,9 @@ func performUpdate(downloadURL string) error {
 
 			oldPath := filepath.Join(pathsOS.Path_Backup, name)
 			if err := os.Remove(oldPath); err != nil {
-				log.Printf("Предупреждение: не удалось удалить старый бэкап %s: %v", oldPath, err)
+				LogError("OWASP CRS: Не удалось удалить старый бэкап %s: %v", oldPath, err)
 			} else {
-				log.Printf("Удалён старый бэкап правил: %s", oldPath)
+				LogSystem("OWASP CRS: Удалён старый бэкап правил: %s", oldPath)
 			}
 		}
 	}
@@ -376,10 +380,51 @@ func performUpdate(downloadURL string) error {
 	return nil
 }
 
+// normalizeOWASPCRSReleaseURL преобразует обычную GitHub-ссылку на страницу релиза OWASP CRS
+func normalizeOWASPCRSReleaseURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+
+	// Если ссылка уже API или явно указывает на api.github.com — возвращает как есть
+	if strings.HasPrefix(raw, "https://api.github.com/") || strings.HasPrefix(raw, "http://api.github.com/") {
+		return raw
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+
+	if !strings.EqualFold(u.Host, "github.com") {
+		return raw
+	}
+
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 3 {
+		// Ожидает формат /owner/repo/...
+		return raw
+	}
+
+	owner := parts[0]
+	repo := parts[1]
+	rest := strings.Join(parts[2:], "/")
+
+	apiURL := url.URL{
+		Scheme: u.Scheme,
+		Host:   "api.github.com",
+		Path:   "/repos/" + owner + "/" + repo + "/" + rest,
+	}
+
+	return apiURL.String()
+}
+
 // getLatestReleaseInfo получает информацию о последнем стабильном релизе OWASP CRS с GitHub
 func getLatestReleaseInfo() (string, string, error) {
-	// Получает ссылку из конфига "server.conf"
-	resp, err := http.Get(pathsOS.URL_OWASP_CRS_LatestRelease)
+	// Получает ссылку из конфига "server.conf" и при необходимости преобразует её в GitHub API URL
+	apiURL := normalizeOWASPCRSReleaseURL(pathsOS.URL_OWASP_CRS_LatestRelease)
+	resp, err := http.Get(apiURL)
 
 	if err != nil {
 		return "", "", fmt.Errorf("не удалось получить данные о релизе: %v", err)
@@ -580,7 +625,7 @@ func createBackup(backupFile string) error {
 	// Определяет директорию исполняемого файла
 	exeDir, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("ошибка получения пути к exe: %w", err)
+		return fmt.Errorf("ошибка получения пути к исполняемому файлу: %w", err)
 	}
 	exeDir = filepath.Dir(exeDir)
 
@@ -763,7 +808,7 @@ func InitializeWAFWithRecovery() error {
 	if err := reloadWAF(); err == nil {
 		return nil
 	} else {
-		log.Printf("Первая попытка инициализации WAF не удалась: %v", err)
+		LogError("OWASP CRS: Первая попытка инициализации WAF не удалась: %v", err)
 	}
 
 	// Вторая попытка инициализации
@@ -771,7 +816,7 @@ func InitializeWAFWithRecovery() error {
 	if err := reloadWAF(); err == nil {
 		return nil
 	} else {
-		log.Printf("Вторая попытка инициализации WAF не удалась: %v", err)
+		LogError("OWASP CRS: Вторая попытка инициализации WAF не удалась: %v", err)
 	}
 
 	// Поиск последнего бэкапа для отката
@@ -783,7 +828,7 @@ func InitializeWAFWithRecovery() error {
 		return fmt.Errorf("бэкапы для отката не найдены")
 	}
 
-	log.Printf("Восстанавливаем правила из бэкапа: %s", backupFile)
+	LogSystem("OWASP CRS: Восстанавливаем правила из бэкапа: %s", backupFile)
 	if err := restoreBackup(backupFile); err != nil {
 		return fmt.Errorf("ошибка отката из бэкапа: %v", err)
 	}

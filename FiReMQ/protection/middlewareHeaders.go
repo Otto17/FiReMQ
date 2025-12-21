@@ -4,7 +4,6 @@
 package protection
 
 import (
-	"log"
 	"net/http"
 	"strings"
 )
@@ -25,14 +24,14 @@ func OriginCheckMiddleware(next http.Handler) http.Handler {
 			origin := r.Header.Get("Origin")
 			// Блокирует запрос, если заголовок Origin присутствует и не совпадает с ожидаемым хостом
 			if origin != "" && !strings.HasPrefix(origin, "https://"+r.Host) {
-				log.Printf("[ORIGIN-CHECK][FAIL] %s %s origin=%s", r.Method, r.URL.Path, origin)
+				LogSecurity("Заголовки: Блокировка запроса %s %s (Origin=%s не совпадает с хостом)", r.Method, r.URL.Path, origin)
 				http.Error(w, "Запрещено!", http.StatusForbidden)
 				return
 			}
 			ref := r.Header.Get("Referer")
 			// Блокирует запрос, если заголовок Referer присутствует и не совпадает с ожидаемым хостом
 			if ref != "" && !strings.HasPrefix(ref, "https://"+r.Host+"/") {
-				log.Printf("[ORIGIN-CHECK][FAIL] %s %s referer=%s", r.Method, r.URL.Path, ref)
+				LogSecurity("Заголовки: Блокировка запроса %s %s (Referer=%s не совпадает с хостом)", r.Method, r.URL.Path, ref)
 				http.Error(w, "Запрещено!", http.StatusForbidden)
 				return
 			}

@@ -7,7 +7,6 @@ import (
 	"archive/zip"
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -19,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 	"FiReMQ/pathsOS" // Локальный пакет с путями
 
 	"github.com/dgraph-io/badger/v4"
@@ -73,7 +73,7 @@ func PerformRestoreMode() {
 		os.Exit(0)
 	}
 
-	// Интерактивное меню выбора: показывает по 10 бэкапов, начинаем с конца
+	// Интерактивное меню выбора: показывает по 10 бэкапов, начиная с конца
 	reader := bufio.NewReader(os.Stdin)
 	pageSize := 10   // До 10 строк на страницу
 	currentPage := 0 // Начальная страница
@@ -212,10 +212,13 @@ func restoreFromZip(zipPath string) error {
 	defer rc.Close()
 
 	// Очищает старую директорию БД, чтобы избежать конфликтов при восстановлении
-	log.Println("Очистка текущей директории базы данных...")
+	logging.LogSystem("Откат БД: Очистка текущей директории...")
+	fmt.Println("Очистка текущей директории базы данных...")
 	if err := os.RemoveAll(pathsOS.Path_DB); err != nil {
+		logging.LogError("Откат БД: не удалось очистить текущую директорию БД: %v", err)
 		return fmt.Errorf("не удалось очистить текущую директорию БД: %w", err)
 	}
+
 	if err := pathsOS.EnsureDir(pathsOS.Path_DB); err != nil {
 		return fmt.Errorf("не удалось создать директорию БД: %w", err)
 	}
@@ -230,16 +233,19 @@ func restoreFromZip(zipPath string) error {
 	defer dbRestore.Close()
 
 	// Загружает данные из потока бэкапа (rc) в новую БД
-	log.Println("Применение данных из бэкапа...")
+	logging.LogSystem("Откат БД: Применение данных из бэкапа...")
+	fmt.Println("Применение данных из бэкапа...")
 	if err := dbRestore.Load(rc, 16); err != nil {
 		return fmt.Errorf("BadgerDB Load failed: %w", err)
 	}
 
 	if runtime.GOOS == "linux" {
 		// Восстанавление необходимых прав доступа для службы FiReMQ в Linux
-		log.Println("Восстановление прав доступа...")
+		logging.LogSystem("Откат БД: Восстановление прав доступа...")
+		fmt.Println("Восстановление прав доступа...")
 		if err := pathsOS.VerifyAndFixPermissions(); err != nil {
-			log.Printf("Предупреждение: не удалось исправить права после восстановления: %v", err)
+			logging.LogError("Откат БД: Не удалось исправить права доступа после восстановления: %v", err)
+			fmt.Printf("Предупреждение: не удалось исправить права доступа после восстановления: %v", err)
 		}
 	}
 
