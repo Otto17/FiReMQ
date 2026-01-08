@@ -171,3 +171,42 @@ background-color: #777777 !important;
     -ms-user-select: none;     /* старый IE/Edge */
     cursor: pointer;           /* визуально показать, что это кликабельно */
 }
+
+/* Стили валидации для полей переименования клиентов */
+.clients .validation-tooltip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    background: rgba(217, 83, 79, 0.95);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    z-index: 1100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    pointer-events: none;
+}
+
+.clients .validation-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.clients .validation-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    border: 6px solid transparent;
+    border-top-color: rgba(217, 83, 79, 0.95);
+}
+
+/* Позиционирование для ячейки с именем */
+td[data-field="name"] {
+    position: relative;
+}

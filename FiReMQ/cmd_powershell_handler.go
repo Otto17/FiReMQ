@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -125,6 +125,13 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
 	// Ожидает JSON: {"Date_Of_Creation": "02.01.06(15:04:05)"}
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
@@ -177,6 +184,8 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) удалил запрос '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "Успех",
@@ -188,6 +197,13 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -275,6 +291,8 @@ func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) удалил клиента '%s' из запроса '%s'", authInfo.Login, authInfo.Name, req.ClientID, req.Date_Of_Creation)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "Успех",
@@ -289,6 +307,13 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -374,7 +399,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			if err := mqtt_client.Publish(topic, []byte(cmdPayload), 2); err != nil {
 				logging.LogError("CMD/PowerShell: Ошибка повторной публикации команды в топик %s: %v", topic, err)
 			} else {
-				logging.LogAction("CMD/PowerShell: Повторная отправка команды клиенту %s выполнена", req.ClientID)
+				logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) выполнил повторную отправку запроса '%s' для клиента '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation, req.ClientID)
 				commandSent = true // Команда отправлена
 			}
 
@@ -415,7 +440,7 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				rr[req.ClientID] = true
 				record["ResendRequested"] = rr
-				logging.LogAction("CMD/PowerShell: Установлен флаг повторной отправки для клиента %s", req.ClientID)
+				logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) установил флаг повторной отправки запроса '%s' для оффлайн клиента с ID '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation, req.ClientID)
 				processed = true
 
 				// Очистка Answer, только при первом выставлении флага
@@ -544,8 +569,8 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получает информацию о админе
-	authInfo, err := getAuthInfoFromRequest(r)
-	if err != nil {
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
 		logging.LogError("CMD/PowerShell: Ошибка получения информации о админах: %v", err)
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
@@ -671,6 +696,8 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 			logging.LogError("CMD/PowerShell: Ошибка обновления SentFor в БД: %v", err)
 		}
 	}
+
+	logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) создал новый запрос '%s' для %d клиентов", authInfo.Login, authInfo.Name, dateOfCreation, len(cmdReq.ClientIDs))
 
 	// Отправляет ответ, что команда сохранена и отправлена онлайн клиентам
 	w.Header().Set("Content-Type", "application/json")

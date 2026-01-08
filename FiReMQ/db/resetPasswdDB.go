@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package db
@@ -87,20 +87,20 @@ func PerformPasswordReset() {
 			}
 			os.Exit(1)
 		}
-		logging.LogError("Сброс пароля БД: Не удалось открыть БД: %v", err)
+		logging.LogError("Сброс пароля БД (CLI): Не удалось открыть БД: %v", err)
 	}
 
 	// Закрытие БД при выходе
 	defer func() {
 		if err := Close(); err != nil {
-			logging.LogError("Сброс пароля БД: Ошибка закрытия БД: %v", err)
+			logging.LogError("Сброс пароля БД (CLI): Ошибка закрытия БД: %v", err)
 		}
 	}()
 
 	// Загружает учётные записи админов
 	users, err := loadUsers()
 	if err != nil {
-		logging.LogError("Сброс пароля: Ошибка чтения учётных записей: %v", err)
+		logging.LogError("Сброс пароля (CLI): Ошибка чтения учётных записей: %v", err)
 		os.Exit(1)
 	}
 
@@ -118,20 +118,20 @@ func PerformPasswordReset() {
 	newPass := promptNewPassword(selectedUser.Login) // Запрашивает новый пароль
 
 	if err := updatePassword(selectedUser.Login, newPass); err != nil { // Обновляет пароль в БД
-		logging.LogError("Сброс пароля: Ошибка обновления пароля для %s: %v", selectedUser.Login, err)
+		logging.LogError("Сброс пароля БД (CLI): Ошибка обновления пароля для %s: %v", selectedUser.Login, err)
 		os.Exit(1)
 	}
 
-	logging.LogAction("Сброс пароля: Пароль для '%s' (%s) успешно изменён", selectedUser.Login, selectedUser.Name)
+	logging.LogAction("Сброс пароля (CLI): Пароль для учётной записи '%s' (с именем: %s) успешно изменён через консоль", selectedUser.Login, selectedUser.Name)
 	fmt.Printf("\n%sПароль для учётной записи '%s' (%s) успешно изменён!%s\n", ColorGreen, selectedUser.Login, selectedUser.Name, ColorReset)
 
 	if runtime.GOOS == "linux" { // Восстанавливает права доступа
 		fmt.Println("Применение прав доступа...")
 		if err := pathsOS.VerifyAndFixPermissions(); err != nil {
-			logging.LogError("Сброс пароля БД: Сброс пароля: Ошибка при восстановлении прав доступа: %v", err)
+			logging.LogError("Сброс пароля БД (CLI): Сброс пароля: Ошибка при восстановлении прав доступа: %v", err)
 			fmt.Printf("%sОшибка при восстановлении прав доступа: %v%s\n", ColorRed, err, ColorReset)
 		} else {
-			logging.LogAction("Сброс пароля БД: Права доступа, владелец и группа успешно восстановлены.")
+			logging.LogSystem("Сброс пароля (CLI): Права доступа, владелец и группа успешно восстановлены")
 			fmt.Println("Права доступа, владелец и группа успешно восстановлены.")
 		}
 	}
@@ -311,12 +311,4 @@ func updatePassword(login, rawPassword string) error {
 
 		return txn.Set(key, userData)
 	})
-}
-
-// min возвращает минимальное из двух чисел
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

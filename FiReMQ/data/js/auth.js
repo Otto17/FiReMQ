@@ -6,13 +6,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const captchaIdInput = document.getElementById("captcha_id");
   const captchaAnswerInput = document.getElementById("captcha_answer");
 
-  // Функция для валидации ввода
+  // Функция для валидации ввода логина и пароля
   function validateAuth(input) {
-    const regex = /^[a-zA-Z0-9а-яА-Я_!@#$%.?-]+$/;
+    const regex = /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\[\]{}~^№€₽]+$/;
     return regex.test(input);
   }
 
-  // Проверяем, требуется ли капча для текущего IP
+  // Проверяет, требуется ли капча для текущего IP
   try {
     const response = await fetch("/check-captcha", {
       method: "GET",
@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (response.ok) {
       const data = await response.json();
       if (data.captcha_required) {
-        // Загружаем капчу
+        // Загружает капчу
         await fetchCaptcha();
       }
     }
@@ -65,9 +65,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const errorData = await response.json();
         let errorMsg = errorData.error || "Ошибка авторизации";
+		
         // Если требуется капча
         if (errorData.captcha_required) {
-          // Показываем капчу
+          // Показывает капчу
           await fetchCaptcha();
         }
         showError(errorMsg);
@@ -98,13 +99,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function showError(message) {
     errorMessage.textContent = message;
-    // Убедимся, что предыдущая анимация завершена
+    // Убеждается, что предыдущая анимация завершена
     errorMessage.classList.remove("visible");
     void errorMessage.offsetWidth; // Принудительное пересчитывание стилей
-    // Запускаем анимацию появления
+    // Запускает анимацию появления
     errorMessage.classList.add("visible");
     setTimeout(() => {
-      // Запускаем анимацию исчезновения
+      // Запускает анимацию исчезновения
       errorMessage.classList.remove("visible");
     }, 3000); // Задержка перед исчезновением
   }

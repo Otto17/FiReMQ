@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -140,7 +140,7 @@ func handleQUICConnection(conn *quic.Conn) {
 			}
 			delete(sessionStore, mqttID)
 			sessionMutex.Unlock()
-			logging.LogAction("QUIC: Сессия для %s удалена (ошибка или отсутствие подтверждения)", mqttID)
+			logging.LogSystem("QUIC: Сессия для %s удалена (ошибка или отсутствие подтверждения)", mqttID)
 		}
 	}()
 
@@ -184,7 +184,7 @@ func handleQUICConnection(conn *quic.Conn) {
 		logging.LogError("QUIC: Ошибка при чтении смещения: %v", err)
 		return
 	}
-	logging.LogAction("QUIC: Получено смещение resumeFrom=%d для mqttID=%s", resumeFrom, mqttID)
+	logging.LogSystem("QUIC: Получено смещение resumeFrom=%d для mqttID=%s", resumeFrom, mqttID)
 
 	// Проверка токена
 	if !validateQUICToken(token, mqttID) {
@@ -256,7 +256,7 @@ func handleQUICConnection(conn *quic.Conn) {
 		logging.LogError("QUIC: Ошибка при установке смещения: %v", err)
 		return
 	}
-	logging.LogAction("QUIC: Отправка файла: %s, начиная с %d байт", fileName, resumeFrom)
+	logging.LogSystem("QUIC: Отправка файла: %s, начиная с %d байт", fileName, resumeFrom)
 
 	// Определение размера буфера
 	bufSize := getBufferSize(fileSize, resumeFrom)
@@ -279,7 +279,7 @@ func handleQUICConnection(conn *quic.Conn) {
 		}
 		sent += uint64(n)
 	}
-	logging.LogAction("QUIC: Файл %s отправлен полностью: %d байт", fileName, sent)
+	logging.LogSystem("QUIC: Файл %s отправлен полностью: %d байт", fileName, sent)
 	shouldDeleteSession = false // Ожидает подтверждение от клиента
 }
 
@@ -669,7 +669,7 @@ func isQUICFileStillReferenced(fileName string) (bool, error) {
 }
 
 // DeleteQUICFileIfUnreferenced удаляет файл из папки "Path_QUIC_Downloads", если он больше не используется никакими записями
-func deleteQUICFileIfUnreferenced(fileName string) {
+func deleteQUICFileIfUnreferenced(fileName string, authInfo *AuthInfo) {
 	fileName = filepath.Base(strings.TrimSpace(fileName))
 	if fileName == "" {
 		return
@@ -701,7 +701,12 @@ func deleteQUICFileIfUnreferenced(fileName string) {
 			logging.LogError("QUIC: Не удалось удалить файл %s окончательно: %v", filePath, err)
 			return
 		}
-		logging.LogAction("QUIC: Файл %s удалён (очистка после удаления запроса)", filePath)
+
+		if authInfo != nil {
+			logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) удалил файл '%s' (очистка после ручного удаления запроса)", authInfo.Login, authInfo.Name, filePath)
+		} else {
+			logging.LogAction("QUIC: Файл '%s' удалён (автоматическая очистка)", filePath)
+		}
 		break
 	}
 }

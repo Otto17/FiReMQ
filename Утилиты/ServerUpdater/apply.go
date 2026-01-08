@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 //go:build linux
@@ -333,6 +333,14 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 				return stats, err
 			}
 
+			// Определение размера распакованного файла
+			var sizeStr string
+			if info, err := os.Stat(temp); err == nil {
+				sizeStr = formatSize(info.Size())
+			} else {
+				sizeStr = "неизвестно"
+			}
+
 			// Создаёт родительскую директорию с правильными правами, если она не существует
 			if err := ensureDirAllAndSetOwner(filepath.Dir(op.DestAbs), 0755); err != nil {
 				_ = os.Remove(temp)
@@ -358,9 +366,9 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 			setOwnerAndPerms(op.DestAbs, mode)
 
 			if isSelfUpdate {
-				log.Printf("САМООБНОВЛЕНИЕ: %s успешно заменён.", op.DestAbs)
+				log.Printf("САМООБНОВЛЕНИЕ: %s успешно заменён (размер=%s).", op.DestAbs, sizeStr)
 			} else {
-				log.Printf("ОБНОВЛЕНИЕ: %s (права=%o)", op.DestAbs, mode)
+				log.Printf("ОБНОВЛЕНИЕ: %s (размер=%s, права=%o)", op.DestAbs, sizeStr, mode)
 			}
 
 			stats.Updated++

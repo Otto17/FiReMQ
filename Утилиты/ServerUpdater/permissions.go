@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 //go:build linux
@@ -19,7 +19,7 @@ var (
 
 func init() {
 	// Добавляет логирование для отслеживания инициализации
-	// log.Println("DEBUG: permissions_linux.go init() стартовал.")
+	// log.Println("ПРАВА: permissions_linux.go init() стартовал.")
 
 	u, err := user.Lookup("firemq")
 	if err != nil {
@@ -44,26 +44,26 @@ func init() {
 	// log.Printf("Пользователь 'firemq' найден (uid=%d, gid=%d). Права будут применены.", firemqUID, firemqGID)
 
 	// Добавляет логирование для отслеживания завершения инициализации
-	// log.Println("DEBUG: permissions_linux.go init() завершен.")
+	// log.Println("ПРАВА: permissions_linux.go init() завершен.")
 }
 
 // SetOwnerAndPerms устанавливает владельца firemq:firemq и права доступа для пути
 func setOwnerAndPerms(path string, perm os.FileMode) {
 	// Добавляет логирование для отслеживания установки прав
-	log.Printf("DEBUG: Установка прав %o для %s", perm, path)
+	log.Printf("ПРАВА: Установка прав %o для %s", perm, path)
 	if err := os.Chmod(path, perm); err != nil {
 		log.Printf("ПРЕДУПРЕЖДЕНИЕ: Не удалось изменить права доступа для %s на %o: %v", path, perm, err)
 	}
 
 	if firemqUID != -1 && firemqGID != -1 {
 		// Добавляет логирование для отслеживания установки владельца
-		log.Printf("DEBUG: Установка владельца %d:%d для %s", firemqUID, firemqGID, path)
+		log.Printf("ПРАВА: Установка владельца %d:%d для %s", firemqUID, firemqGID, path)
 		if err := os.Chown(path, firemqUID, firemqGID); err != nil {
 			log.Printf("ПРЕДУПРЕЖДЕНИЕ: Не удалось изменить владельца для %s на firemq:firemq: %v", path, err)
 		}
 	} else {
 		// Пропускает смену владельца, если firemq не определен
-		log.Printf("DEBUG: Пропуск смены владельца, т.к. UID/GID для firemq не определены.")
+		log.Printf("ПРАВА: Пропуск смены владельца, т.к. UID/GID для firemq не определены.")
 	}
 }
 

@@ -1,3 +1,56 @@
+/* УНИВЕРСАЛЬНОЕ УВЕДОМЛЕНИЕ ДЛЯ ПОКАЗА ЗАПРЕЩЁННЫХ СПЕЦСИМВОЛОВ */
+
+/* Обёртка для полей с валидацией */
+.input-validation-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* Красная рамка при ошибке валидации (универсальный стиль) */
+input.validation-error {
+    border-color: #d9534f !important;
+    box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.3);
+}
+
+/* Всплывающая подсказка с ошибкой */
+.validation-tooltip {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    background: rgba(217, 83, 79, 0.95);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    z-index: 1100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(5px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    pointer-events: none;
+}
+
+/* Видимое состояние подсказки */
+.validation-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Стрелка подсказки (указывает вниз на поле) */
+.validation-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    border: 6px solid transparent;
+    border-top-color: rgba(217, 83, 79, 0.95);
+}
+
+
+
+
 /* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ КЛИЕНТА */
 
 .modal-window {
@@ -140,7 +193,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО КАК ДЛЯ МАССОВОГО ПЕРЕМЕЩЕНИЯ КЛИЕНТОВ, ТАК И ОДИНОЧНОГ ОПЕРЕМЕЩЕНИЯ КЛИЕНТА В ДРУГУЮ ГРУППУ/ПОДГРУППУ */
+/* МОДАЛЬНОЕ ОКНО ДЛЯ "МАССОВОЕ ПЕРЕМЕЩЕНИЕ КЛИЕНТОВ" И "ПЕРЕМЕЩЕНИЕ КЛИЕНТА" В ДРУГУЮ ГРУППУ/ПОДГРУППУ */
 
 .modal-window-content.move-client {
   width: 370px;
@@ -206,6 +259,21 @@ input[type="text"]::placeholder {
   color: #000000; /* Чёрный текст */
   font-weight: bold; /* Жирный шрифт */
 }
+
+/* Стили обёртки валидации для полей перемещения */
+#moveClientForm .input-validation-wrapper,
+#moveCheckClientsForm .input-validation-wrapper {
+    position: relative;
+    width: 80%;
+    margin: 10px auto;
+}
+
+#moveClientForm .input-validation-wrapper input[type="text"],
+#moveCheckClientsForm .input-validation-wrapper input[type="text"] {
+    width: 100%;
+    margin: 0;
+}
+
 
 
 
@@ -394,6 +462,7 @@ margin-left: 3px;
 
 
 
+
 /* МОДАЛЬНОЕ ОКНО MQTT АВТОРИЗАЦИЯ */
 
 #mqttAuthModal .modal-window-content.mqtt-auth-content {
@@ -555,6 +624,22 @@ margin-left: 3px;
 #toggleReserveAccount.confirm-mode:hover {
   background-color: #c9302c; /* Более тёмный красный */
 }
+
+/* Стили обёртки валидации для полей MQTT */
+#mqttAuthForm .input-validation-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+#mqttAuthForm .input-validation-wrapper input[type="text"],
+#mqttAuthForm .input-validation-wrapper .mqtt-password-input-container {
+    width: 100%;
+}
+
+#mqttAuthForm .input-validation-wrapper input[type="text"] {
+    width: calc(100% - 20px);
+}
+
 
 
 
@@ -1080,9 +1165,47 @@ margin-left: 3px;
   pointer-events: none;
 }
 
+/* Стили для меток с подсказками (поле ввода и чекбокс) */
+.command-tooltip-label {
+    position: relative;
+    cursor: help;
+    display: inline-block;
+}
+
+.command-modal-checkbox .command-tooltip-label {
+    display: flex;
+    align-items: center;
+}
+
+.command-tooltip-label::after {
+    content: "?";
+    display: inline-block;
+    font-size: 12px;
+    color: #1e88e5;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.command-tooltip-label:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: normal;
+    width: 360px;
+    z-index: 1000;
+    opacity: 0;
+    animation: tooltipFade 0.3s ease-in forwards;
+    pointer-events: none;
+}
 
 
-/* МОДАЛЬНОЕ ОКНО УСТАНОВКИ ПО */
+/* МОДАЛЬНОЕ ОКНО УСТАНОВКА ПО */
 
 .install-modal {
   display: none;
@@ -2041,7 +2164,7 @@ margin-bottom: 0.5em;
 
 
 
-/* МОДАЛЬНОЕ ОКНО УДАЛЕНИЕ FiReAgent */
+/* МОДАЛЬНОЕ ОКНО ПОЛНОЕ УДАЛЕНИЕ FiReAgent */
 .modal-window-content.uninstall-fireagent {
   width: 630px;
   background-color: #2e2e2e;
@@ -2170,4 +2293,52 @@ margin-bottom: 0.5em;
 .client-id-chip .chip-remove[disabled] {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Стили для меток с подсказками в модальном окне удаления FiReAgent */
+.uninstall-tooltip-label {
+    position: relative;
+    cursor: help;
+    display: inline-block;
+}
+
+/* Знак вопроса */
+.uninstall-tooltip-label::after {
+    content: "?";
+    display: inline-block;
+    font-size: 12px;
+    color: #1e88e5;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+/* Всплывающая подсказка */
+.uninstall-tooltip-label:hover::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 0;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: normal;
+    width: 360px;
+    z-index: 1000;
+    opacity: 0;
+    animation: uninstallTooltipFade 0.3s ease-in forwards;
+    pointer-events: none;
+}
+
+/* Анимация для подсказки */
+@keyframes uninstallTooltipFade {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

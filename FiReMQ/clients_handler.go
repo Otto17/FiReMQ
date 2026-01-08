@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -29,6 +29,13 @@ type ClientInfo struct {
 func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -108,7 +115,7 @@ func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nameChanged {
-		logging.LogAction("Клиенты: Имя клиента %s изменено на '%s'", clientID, name)
+		logging.LogAction("Клиенты: Админ \"%s\" (с именем: %s) изменил имя клиента с '%s' на '%s'", authInfo.Login, authInfo.Name, clientID, name)
 		w.Write([]byte("Имя клиента обновлено"))
 	} else {
 		w.Write([]byte("Имя клиента не изменено"))
@@ -122,22 +129,30 @@ func DeleteClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
 	var data struct {
 		ClientID string `json:"clientID"`
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, "Неверное тело запроса", http.StatusBadRequest)
 		return
 	}
 
-	if err := fullyRemoveClientAndData([]string{data.ClientID}); err != nil {
+	if err := fullyRemoveClientAndData([]string{data.ClientID}, &authInfo); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиента %s: %v", data.ClientID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logging.LogAction("Клиенты: Клиент %s успешно удалён из БД", data.ClientID)
+	logging.LogAction("Клиенты: Админ \"%s\" (с именем: %s) успешно удалил клиент %s из БД", authInfo.Login, authInfo.Name, data.ClientID)
 	w.Write([]byte("Клиент удалён"))
 }
 
@@ -145,6 +160,13 @@ func DeleteClientHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -161,13 +183,13 @@ func DeleteSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Вызов единой функции для полного удаления всех связанных данных
-	if err := fullyRemoveClientAndData(clientIDs); err != nil {
+	if err := fullyRemoveClientAndData(clientIDs, &authInfo); err != nil {
 		logging.LogError("Клиенты: Ошибка массового удаления клиентов %v: %v", clientIDs, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logging.LogAction("Клиенты: Массовое удаление клиентов выполнено. Удалены ID: %v", clientIDs)
+	logging.LogAction("Клиенты: Админ \"%s\" (с именем: %s) выполнил массовое удаление клиентов. Удалены ID: %v", authInfo.Login, authInfo.Name, clientIDs)
 	w.Write([]byte("Клиенты успешно удалены"))
 }
 

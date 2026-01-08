@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -222,6 +222,8 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		if !protection.CheckCaptcha(credentials.CaptchaID, credentials.CaptchaAnswer) {
 			// Увеличивает счетчик неудачных попыток
 			protection.IncrementLoginAttempt(ip)
+
+			logging.LogSecurity("Авторизация: Неудачная попытка ввода капчи (логин: \"%s\", IP: %s, попытка: %d)", credentials.Auth_Login, ip, attempts+1)
 
 			if isJSON {
 				// Отправляет JSON ответ с требованием капчи

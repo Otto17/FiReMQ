@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package db
@@ -212,10 +212,10 @@ func restoreFromZip(zipPath string) error {
 	defer rc.Close()
 
 	// Очищает старую директорию БД, чтобы избежать конфликтов при восстановлении
-	logging.LogSystem("Откат БД: Очистка текущей директории...")
+	logging.LogSystem("Откат БД (CLI): Очистка текущей директории...")
 	fmt.Println("Очистка текущей директории базы данных...")
 	if err := os.RemoveAll(pathsOS.Path_DB); err != nil {
-		logging.LogError("Откат БД: не удалось очистить текущую директорию БД: %v", err)
+		logging.LogError("Откат БД (CLI): не удалось очистить текущую директорию БД: %v", err)
 		return fmt.Errorf("не удалось очистить текущую директорию БД: %w", err)
 	}
 
@@ -233,7 +233,7 @@ func restoreFromZip(zipPath string) error {
 	defer dbRestore.Close()
 
 	// Загружает данные из потока бэкапа (rc) в новую БД
-	logging.LogSystem("Откат БД: Применение данных из бэкапа...")
+	logging.LogSystem("Откат БД (CLI): Применение данных из бэкапа...")
 	fmt.Println("Применение данных из бэкапа...")
 	if err := dbRestore.Load(rc, 16); err != nil {
 		return fmt.Errorf("BadgerDB Load failed: %w", err)
@@ -241,10 +241,10 @@ func restoreFromZip(zipPath string) error {
 
 	if runtime.GOOS == "linux" {
 		// Восстанавление необходимых прав доступа для службы FiReMQ в Linux
-		logging.LogSystem("Откат БД: Восстановление прав доступа...")
+		logging.LogSystem("Откат БД (CLI): Восстановление прав доступа...")
 		fmt.Println("Восстановление прав доступа...")
 		if err := pathsOS.VerifyAndFixPermissions(); err != nil {
-			logging.LogError("Откат БД: Не удалось исправить права доступа после восстановления: %v", err)
+			logging.LogError("Откат БД (CLI): Не удалось исправить права доступа после восстановления: %v", err)
 			fmt.Printf("Предупреждение: не удалось исправить права доступа после восстановления: %v", err)
 		}
 	}

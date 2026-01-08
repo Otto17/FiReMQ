@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package protection
@@ -22,8 +22,8 @@ type ValidationRule struct {
 
 // Паттерны для валидации
 const (
-	patternAlphaNumRuEn         = `^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%.\/?\-]+$`                // Без пробелов
-	patternAlphaNumRuEnWithSpec = `^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%.\/?\-\*+=,:|()"'@–— ]+$` // С доп. символами и буквальным пробелом
+	patternAlphaNumRuEn         = `^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\[\]{}~^№€₽]+$`                // Без пробелов
+	patternAlphaNumRuEnWithSpec = `^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\*\+=,:|()"'–—\[\]{}~^№€₽ ]+$` // С доп. символами и буквальным пробелом
 )
 
 // Регулярные выражения на уровне пакета, для повышения производительности

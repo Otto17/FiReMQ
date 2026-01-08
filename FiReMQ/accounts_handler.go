@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -40,8 +40,8 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение информации об инициаторе (текущем админе)
-	authInfo, err := getAuthInfoFromRequest(r)
-	if err != nil {
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
@@ -151,8 +151,8 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение информации об инициаторе (текущем админе)
-	authInfo, err := getAuthInfoFromRequest(r)
-	if err != nil {
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
@@ -218,8 +218,8 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение информации об инициаторе (текущем админе)
-	authInfo, err := getAuthInfoFromRequest(r)
-	if err != nil {
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}

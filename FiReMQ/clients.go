@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -248,92 +248,165 @@ func StatusClient() {
 	}()
 }
 
-// updateClientStatus обновляет статусы всех клиентов в одной транзакции
+// updateClientStatus обновляет статусы всех клиентов
 func updateClientStatus() {
-	// Получает актуальный список ID всех подключенных клиентов
+	// Получает список тех, кто реально подключен к MQTT серверу сейчас
 	connectedClients := mqtt_server.Server.Clients.GetAll()
 	onlineClientIDs := make(map[string]struct{}, len(connectedClients))
 	for _, client := range connectedClients {
 		onlineClientIDs[client.GetID()] = struct{}{}
 	}
 
-	var hadStatusChanges bool    // Флаг наличия изменений статусов
-	var newlyOnlineIDs []string  // Клиенты, перешедшие в онлайн
-	var newlyOfflineIDs []string // Клиенты, перешедшие в оффлайн
+	// Карта для хранения ID клиентов, статус которых нужно изменить
+	clientsToUpdate := make(map[string]string) // Ключ: ID клиента, Значение: Новый статус ("On" или "Off")
 
-	// Запускает одну транзакцию для обновления всех статусов
-	err := db.DBInstance.Update(func(txn *badger.Txn) error {
+	// Чтение (View): происходит поиск расхождений между БД и реальными статусами
+	err := db.DBInstance.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.Prefix = []byte("client:")
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
-		// Итерируемся по всем клиентам в БД
+		// Итерация по всем клиентам в БД
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			key := string(item.Key())
-			clientID := key[len("client:"):]
+			clientID := string(item.Key())[len("client:"):] // Отрезает префикс, получая чистый ID
 
 			var data map[string]string
-			err := item.Value(func(val []byte) error {
-				return json.Unmarshal(val, &data)
-			})
+			// Создаёт безопасную копию значения для работы вне итератора
+			valCopy, err := item.ValueCopy(nil)
 			if err != nil {
-				logging.LogError("Клиенты: Ошибка десериализации данных для клиента %s: %v", clientID, err)
-				continue // Пропускает поврежденную запись, но не прерывает транзакцию
+				continue
+			}
+
+			if err := json.Unmarshal(valCopy, &data); err != nil {
+				continue
 			}
 
 			_, isOnline := onlineClientIDs[clientID]
 			currentStatus := data["status"]
-			needsUpdate := false
 
+			// Сравнивает статус в БД с реальным подключением и фиксирует расхождения
 			if isOnline && currentStatus != "On" {
-				// Случай 1: Клиент онлайн, а в БД оффлайн, меняет на "On"
-				data["status"] = "On"
-				newlyOnlineIDs = append(newlyOnlineIDs, clientID)
-				needsUpdate = true
+				clientsToUpdate[clientID] = "On"
 			} else if !isOnline && currentStatus != "Off" {
-				// Случай 2: Клиент оффлайн, а в БД онлайн, меняет на "Off"
-				data["status"] = "Off"
-				newlyOfflineIDs = append(newlyOfflineIDs, clientID)
-				needsUpdate = true
-			}
-
-			if needsUpdate {
-				hadStatusChanges = true
-				data["time_stamp"] = time.Now().Format("02.01.06(15:04)")
-				jsonData, err := json.Marshal(data)
-				if err != nil {
-					return err // Критическая ошибка, прерывает транзакцию
-				}
-				if err := txn.Set(item.KeyCopy(nil), jsonData); err != nil {
-					return err // Критическая ошибка, прерывает транзакцию
-				}
+				clientsToUpdate[clientID] = "Off"
 			}
 		}
 		return nil
 	})
 
 	if err != nil {
-		logging.LogError("Клиенты: Критическая ошибка во время транзакции обновления статусов клиентов: %v", err)
+		logging.LogError("Клиенты: Ошибка чтения БД при проверке статусов: %v", err)
+		return
 	}
 
-	// Фоновые задачи запускаются после транзакции, чтобы не блокировать БД
-	for _, clientID := range newlyOnlineIDs {
-		exists, perr := isPendingUninstall(clientID)
-		if perr == nil && !exists {
-			go checkAndResendCommands(clientID)
-			go checkAndResendQUIC(clientID)
+	// Если обновлять нечего - выходит, не создавая нагрузку на запись
+	if len(clientsToUpdate) == 0 {
+		return
+	}
+
+	// Списки для фоновых задач (заполняется после успешной записи)
+	var newlyOnlineIDs []string
+	var newlyOfflineIDs []string
+
+	// Запись (Update): обновляет только найденные расхождения
+	maxRetries := 3 // Повторные попытки на случай конфликта (по конкретным ключам, а не по всем записям)
+	for i := range maxRetries {
+		err = db.DBInstance.Update(func(txn *badger.Txn) error {
+			// Очистка списков перед каждой попыткой транзакции
+			newlyOnlineIDs = nil
+			newlyOfflineIDs = nil
+
+			for clientID, newStatus := range clientsToUpdate {
+				key := []byte("client:" + clientID)
+				item, err := txn.Get(key)
+				if err != nil {
+					if err == badger.ErrKeyNotFound {
+						continue // Клиент мог быть удалён между View и Update
+					}
+					return err
+				}
+
+				var data map[string]string
+
+				// Читает актуальные данные внутри транзакции (защита от гонки данных)
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+
+				if err := json.Unmarshal(val, &data); err != nil {
+					return err
+				}
+
+				// Повторная проверка статуса (если другая горутина уже обновила его, запись пропускается)
+				if data["status"] == newStatus {
+					continue
+				}
+
+				// Применяет изменения и обновляет метку времени
+				data["status"] = newStatus
+				data["time_stamp"] = time.Now().Format("02.01.06(15:04)")
+
+				jsonData, err := json.Marshal(data)
+				if err != nil {
+					return err
+				}
+
+				// Фиксирует изменения в БД
+				if err := txn.Set(key, jsonData); err != nil {
+					return err
+				}
+
+				// Распределяет ID по спискам для последующего запуска фоновых задач
+				if newStatus == "On" {
+					newlyOnlineIDs = append(newlyOnlineIDs, clientID)
+				} else {
+					newlyOfflineIDs = append(newlyOfflineIDs, clientID)
+				}
+			}
+			return nil
+		})
+
+		if err == nil {
+			break // Успех, выход из цикла повторов
 		}
-		go schedulePendingUninstall(clientID)
+
+		// Если конфликт - пробует ещё раз
+		if errors.Is(err, badger.ErrConflict) {
+			if i == maxRetries-1 {
+				logging.LogError("Клиенты: Не удалось обновить статусы после %d попыток (конфликт): %v", maxRetries, err)
+			}
+			time.Sleep(10 * time.Millisecond) // Небольшая пауза перед повтором
+			continue
+		}
+
+		// Если другая ошибка - логирует и выходит
+		logging.LogError("Клиенты: Критическая ошибка записи статусов в БД: %v", err)
+		return
+	}
+
+	// Запуск фоновых задач (только если запись прошла успешно)
+	for _, clientID := range newlyOnlineIDs {
+		// Проверяет, не стоит ли клиент в очереди на самоудаление
+		exists, perr := isPendingUninstall(clientID)
+
+		// Если удаления не планируется, запускает переотправку недоставленных команд и файлов
+		if perr == nil && !exists {
+			go checkAndResendCommands(clientID) // cmd/PowerShell
+			go checkAndResendQUIC(clientID)     // QUIC
+		}
+		go schedulePendingUninstall(clientID) // Планирует проверку самоудаления
 	}
 
 	for _, clientID := range newlyOfflineIDs {
+		// Отмечает сбой для ушедшего в оффлайн клиента
 		go markQUICResendOnOffline(clientID)
 	}
 
-	// При изменении статусов необходимо пересчитать доступ к QUIC
-	if hadStatusChanges {
+	// Пересчёт доступа к порту QUIC (если состав онлайн-клиентов изменился)
+	if len(newlyOnlineIDs) > 0 || len(newlyOfflineIDs) > 0 {
 		RecalculateQUICAccess("статус одного или нескольких клиентов изменился")
 	}
 }
@@ -354,6 +427,7 @@ func removeClientIDsFromCommandRecords(clientIDs []string) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
+		// Итерация по всем клиентам в БД
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			key := item.KeyCopy(nil)
@@ -424,7 +498,7 @@ func removeClientIDsFromCommandRecords(clientIDs []string) error {
 }
 
 // removeClientIDsFromQUICRecords удаляет ID клиентов из записей QUIC
-func removeClientIDsFromQUICRecords(clientIDs []string) error {
+func removeClientIDsFromQUICRecords(clientIDs []string, authInfo *AuthInfo) error {
 	if len(clientIDs) == 0 {
 		return nil
 	}
@@ -441,6 +515,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
 
+		// Итерация по всем клиентам в БД
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			key := item.KeyCopy(nil)
@@ -528,7 +603,7 @@ func removeClientIDsFromQUICRecords(clientIDs []string) error {
 			}
 		}
 		for f := range uniq {
-			deleteQUICFileIfUnreferenced(f)
+			deleteQUICFileIfUnreferenced(f, authInfo)
 		}
 	}
 
@@ -555,7 +630,7 @@ func cleanupClientsRuntimeState(clientIDs []string) {
 }
 
 // fullyRemoveClientAndData инкапсулирует логику полного удаления клиента и связанных с ним данных
-func fullyRemoveClientAndData(clientIDs []string) error {
+func fullyRemoveClientAndData(clientIDs []string, authInfo *AuthInfo) error {
 	if len(clientIDs) == 0 {
 		return nil
 	}
@@ -582,7 +657,7 @@ func fullyRemoveClientAndData(clientIDs []string) error {
 	if err := removeClientIDsFromCommandRecords(clientIDs); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов CMD/PowerShell: %v", err)
 	}
-	if err := removeClientIDsFromQUICRecords(clientIDs); err != nil {
+	if err := removeClientIDsFromQUICRecords(clientIDs, authInfo); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов Установки ПО: %v", err)
 	}
 

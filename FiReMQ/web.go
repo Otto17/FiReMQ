@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -143,8 +143,8 @@ func renderWebPage(w http.ResponseWriter, r *http.Request) {
 
 // StartWebServer запуск веб-сервера (маршруты)
 func StartWebServer(getWAF func() coraza.WAF) {
-	// Страница с авторизацией (1 запрос каждые 250 мс = 4 запросов в секунду)
-	http.HandleFunc("/auth.html", protection.RateLimitMiddleware(4, 8)(AuthPageHandler))
+	// Страница с авторизацией (1 запрос каждые 250 мс = 4 запросов в секунду), DoS логи в данном случае пишутся ТОЛЬКО в консоль
+	http.HandleFunc("/auth.html", protection.RateLimitMiddleware(4, 8, protection.DoSLogConsoleOnly)(AuthPageHandler))
 
 	// Генерация капчи (1 запрос каждые 6 секунд = 10 запросов в минуту)
 	http.HandleFunc("/captcha", protection.RateLimitMiddleware(rate.Every(time.Minute/10), 20)(func(w http.ResponseWriter, r *http.Request) {
@@ -181,8 +181,8 @@ func StartWebServer(getWAF func() coraza.WAF) {
 		})
 	}))
 
-	// Авторизация (применяет Middleware для проверки авторизации и Coraza WAF)
-	http.HandleFunc("/auth", protection.RateLimitMiddleware(rate.Every(6*time.Second), 10)(AuthHandler)) // POST команда для авторизации (1 запрос каждые 6 секунд = 10 запросов в минуту)
+	// Авторизация (применяет Middleware для проверки авторизации и Coraza WAF), DoS логи в данном случае пишутся ТОЛЬКО в консоль
+	http.HandleFunc("/auth", protection.RateLimitMiddleware(rate.Every(6*time.Second), 10, protection.DoSLogConsoleOnly)(AuthHandler)) // POST команда для авторизации (1 запрос каждые 6 секунд = 10 запросов в минуту)
 	http.HandleFunc("/logout", LogoutHandler)                                                            // GET команда для разлогинивания
 	http.HandleFunc("/check-auth", CheckAuthHandler)                                                     // GET Проверка авторизации
 	http.HandleFunc("/refresh-token", RefreshTokenHandler)                                               // GET Обновление токена

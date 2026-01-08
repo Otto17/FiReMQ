@@ -263,17 +263,16 @@ document.addEventListener("DOMContentLoaded", function() {
       }
 
       // Обработчик для горячей клавиши Enter
-    } else if (event.key === "Enter") {
-      event.preventDefault(); // Предотвращает стандартное поведение Enter
-      if (hoveredClientID) {
-        const input = document.getElementById("nameInput_" + hoveredClientID);
-        const display = document.getElementById("nameDisplay_" + hoveredClientID);
+	} else if (event.key === "Enter") {
+		const activeElement = document.activeElement;
 		
-        if (input && display && display.classList.contains("hidden")) {
-            saveName(hoveredClientID); // Сохраняем имя при активном поле ввода
-        }
-      }
-    }
+		// Проверяет, является ли активный элемент полем ввода имени клиента
+		if (activeElement && activeElement.id && activeElement.id.startsWith("nameInput_")) {
+			event.preventDefault();
+			const clientID = activeElement.id.replace("nameInput_", "");
+			saveName(clientID);
+		}
+	}
   });
 })();
 
@@ -506,34 +505,46 @@ function renameClient() {
 
 // Функция для включения режима редактирования
 function enableEdit(clientID) {
-  const input = document.getElementById("nameInput_" + clientID);
-  const display = document.getElementById("nameDisplay_" + clientID);
+    const input = document.getElementById("nameInput_" + clientID);
+    const display = document.getElementById("nameDisplay_" + clientID);
 
-  if (input && display) {
-    display.classList.add("hidden");
-    input.classList.remove("hidden");
-	input.style.display = "inline"; // Явно показываем input
-    input.focus();
+    if (input && display) {
+        display.classList.add("hidden");
+        input.classList.remove("hidden");
+        input.style.display = "inline"; // Явно показывает input
+        input.focus();
 
-    // Ограничение длины ввода
-    input.setAttribute("maxlength", "80");
+        // Ограничение длины ввода
+        input.setAttribute("maxlength", "80");
 
-    // Добавляем placeholder
-    input.setAttribute("placeholder", "Новое имя (до 80)");
-  } else {
-    console.error("Элементы для редактирования клиента не найдены: " + clientID);
-  }
+        // Добавляет placeholder
+        input.setAttribute("placeholder", "Новое имя (до 80)");
+        
+        // Добавляет обработчик валидации если ещё не добавлен
+        if (!input.dataset.validationInit) {
+            input.addEventListener('input', () => updateFieldValidation(input, true));
+            input.dataset.validationInit = 'true';
+        }
+        
+        // Сбрасывает состояние валидации при открытии
+        resetFieldValidation(input);
+    } else {
+        console.error("Элементы для редактирования клиента не найдены: " + clientID);
+    }
 }
 
 // Функция отмены редактирования
 function cancelEdit(clientID) {
-  const input = document.getElementById("nameInput_" + clientID);
-  const display = document.getElementById("nameDisplay_" + clientID);
+    const input = document.getElementById("nameInput_" + clientID);
+    const display = document.getElementById("nameDisplay_" + clientID);
 
-  if (input && display && display.classList.contains("hidden")) {
-    display.classList.remove("hidden");
-    input.style.display = "";
-  }
+    if (input && display && display.classList.contains("hidden")) {
+        display.classList.remove("hidden");
+        input.style.display = "";
+        
+        // Сбрасывает состояние валидации
+        resetFieldValidation(input);
+    }
 }
 
 // Сохранение нового имени

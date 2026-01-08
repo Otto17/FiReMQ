@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -73,6 +73,13 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		sendErrorResponse(w, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
+
 	// Создаёт директорию для загрузки исполняемых файлов, если её нет
 	if err := pathsOS.EnsureDir(pathsOS.Path_QUIC_Downloads); err != nil {
 		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка создания папки для загрузки исполняемых файлов QUIC-сервера")
@@ -133,7 +140,7 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 				cancel: make(chan struct{}),
 			}
 			hashMap.Store(fileName, hr)
-			logging.LogAction("QUIC WEB: Файл %s загружен, хеш XXH3: %s\n", fileName, hashSum)
+			logging.LogAction("QUIC WEB: Админ \"%s\" (с именем: %s) загрузил на сервер файл '%s', хеш XXH3: %s", authInfo.Login, authInfo.Name, fileName, hashSum)
 		}
 	}
 
@@ -227,8 +234,8 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получает информацию о админе
-	authInfo, err := getAuthInfoFromRequest(r)
-	if err != nil {
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
 		logging.LogError("QUIC WEB: Ошибка получения информации о админе: %v", err)
 		sendErrorResponse(w, http.StatusUnauthorized, "Ошибка авторизации")
 		return
@@ -342,11 +349,14 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		"status":  "Успех",
 		"message": "Запрос сохранён и отправлен онлайн клиентам",
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка формирования ответа")
 	}
+
+	logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) создал новый запрос '%s' для '%d' клиентов", authInfo.Login, authInfo.Name, dateOfCreation, len(data.ClientIDs))
 	hashMap.Delete(fileName)
 }
 
@@ -355,6 +365,13 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 	// Проверка метода запроса
 	if r.Method != http.MethodPost {
 		sendErrorResponse(w, http.StatusMethodNotAllowed, "Разрешены только POST запросы")
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		sendErrorResponse(w, http.StatusUnauthorized, "Ошибка авторизации")
 		return
 	}
 
@@ -403,7 +420,7 @@ func DeleteFileHandler(w http.ResponseWriter, r *http.Request) {
 			sendErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("Не удалось удалить файл: %v", err))
 			return
 		}
-		logging.LogAction("QUIC: Файл %s успешно удален\n", filePath)
+		logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) удалил файл '%s' с сервера", authInfo.Login, authInfo.Name, filePath)
 		break
 	}
 
@@ -522,6 +539,13 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 	// Если клиент офлайн – выставляется флаг, чтобы при переходе в онлайн команда была отправлена один раз (независимо от кол-ва запросов)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -666,7 +690,7 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				rr[req.ClientID] = true
 				record["ResendRequested"] = rr
-				logging.LogAction("QUIC: Установлен флаг повторной отправки для клиента %s", req.ClientID)
+				logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) установил флаг повторной отправки запроса '%s' для оффлайн клиента '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation, req.ClientID)
 				processed = true
 				// Очистка Answer, только при первом выставлении флага
 				if s, _ := clientEntry["Answer"].(string); s != "" {
@@ -714,12 +738,12 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Если есть что публиковать — обеспечим открытый порт и отправим команду
 	if needOpen && len(payloadToPublish) > 0 {
-		// ВАЖНО: теперь в БД Answer уже очищен -> hasReadyQUICTasks() вернёт true
+		// В БД Answer уже очищен -> hasReadyQUICTasks() вернёт true
 		EnsureQUICOpen("повторная отправка для клиента " + req.ClientID)
 		if err := mqtt_client.Publish(topic, payloadToPublish, 2); err != nil {
 			logging.LogError("QUIC: Ошибка повторной публикации QUIC команды в топик %s: %v", topic, err)
 		} else {
-			logging.LogAction("QUIC: Повторная отправка QUIC команды клиенту %s выполнена", req.ClientID)
+			logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) выполнил повторную отправку запроса '%s' для клиента '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation, req.ClientID)
 			commandSent = true
 		}
 	}
@@ -746,6 +770,13 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -810,9 +841,11 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 			uniq[filepath.Base(f)] = struct{}{}
 		}
 		for f := range uniq {
-			deleteQUICFileIfUnreferenced(f)
+			deleteQUICFileIfUnreferenced(f, &authInfo)
 		}
 	}
+
+	logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) удалил запрос '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -828,6 +861,13 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -919,9 +959,11 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 			uniq[filepath.Base(f)] = struct{}{}
 		}
 		for f := range uniq {
-			deleteQUICFileIfUnreferenced(f)
+			deleteQUICFileIfUnreferenced(f, &authInfo)
 		}
 	}
+
+	logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) удалил клиента '%s' из запроса '%s'", authInfo.Login, authInfo.Name, req.ClientID, req.Date_Of_Creation)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

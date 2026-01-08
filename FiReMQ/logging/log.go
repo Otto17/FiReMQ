@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package logging
@@ -62,7 +62,7 @@ const htmlHeader = `<!DOCTYPE html>
         body { background: var(--bg); color: var(--text); font-family: Consolas, monospace; margin: 0; padding-top: 140px; overflow-y: scroll; }
         
         #control-panel {
-            position: fixed; top: 0; left: 0; right: 0; height: 130px;
+            position: fixed; top: 0; left: 0; right: 0; height: 110px;
             background: var(--panel); border-bottom: 2px solid var(--accent);
             z-index: 1000; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             display: flex; flex-direction: column; gap: 10px;
@@ -196,7 +196,7 @@ const htmlHeader = `<!DOCTYPE html>
                 const dateParts = dateInput.value.split('-'); // ГГГГ, ММ, ДД
                 const searchDate = dateParts[2] + '.' + dateParts[1] + '.' + dateParts[0]; // ДД.ММ.ГГГГ
 
-                const selector = '.row[data-date="' + searchDate + '"]';
+                const selector = '.row[data-date="' + searchDate + '"]:not(.hidden)';
                 const elements = container.querySelectorAll(selector);
                 
                 if (elements.length > 0) {
@@ -209,7 +209,7 @@ const htmlHeader = `<!DOCTYPE html>
                 } else {
                     dateInput.classList.add('input-error');
                     setTimeout(() => { dateInput.classList.remove('input-error'); }, 1000);
-                    showToast('Записей за ' + searchDate + ' не найдено');
+                    showToast('Записей за ' + searchDate + ' не найдено (в текущем фильтре)');
                 }
             });
         });
@@ -463,6 +463,20 @@ func performCleanup() {
 	}
 }
 
+// parseLogArgs извлекает служебный флаг логирования (true/false) из последнего аргумента
+func parseLogArgs(args []any) (cleanArgs []any, consoleOnly bool) {
+	if len(args) == 0 {
+		return args, false
+	}
+
+	// Проверяет, является ли последний аргумент bool
+	if v, ok := args[len(args)-1].(bool); ok {
+		return args[:len(args)-1], v
+	}
+
+	return args, false
+}
+
 // logToConsole выводит сообщение в стандартный вывод с меткой времени
 func logToConsole(level, msg string) {
 	ts := time.Now().Format(consoleTimeFormat)
@@ -471,37 +485,57 @@ func logToConsole(level, msg string) {
 
 // LogSystem для событий жизненного цикла сервера (запуск, остановка, конфиг...)
 func LogSystem(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	cleanArgs, consoleOnly := parseLogArgs(args)
+	msg := fmt.Sprintf(format, cleanArgs...)
+
 	logToConsole("СИСТЕМА", msg)
-	writeLogEntry("СИСТЕМА", msg)
+	if !consoleOnly {
+		writeLogEntry("СИСТЕМА", msg)
+	}
 }
 
 // LogError для ошибок, сбоев и предупреждений
 func LogError(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	cleanArgs, consoleOnly := parseLogArgs(args)
+	msg := fmt.Sprintf(format, cleanArgs...)
+
 	logToConsole("ОШИБКА", msg)
-	writeLogEntry("ОШИБКА", msg)
+	if !consoleOnly {
+		writeLogEntry("ОШИБКА", msg)
+	}
 }
 
 // LogAction для записи действий админов и операций с клиентами
 func LogAction(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	cleanArgs, consoleOnly := parseLogArgs(args)
+	msg := fmt.Sprintf(format, cleanArgs...)
+
 	logToConsole("ДЕЙСТВИЕ", msg)
-	writeLogEntry("ДЕЙСТВИЕ", msg)
+	if !consoleOnly {
+		writeLogEntry("ДЕЙСТВИЕ", msg)
+	}
 }
 
 // LogSecurity для аудита безопасности (вход, атаки, блокировки WAF)
 func LogSecurity(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	cleanArgs, consoleOnly := parseLogArgs(args)
+	msg := fmt.Sprintf(format, cleanArgs...)
+
 	logToConsole("БЕЗОПАСНОСТЬ", msg)
-	writeLogEntry("БЕЗОПАСНОСТЬ", msg)
+	if !consoleOnly {
+		writeLogEntry("БЕЗОПАСНОСТЬ", msg)
+	}
 }
 
 // LogUpdate для логирования процесса обновлений (FiReMQ и ServerUpdater)
 func LogUpdate(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
+	cleanArgs, consoleOnly := parseLogArgs(args)
+	msg := fmt.Sprintf(format, cleanArgs...)
+
 	logToConsole("ОБНОВЛЕНИЕ", msg)
-	writeLogEntry("ОБНОВЛЕНИЕ", msg)
+	if !consoleOnly {
+		writeLogEntry("ОБНОВЛЕНИЕ", msg)
+	}
 }
 
 // --- HTTP ОБРАБОТЧИКИ ---

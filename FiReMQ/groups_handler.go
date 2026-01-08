@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -21,11 +21,19 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
 	var data struct {
 		ClientID      string `json:"clientID"`
 		NewGroupID    string `json:"newGroupID"`
 		NewSubgroupID string `json:"newSubgroupID"`
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, "Неверное тело запроса", http.StatusBadRequest)
@@ -59,6 +67,7 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 	// Валидация и санитизация
 	sanitized, err := protection.ValidateFields(dataToValidate, rules)
 	if err != nil {
+		// Возвращает ошибку, если найдены запрещенные символы
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -80,7 +89,7 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logging.LogAction("Группы: Клиент [%s] перемещён в группу '%s', подгруппу '%s'", clientID, newGroup, newSubgroup)
+	logging.LogAction("Группы: Админ \"%s\" (с именем: %s) переместил клиента [%s] группу '%s', подгруппу '%s'", authInfo.Login, authInfo.Name, clientID, newGroup, newSubgroup)
 	w.Write([]byte("Клиент перемещён"))
 }
 
@@ -88,6 +97,13 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -138,6 +154,7 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	// Валидация и санитизация
 	sanitized, err := protection.ValidateFields(dataToValidate, rules)
 	if err != nil {
+		// Возвращает ошибку, если найдены запрещенные символы
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -176,7 +193,7 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	// Логирует успешное действие
 	movedCount := len(payload.ClientIDs) - len(notFoundIDs)
 	if movedCount > 0 {
-		logging.LogAction("Группы: Перемещено %d клиентов в группу '%s', подгруппу '%s'", movedCount, payload.NewGroup, payload.NewSubgroup)
+		logging.LogAction("Группы: Админ \"%s\" (с именем: %s) переместил %d клиентов в группу '%s', подгруппу '%s'", authInfo.Login, authInfo.Name, movedCount, payload.NewGroup, payload.NewSubgroup)
 	}
 	if len(notFoundIDs) > 0 {
 		logging.LogError("Группы: При массовом перемещении не найдены ID: %v", notFoundIDs)

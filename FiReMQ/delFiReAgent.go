@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -146,18 +146,18 @@ func schedulePendingUninstall(clientID string) {
 		}
 
 		// Вызывает функцию, которая выполняет все шаги по удалению
-		if err := fullyDeleteClient(clientID); err != nil {
+		if err := fullyDeleteClient(clientID, nil); err != nil {
 			logging.LogError("Удаление Агента: Ошибка при выполнении полного удаления для %s: %v", clientID, err)
 			return
 		}
 
 		// Если ошибок не было, логирует успешное завершение
-		logging.LogAction("Удаление Агента: Клиент %s удалён (после входа онлайн) и исключён из очереди", clientID)
+		logging.LogSystem("Удаление Агента: Клиент %s удалён (после входа онлайн) и исключён из очереди", clientID)
 	}()
 }
 
 // fullyDeleteClient Инкапсулирует всю логику полного удаления клиента и связанных с ним данных
-func fullyDeleteClient(clientID string) error {
+func fullyDeleteClient(clientID string, authInfo *AuthInfo) error {
 	// Отправляет команду на самоудаление
 	if err := publishUninstallCommand(clientID); err != nil {
 		// Возвращает ошибку, чтобы вызывающий код мог решить, что делать дальше
@@ -184,7 +184,7 @@ func fullyDeleteClient(clientID string) error {
 	if err := removeClientIDsFromCommandRecords([]string{clientID}); err != nil {
 		logging.LogError("Удаление Агента: Ошибка очистки из CMD отчётов для %s: %v", clientID, err)
 	}
-	if err := removeClientIDsFromQUICRecords([]string{clientID}); err != nil {
+	if err := removeClientIDsFromQUICRecords([]string{clientID}, authInfo); err != nil {
 		logging.LogError("Удаление Агента: Ошибка очистки из QUIC отчётов для %s: %v", clientID, err)
 	}
 	cleanupClientsRuntimeState([]string{clientID})
@@ -192,6 +192,10 @@ func fullyDeleteClient(clientID string) error {
 	// На случай, если этот клиент раньше был в очереди — удалим ключ ожидания
 	_ = removePendingUninstall(clientID)
 
-	logging.LogAction("Удаление Агента: Процесс полного удаления для клиента %s инициирован.", clientID)
+	if authInfo != nil {
+		logging.LogAction("Удаление Агента: Админ \"%s\" (с именем: %s) инициировал процесс полного удаления клиента %s", authInfo.Login, authInfo.Name, clientID)
+	} else {
+		logging.LogAction("Удаление Агента: Процесс полного удаления для клиента %s инициирован (автоматически)", clientID)
+	}
 	return nil
 }

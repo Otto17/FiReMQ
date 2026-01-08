@@ -58,11 +58,109 @@ window.addEventListener("load", function() {
   }
 });
 
+
+// Константы с разрешёнными символами
+const REGEX_NO_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\[\]{}~^№€₽]+$/; 					// Без пробелов
+const REGEX_WITH_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%&.\-\/?\*\+=,:|()"'–—\[\]{}~^№€₽]+$/;	// С доп. символами и буквальным пробелом
+
 // Функция для валидации ввода (без знака пробела, либо с ним и доп. символами)
 function validateInput(input, allowSpace = false) {
-  const regex = allowSpace ? /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%.\/?\-\*+=,:|()"'@–—]+$/ : /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%.\/?-]+$/;
-  return regex.test(input);
+    return (allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE).test(input);
 }
+
+
+// Получение запрещённых символов из строки (для компактной всплывающей подсказки в полях ввода)
+function getForbiddenChars(input, allowSpace = false) {
+    const baseRegex = allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE;
+
+    // Извлекает содержимое character class: [...]
+    const match = baseRegex.source.match(/^\^\[(.*)\]\+\$$/);
+    if (!match) {
+        console.error('Неверный формат REGEX');
+        return [];
+    }
+
+    const allowedChars = match[1];
+
+    // Инвертированный regex: всё, что НЕ разрешено
+    const forbiddenRegex = new RegExp(`[^${allowedChars}]`, 'g');
+
+    // Находит запрещённые символы
+    const forbidden = input.match(forbiddenRegex) || [];
+
+    // Убирает дубликаты
+    return [...new Set(forbidden)];
+}
+
+// Функция для обновления состояния валидации поля (для компактной всплывающей подсказки в полях ввода)
+function updateFieldValidation(inputElement, allowSpace = false) {
+    let tooltip;
+    
+    // Ищет tooltip в обёртке или как соседний элемент
+    const wrapper = inputElement.closest('.input-validation-wrapper');
+    if (wrapper) {
+        tooltip = wrapper.querySelector('.validation-tooltip');
+    } else {
+        // Ищет tooltip как следующий соседний элемент
+        tooltip = inputElement.nextElementSibling;
+        if (!tooltip || !tooltip.classList.contains('validation-tooltip')) {
+            // Создаёт tooltip динамически если его нет
+            tooltip = document.createElement('span');
+            tooltip.className = 'validation-tooltip';
+            inputElement.parentNode.insertBefore(tooltip, inputElement.nextSibling);
+        }
+    }
+    
+    if (!tooltip) return;
+    
+    const value = inputElement.value;
+    
+    if (value === '') {
+        // Поле пустое — сбрасывает состояние
+        inputElement.classList.remove('validation-error');
+        tooltip.textContent = '';
+        tooltip.classList.remove('visible');
+        return;
+    }
+    
+    const forbiddenChars = getForbiddenChars(value, allowSpace);
+    
+    if (forbiddenChars.length > 0) {
+        inputElement.classList.add('validation-error');
+        
+        if (forbiddenChars.length === 1) {
+            tooltip.textContent = `Символ '${forbiddenChars[0]}' запрещён!`;
+        } else {
+            const charsFormatted = forbiddenChars.map(c => `'${c}'`).join(', ');
+            tooltip.textContent = `Символы ${charsFormatted} запрещены!`;
+        }
+        tooltip.classList.add('visible');
+    } else {
+        inputElement.classList.remove('validation-error');
+        tooltip.textContent = '';
+        tooltip.classList.remove('visible');
+    }
+}
+
+// Функция для сброса состояния валидации поля (для компактной всплывающей подсказки в полях ввода)
+function resetFieldValidation(inputElement) {
+    inputElement.classList.remove('validation-error');
+    
+    // Ищет tooltip
+    const wrapper = inputElement.closest('.input-validation-wrapper');
+    let tooltip;
+    if (wrapper) {
+        tooltip = wrapper.querySelector('.validation-tooltip');
+    } else {
+        tooltip = inputElement.nextElementSibling;
+    }
+    
+    if (tooltip && tooltip.classList.contains('validation-tooltip')) {
+        tooltip.textContent = '';
+        tooltip.classList.remove('visible');
+    }
+}
+
 
 
 
@@ -227,7 +325,7 @@ document.getElementById("deleteCheckClientsModal").addEventListener("keydown", f
 
 
 
-// МОДАЛЬНОЕ ОКНО ПЕРЕМЕЩЕНИЯ КЛИЕНТА В ДРУГУЮ ПОДГРУППУ
+// МОДАЛЬНОЕ ОКНО ПЕРЕМЕЩЕНИЕ КЛИЕНТА
 
 document.addEventListener("DOMContentLoaded", function() {
   const moveClientModal = document.getElementById("moveClientModal");
@@ -246,15 +344,32 @@ document.addEventListener("DOMContentLoaded", function() {
 	});
   }
 
-  // Обработка выбора радиокнопок
-  document.querySelectorAll('input[name="moveOption"]').forEach((radio) =>
-    radio.addEventListener("change", (e) => {
-      const isExisting = e.target.value === "existing";
-      document.getElementById("existingGroups").disabled = !isExisting;
-      document.getElementById("newGroupName").disabled = isExisting;
-      document.getElementById("newSubgroupName").disabled = isExisting;
-    })
-  );
+	// Обработка выбора радиокнопок
+	document.querySelectorAll('input[name="moveOption"]').forEach((radio) =>
+		radio.addEventListener("change", (e) => {
+			const isExisting = e.target.value === "existing";
+			document.getElementById("existingGroups").disabled = !isExisting;
+			document.getElementById("newGroupName").disabled = isExisting;
+			document.getElementById("newSubgroupName").disabled = isExisting;
+			
+			// Сбрасывает валидацию при переключении
+			if (isExisting) {
+				resetFieldValidation(document.getElementById("newGroupName"));
+				resetFieldValidation(document.getElementById("newSubgroupName"));
+			}
+		})
+	);
+
+	// Инициализация валидации для полей ввода групп
+	const newGroupNameInput = document.getElementById("newGroupName");
+	const newSubgroupNameInput = document.getElementById("newSubgroupName");
+
+	if (newGroupNameInput) {
+		newGroupNameInput.addEventListener('input', () => updateFieldValidation(newGroupNameInput, true));
+	}
+	if (newSubgroupNameInput) {
+		newSubgroupNameInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameInput, true));
+	}
 
   // Перемещение клиента
 	confirmMoveClientButton.onclick = () => {
@@ -272,8 +387,19 @@ document.addEventListener("DOMContentLoaded", function() {
 		} else {
 			newGroupID = document.getElementById("newGroupName").value.trim();
 			newSubgroupID = document.getElementById("newSubgroupName").value.trim();
+
 			if (!newGroupID || !newSubgroupID) {
 				showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
+				return;
+			}
+
+			// Проверка на разрешённые символы (true = разрешить пробелы)
+			if (!validateInput(newGroupID, true)) {
+				showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+				return;
+			}
+			if (!validateInput(newSubgroupID, true)) {
+				showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
 				return;
 			}
 		}
@@ -366,7 +492,7 @@ function closeMoveModal() {
 
 
 
-// МОДАЛЬНОЕ ОКНО ДЛЯ МАССОВОГО ПЕРЕМЕЩЕНИЯ КЛИЕНТОВ В ДРУГУЮ ПОДГРУППУ
+// МОДАЛЬНОЕ ОКНО ДЛЯ МАССОВОЕ ПЕРЕМЕЩЕНИЯ КЛИЕНТОВ В ДРУГУЮ ПОДГРУППУ
 
 // Открытие модального окна массового перемещения клиентов
 function moveClientCheckClient() {
@@ -393,18 +519,35 @@ function closeMoveCheckModal() {
   modal.style.display = "none";
 }
 
-// Привязка обработчиков событий к модальному окну
-document.getElementById("closeMoveCheckModal").addEventListener("click", closeMoveCheckModal);
+	// Привязка обработчиков событий к модальному окну
+	document.getElementById("closeMoveCheckModal").addEventListener("click", closeMoveCheckModal);
 
-// Обработка выбора опций (существующая группа/новая)
-document.querySelectorAll('#moveCheckClientsForm input[name="moveOption"]').forEach((radio) =>
-  radio.addEventListener("change", (e) => {
-    const isExisting = e.target.value === "existing";
-    document.getElementById("existingGroupsCheck").disabled = !isExisting;
-    document.getElementById("newGroupNameCheck").disabled = isExisting;
-    document.getElementById("newSubgroupNameCheck").disabled = isExisting;
-  })
-);
+	// Обработка выбора опций (существующая группа/новая)
+	document.querySelectorAll('#moveCheckClientsForm input[name="moveOption"]').forEach((radio) =>
+		radio.addEventListener("change", (e) => {
+			const isExisting = e.target.value === "existing";
+			document.getElementById("existingGroupsCheck").disabled = !isExisting;
+			document.getElementById("newGroupNameCheck").disabled = isExisting;
+			document.getElementById("newSubgroupNameCheck").disabled = isExisting;
+			
+			// Сбрасывает валидацию при переключении
+			if (isExisting) {
+				resetFieldValidation(document.getElementById("newGroupNameCheck"));
+				resetFieldValidation(document.getElementById("newSubgroupNameCheck"));
+			}
+		})
+	);
+
+	// Инициализация валидации для полей ввода групп (массовое перемещение)
+	const newGroupNameCheckInput = document.getElementById("newGroupNameCheck");
+	const newSubgroupNameCheckInput = document.getElementById("newSubgroupNameCheck");
+
+	if (newGroupNameCheckInput) {
+		newGroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newGroupNameCheckInput, true));
+	}
+	if (newSubgroupNameCheckInput) {
+		newSubgroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameCheckInput, true));
+	}
 
 // Подтверждение массового перемещения клиентов
 document.getElementById("confirmMoveCheckClientsButton").addEventListener("click", () => {
@@ -427,14 +570,25 @@ document.getElementById("confirmMoveCheckClientsButton").addEventListener("click
       return;
     }
     [newGroupID, newSubgroupID] = selectedOption.split("|");
-  } else {
-    newGroupID = document.getElementById("newGroupNameCheck").value.trim();
-    newSubgroupID = document.getElementById("newSubgroupNameCheck").value.trim();
-    if (!newGroupID || !newSubgroupID) {
-      showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
-      return;
+      } else {
+		  newGroupID = document.getElementById("newGroupNameCheck").value.trim();
+		  newSubgroupID = document.getElementById("newSubgroupNameCheck").value.trim();
+
+		  if (!newGroupID || !newSubgroupID) {
+			showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
+			return;
+		  }
+
+		  // Проверка на разрешённые символы (true = разрешить пробелы)
+		  if (!validateInput(newGroupID, true)) {
+			showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+			return;
+		  }
+		  if (!validateInput(newSubgroupID, true)) {
+			showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
+			return;
+		  }
     }
-  }
 
 	// Формирование данных для POST
 	const requestData = {
@@ -444,18 +598,16 @@ document.getElementById("confirmMoveCheckClientsButton").addEventListener("click
 	};
 
 	apiPostJson("/move-selected-clients", requestData)
-     .then((response) => {
-        if (!response.ok) {
-            // Если сервер вернул ошибку (статус не 2xx), пытаемся извлечь сообщение или используем стандартное, и прерываем цепочку
-            return response.json().then(errData => {
-                throw new Error(errData.message || "Ошибка перемещения клиентов");
-            }).catch(() => {
-                throw new Error("Ошибка перемещения клиентов");
-            });
-        }
-        // Если ответ успешный, парсим его как JSON
-        return response.json();
-    })
+	.then((response) => {
+		if (!response.ok) {
+			// Читает текст ошибки
+			return response.text().then((errorText) => {
+				throw new Error(errorText || "Ошибка перемещения клиентов");
+			});
+		}
+		// Если ответ успешный, парсит его как JSON
+		return response.json();
+	})
     .then((data) => {
         clearAllCheckboxStates(); // Снимаем все галочки в sessionStorage
 
@@ -580,17 +732,27 @@ function loadAccounts() {
                 accountItem.className = "account-item";
                 const encodedLogin = encodeURIComponent(user.auth_login);
 
-                // Поле ввода имени
-                const nameInput = document.createElement("input");
-                nameInput.type = "text";
-                nameInput.name = `update-name-${encodedLogin}`;
-                nameInput.placeholder = "Обновить имя (до 40)";
-                nameInput.maxLength = 40;
-                nameInput.value = user.auth_name;
+                // Обёртка для поля имени с валидацией
+				const nameWrapper = document.createElement("div");
+				nameWrapper.className = "input-validation-wrapper";
+
+				// Поле ввода имени
+				const nameInput = document.createElement("input");
+				nameInput.type = "text";
+				nameInput.name = `update-name-${encodedLogin}`;
+				nameInput.placeholder = "Обновить имя (до 40)";
+				nameInput.maxLength = 40;
+				nameInput.value = user.auth_name;
 				nameInput.setAttribute("origNameAdmin", user.auth_name);
-                nameInput.dataset.login = encodedLogin;
-                nameInput.className = "update-name";
-                nameInput.required = true;
+				nameInput.dataset.login = encodedLogin;
+				nameInput.className = "update-name";
+				nameInput.required = true;
+
+				const nameTooltip = document.createElement("span");
+				nameTooltip.className = "validation-tooltip";
+
+				nameWrapper.appendChild(nameInput);
+				nameWrapper.appendChild(nameTooltip);
 
                 // Отображение логина
                 const loginDisplay = document.createElement("div");
@@ -600,30 +762,40 @@ function loadAccounts() {
                 loginSpan.textContent = user.auth_login;
                 loginDisplay.appendChild(loginSpan);
 
-                // Контейнер для пароля
-                const passwordContainer = document.createElement("div");
-                passwordContainer.className = "password-input-container";
-                const passwordInput = document.createElement("input");
-                passwordInput.type = "password";
-                passwordInput.name = `update-password-${encodedLogin}`;
-                passwordInput.placeholder = "Обновить пароль (до 64)";
-                passwordInput.maxLength = 64;
-                passwordInput.dataset.login = encodedLogin;
-                passwordInput.className = "update-password";
-                passwordInput.autocomplete = "off";
+                // Обёртка для пароля с валидацией
+				const passwordWrapper = document.createElement("div");
+				passwordWrapper.className = "input-validation-wrapper";
 
-                // Кнопка переключения видимости пароля
-                const toggleButton = document.createElement("button");
-                toggleButton.type = "button";
-                toggleButton.className = "toggle-password";
-                toggleButton.dataset.login = encodedLogin;
-                const toggleIcon = document.createElement("img");
-                toggleIcon.id = `passwordIcon-${encodedLogin}`;
-                toggleIcon.src = "../icon/Hide_Passwd.svg";
-                toggleIcon.alt = "Показать пароль";
-                toggleButton.appendChild(toggleIcon);
-                passwordContainer.appendChild(passwordInput);
-                passwordContainer.appendChild(toggleButton);
+				// Контейнер для пароля
+				const passwordContainer = document.createElement("div");
+				passwordContainer.className = "password-input-container";
+				const passwordInput = document.createElement("input");
+				passwordInput.type = "password";
+				passwordInput.name = `update-password-${encodedLogin}`;
+				passwordInput.placeholder = "Обновить пароль (до 64)";
+				passwordInput.maxLength = 64;
+				passwordInput.dataset.login = encodedLogin;
+				passwordInput.className = "update-password";
+				passwordInput.autocomplete = "off";
+
+				// Кнопка переключения видимости пароля
+				const toggleButton = document.createElement("button");
+				toggleButton.type = "button";
+				toggleButton.className = "toggle-password";
+				toggleButton.dataset.login = encodedLogin;
+				const toggleIcon = document.createElement("img");
+				toggleIcon.id = `passwordIcon-${encodedLogin}`;
+				toggleIcon.src = "../icon/Hide_Passwd.svg";
+				toggleIcon.alt = "Показать пароль";
+				toggleButton.appendChild(toggleIcon);
+				passwordContainer.appendChild(passwordInput);
+				passwordContainer.appendChild(toggleButton);
+
+				const passwordTooltip = document.createElement("span");
+				passwordTooltip.className = "validation-tooltip";
+
+				passwordWrapper.appendChild(passwordContainer);
+				passwordWrapper.appendChild(passwordTooltip);
 
                 // Информация о датах
                 const dateInfo = document.createElement("div");
@@ -647,9 +819,9 @@ function loadAccounts() {
                 deleteButton.textContent = "Удалить";
 
                 // Собираем элементы в "accountItem"
-                accountItem.appendChild(nameInput);
-                accountItem.appendChild(loginDisplay);
-                accountItem.appendChild(passwordContainer);
+				accountItem.appendChild(nameWrapper);
+				accountItem.appendChild(loginDisplay);
+				accountItem.appendChild(passwordWrapper);
                 accountItem.appendChild(dateInfo);
                 accountItem.appendChild(updateButton);
                 accountItem.appendChild(deleteButton);
@@ -664,13 +836,18 @@ function loadAccounts() {
                 toggleButton.addEventListener("click", () => {
                     togglePasswordVisibility(encodedLogin);
                 });
+				
                 updateButton.addEventListener("click", (event) => {
                     event.preventDefault(); // Предотвращаем любые действия формы
                     toggleUpdateButtonState(encodedLogin);
                 });
+				
                 deleteButton.addEventListener("click", () => {
                     toggleDeleteButtonState(encodedLogin);
                 });
+				
+				// Инициализация валидации для динамических полей
+				initDynamicFieldValidation(nameInput, passwordInput);
             });
         })
         .catch((error) => console.error("Ошибка загрузки учётных записей:", error));
@@ -913,13 +1090,44 @@ function togglePasswordVisibility(elementId) {
   }
 }
 
-// Обработчик закрытия модального окна крестиком
+// Обработчик закрытия модального окна крестиком и инициализация валидации
 document.addEventListener("DOMContentLoaded", function() {
     const closeButton = document.getElementById("closeAccountsModal");
     if (closeButton) {
         closeButton.addEventListener("click", closeAccountsModal);
     }
+    
+    // Инициализация валидации для статических полей
+    initStaticFieldsValidation();
 });
+
+// Инициализация валидации для статических полей (добавление нового админа)
+function initStaticFieldsValidation() {
+    const newNameInput = document.getElementById('newName');
+    const newLoginInput = document.getElementById('newLogin');
+    const newPasswordInput = document.getElementById('newPassword');
+    
+    if (newNameInput) {
+        newNameInput.addEventListener('input', () => updateFieldValidation(newNameInput, true));
+    }
+    if (newLoginInput) {
+        newLoginInput.addEventListener('input', () => updateFieldValidation(newLoginInput, false));
+    }
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', () => updateFieldValidation(newPasswordInput, false));
+    }
+}
+
+// Инициализация валидации для динамических полей (обновление админа)
+function initDynamicFieldValidation(nameInput, passwordInput) {
+    if (nameInput) {
+        nameInput.addEventListener('input', () => updateFieldValidation(nameInput, true));
+    }
+    if (passwordInput) {
+        passwordInput.addEventListener('input', () => updateFieldValidation(passwordInput, false));
+    }
+}
+
 
 
 
@@ -965,8 +1173,12 @@ function showMqttAuthModal() {
       passwordIcon.setAttribute("src", "../icon/Hide_Passwd.svg");
       passwordIcon.setAttribute("alt", "Показать пароль");
     }
+	
+	// Сбрасывает состояние валидации
+	resetFieldValidation(usernameInput);
+	resetFieldValidation(passwordInput);
   };
-
+  
   resetUIState();
 
   // Загрузка данных с сервера
@@ -1087,6 +1299,11 @@ function closeMqttAuthModal() {
   saveButton.classList.remove("confirm-mode");
   document.getElementById("mqttUsername").disabled = false;
   document.getElementById("mqttPassword").disabled = false;
+  
+  
+  // Сбрасывает состояние валидации
+  resetFieldValidation(document.getElementById("mqttUsername"));
+  resetFieldValidation(document.getElementById("mqttPassword"));
 
   // Удаляем все обработчики с кнопки
   const newSaveButton = saveButton.cloneNode(true);
@@ -1191,6 +1408,20 @@ document.getElementById("saveMqttAuth").addEventListener("click", toggleSaveButt
 
 // Привязка события к пункту меню "MQTT авторизация"
 document.getElementById("accountsMQTT").addEventListener("click", showMqttAuthModal);
+
+// Инициализация валидации для полей MQTT авторизации
+document.addEventListener("DOMContentLoaded", function() {
+const mqttUsernameInput = document.getElementById("mqttUsername");
+const mqttPasswordInput = document.getElementById("mqttPassword");
+
+if (mqttUsernameInput) {
+	mqttUsernameInput.addEventListener('input', () => updateFieldValidation(mqttUsernameInput, false));
+}
+if (mqttPasswordInput) {
+	mqttPasswordInput.addEventListener('input', () => updateFieldValidation(mqttPasswordInput, false));
+}
+});
+
 
 
 
@@ -3325,7 +3556,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-// МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ FiReAgent
+// МОДАЛЬНОЕ ОКНО ПОЛНОЕ УДАЛЕНИЕ FiReAgent
 
 // Вспомогательный нормализатор статусов
 function isSuccessStatus(status) {

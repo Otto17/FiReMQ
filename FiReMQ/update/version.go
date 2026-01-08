@@ -1,10 +1,10 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package update
 
 // Текущая версия FiReMQ в формате: "дд.мм.гг"
-const CurrentVersion = "21.12.25"
+const CurrentVersion = "08.01.26"
 
 // Имя исполняемого файла FiReMQ
 const exeName = "FiReMQ"

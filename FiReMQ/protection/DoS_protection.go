@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package protection
@@ -8,13 +8,20 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"golang.org/x/time/rate"
 )
 
 // LogSecurity используется для логирования событий безопасности (защита от циклического импорта)
 var LogSecurity func(format string, args ...any)
+
+// DoSLogMode определяет режим логирования DoS событий
+type DoSLogMode int
+
+const (
+	DoSLogDefault     DoSLogMode = iota // Обычное логирование
+	DoSLogConsoleOnly                   // Логирование только в консоль
+)
 
 // IPRateLimiter хранит лимиты запросов для каждого IP-адреса
 type IPRateLimiter struct {
@@ -65,7 +72,8 @@ func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 }
 
 // RateLimitMiddleware создает middleware для ограничения частоты запросов на основе IP-адреса
-func RateLimitMiddleware(r rate.Limit, b int) func(next http.HandlerFunc) http.HandlerFunc {
+func RateLimitMiddleware(r rate.Limit, b int, mode ...DoSLogMode) func(next http.HandlerFunc) http.HandlerFunc {
+
 	limiter := NewIPRateLimiter(r, b)
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -75,9 +83,22 @@ func RateLimitMiddleware(r rate.Limit, b int) func(next http.HandlerFunc) http.H
 			// Получает или создает лимитер для данного IP
 			limiter := limiter.GetLimiter(ip)
 
-			// Проверяет, разрешен ли запрос в соответствии с лимитом
+			// Определяет режим логирования DoS
+			logMode := DoSLogDefault
+			if len(mode) > 0 {
+				logMode = mode[0]
+			}
+
+			// Проверяет, разрешён ли запрос
 			if !limiter.Allow() {
-				LogSecurity("DoS: Превышен лимит запросов для IP: %s (время: %s)", ip, time.Now().Format(time.RFC3339))
+				if LogSecurity != nil {
+					if logMode == DoSLogConsoleOnly {
+						LogSecurity("DoS: Превышен лимит запросов для IP: %s", ip, true)
+					} else {
+						LogSecurity("DoS: Превышен лимит запросов для IP: %s", ip)
+					}
+				}
+
 				http.Error(w, "Слишком много запросов", http.StatusTooManyRequests)
 				return
 			}

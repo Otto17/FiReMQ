@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package main
@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
-	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
+	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
+	// Локальный пакет с функциями базовой защиты
 )
 
 // UninstallFiReAgentHandler Инициирует самоудаление клиентов (онлайн: сразу; оффлайн: в очередь из БД)
@@ -47,15 +47,17 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		seen[id] = struct{}{}
 		clientIDs = append(clientIDs, id)
 	}
+
 	if len(clientIDs) == 0 {
 		http.Error(w, "Пустой список ID клиентов", http.StatusBadRequest)
 		return
 	}
 
-	// Получение логина админа
-	adminLogin, _, err := protection.GetLoginAndSessionIDFromCookie(r)
-	if err != nil {
-		adminLogin = "Логин неизвестен" // Если по какой-то причине не удалось получить логин
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
 	}
 
 	var firstError string
@@ -70,12 +72,12 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 
 		if online {
 			// Онлайн — вызывает единую функцию полного удаления
-			if err := fullyDeleteClient(id); err != nil {
+			if err := fullyDeleteClient(id, &authInfo); err != nil {
 				firstError = err.Error()
 				break
 			}
 			// Лог об успешном прямом удалении
-			logging.LogAction("Удаление Агента: Админ \"%s\" удалил онлайн-клиента: %s", adminLogin, id)
+			logging.LogAction("Удаление Агента: Админ \"%s\" (с именем: %s) удалил онлайн-клиента: %s", authInfo.Login, authInfo.Name, id)
 		} else {
 			// Оффлайн — добавит в очередь (с проверкой на дубликаты ниже)
 			offlineIDs = append(offlineIDs, id)
@@ -104,7 +106,7 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 			if err := addPendingUninstallBatch(toAdd); err != nil {
 				firstError = fmt.Sprintf("ошибка сохранения офлайн клиентов в БД: %v", err)
 			} else {
-				logging.LogAction("Удаление Агента: Админ \"%s\" добавил в очередь на удаление (оффлайн) клиентов: %v", adminLogin, toAdd)
+				logging.LogAction("Удаление Агента: Админ \"%s\" (с именем: %s) добавил в очередь на удаление (оффлайн) клиентов: %v", authInfo.Login, authInfo.Name, toAdd)
 			}
 		}
 	}
@@ -168,8 +170,16 @@ func CancelPendingUninstallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := strings.TrimSpace(req.ClientID)
+
 	if id == "" {
 		http.Error(w, "Не указан ID клиента", http.StatusBadRequest)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
 		return
 	}
 
@@ -178,13 +188,7 @@ func CancelPendingUninstallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получение логина админа
-	adminLogin, _, err := protection.GetLoginAndSessionIDFromCookie(r)
-	if err != nil {
-		adminLogin = "Логин неизвестен" // Если по какой-то причине не удалось получить логин
-	}
-
-	logging.LogAction("Удаление Агента: Админ \"%s\" отменил удаление для клиента %s", adminLogin, id) // Добавление лога действия
+	logging.LogAction("Удаление Агента: Админ \"%s\" (с именем: %s) отменил удаление клиента %s", authInfo.Login, authInfo.Name, id)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{

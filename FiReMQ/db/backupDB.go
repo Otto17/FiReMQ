@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 package db
@@ -108,7 +108,7 @@ func performHotBackup() error {
 	fi, _ := zipFile.Stat()
 	sizeMB := float64(fi.Size()) / 1024 / 1024
 
-	logging.LogAction("Автобэкап БД: Бэкап БД записан: %s (версия TS: %d, размер: %.2f МБ)", fileName, ts, sizeMB)
+	logging.LogSystem("Автобэкап БД: Бэкап БД записан: %s (версия TS: %d, размер: %.2f МБ)", fileName, ts, sizeMB)
 	return nil
 }
 

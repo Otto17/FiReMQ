@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 //go:build linux
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	version = "21.12.25" // Текущая версия ServerUpdater в формате "дд.мм.гг"
+	version = "08.01.26" // Текущая версия ServerUpdater в формате "дд.мм.гг"
 
 	backupTimestampLayout = "02.01.06(в_15.04.05)" // Формат метки времени для резервной копии "дд.мм.гг(в_ЧЧ.ММ.СС)""
 	backupPatternPrefix   = "bak_"                 // Префикс
@@ -60,7 +60,7 @@ func main() {
 			log.Fatalf("Откат не выполнен: %v", err)
 		}
 
-		log.Println("Откат завершён успешно.")
+		log.Println("Откат успешно завершён!")
 		LogSpacer(1) // Один пустой абзац-разделитель
 		return       // Завершает работу после успешного отката
 	}
@@ -79,12 +79,12 @@ func main() {
 			pidStr = strings.TrimSpace(args[4]) // Читает опциональный аргумент PID процесса
 		}
 
-		log.Printf("Применение архива: %s (current=%s, pid=%s)", archPath, curVer, pidStr)
+		log.Printf("Применение архива: %s (текущая версия=%s, pid=%s)", archPath, curVer, pidStr)
 		if err := RunApplyFromZip(archPath, curVer, pidStr); err != nil {
 			log.Fatalf("Ошибка применения архива: %v", err)
 		}
 
-		log.Println("Замена из локального архива завершена успешно.")
+		log.Println("Замена из локального архива успешно завершена!")
 		LogSpacer(1) // Один пустой абзац-разделитель
 		return       // Завершает работу после успешного обновления
 	}
@@ -472,4 +472,17 @@ func exeName() string {
 // updaterName возвращает имя исполняемого файла апдейтера
 func updaterName() string {
 	return "ServerUpdater"
+}
+
+// formatSize преобразует размер в удобночитаемые величины (Байт, КБ, МБ)
+func formatSize(size int64) string {
+	if size < 1024 {
+		return fmt.Sprintf("%d Байт", size)
+	}
+	fSize := float64(size) / 1024.0
+	if fSize < 1024.0 {
+		return fmt.Sprintf("%.2f КБ", fSize)
+	}
+	fSize /= 1024.0
+	return fmt.Sprintf("%.2f МБ", fSize)
 }

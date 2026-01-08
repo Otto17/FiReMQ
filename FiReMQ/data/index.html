@@ -40,13 +40,13 @@
     </div>
   </div>
 
-  <!-- Модальное окно перемещения клиента -->
+  <!-- Модальное окно перемещение клиента -->
   <div id="moveClientModal" class="modal-window">
     <div class="modal-window-content move-client">
       <span class="close" id="closeMoveClientModal">&times;</span>
       <h2>Перемещение клиента</h2>
       <form id="moveClientForm">
-        <!-- Радио кнопки -->
+        <!-- Выбор из списка -->
         <div>
           <label>
             <input type="radio" name="moveOption" value="existing" checked>Выбрать из списка </label>
@@ -54,12 +54,18 @@
             <option value="" disabled selected>Выберите группу и подгруппу</option>
           </select>
         </div>
+		<!-- Ввод вручную -->
         <div>
-          <label>
-            <input type="radio" name="moveOption" value="new">Создать вручную </label>
-          <input type="text" id="newGroupName" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
-          <input type="text" id="newSubgroupName" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
-        </div>
+			<label><input type="radio" name="moveOption" value="new">Создать вручную </label>
+			<div class="input-validation-wrapper">
+				<input type="text" id="newGroupName" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+				<span class="validation-tooltip"></span>
+			</div>
+			<div class="input-validation-wrapper">
+				<input type="text" id="newSubgroupName" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+				<span class="validation-tooltip"></span>
+			</div>
+		</div>
         <button type="button" id="confirmMoveClientButton" class="save-buttonModal">Переместить</button>
       </form>
     </div>
@@ -69,7 +75,7 @@
   <div id="moveCheckClientsModal" class="modal-window">
     <div class="modal-window-content move-client">
       <span class="close" id="closeMoveCheckModal">&times;</span>
-      <h2>Перемещение выделенных клиентов</h2>
+      <h2>Массовое перемещение клиентов</h2>
       <form id="moveCheckClientsForm">
         <!-- Выбор из списка -->
         <div>
@@ -80,12 +86,17 @@
           </select>
         </div>
         <!-- Ввод вручную -->
-        <div>
-          <label>
-            <input type="radio" name="moveOption" value="new">Создать вручную </label>
-          <input type="text" id="newGroupNameCheck" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
-          <input type="text" id="newSubgroupNameCheck" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
-        </div>
+		<div>
+		<label><input type="radio" name="moveOption" value="new">Создать вручную </label>
+		<div class="input-validation-wrapper">
+			<input type="text" id="newGroupNameCheck" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+			<span class="validation-tooltip"></span>
+		</div>
+		<div class="input-validation-wrapper">
+			<input type="text" id="newSubgroupNameCheck" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+			<span class="validation-tooltip"></span>
+		</div>
+		</div>
         <button type="button" id="confirmMoveCheckClientsButton" class="save-buttonModal">Переместить</button>
       </form>
     </div>
@@ -101,21 +112,30 @@
         <h2>Добавить нового Админа</h2>
         <div class="admin-form-container">
             <form id="addUserForm">
-                <input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
-                <input type="text" id="newLogin" placeholder="Новый логин (до 30)" maxlength="30" autocomplete="off">
-                <div class="password-input-container">
-                    <input type="password" id="newPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
-                    <button type="button" class="toggle-password" data-target="newPassword">
-                        <img id="newPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-                    </button>
-                </div>
+                <div class="input-validation-wrapper">
+					<input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
+					<span class="validation-tooltip"></span>
+				</div>
+				<div class="input-validation-wrapper">
+					<input type="text" id="newLogin" placeholder="Новый логин (до 30)" maxlength="30" autocomplete="off">
+					<span class="validation-tooltip"></span>
+				</div>
+				<div class="input-validation-wrapper">
+					<div class="password-input-container">
+						<input type="password" id="newPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+						<button type="button" class="toggle-password" data-target="newPassword">
+							<img id="newPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+						</button>
+					</div>
+					<span class="validation-tooltip"></span>
+				</div>
                 <button type="submit" class="save-buttonModal">Добавить</button>
             </form>
         </div>
     </div>
 </div>
 
-  <!-- Модальное окно MQTT авторизации -->
+  <!-- Модальное окно MQTT авторизация -->
   <div id="mqttAuthModal" class="modal-window">
     <div class="modal-window-content mqtt-auth-content">
       <span class="close-mqtt" id="closeMqttAuthModal">&times;</span>
@@ -125,14 +145,20 @@
         <span>Текущий логин:</span>
         <input type="text" id="currentMqttUsername" name="currentMqttUsername" readonly>
         <span>Новые данные:</span>
-        <input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
-        <!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
-        <div class="mqtt-password-input-container">
-          <input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
-          <button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
-            <img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-          </button>
-        </div>
+		<div class="input-validation-wrapper">
+			<input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
+			<span class="validation-tooltip"></span>
+		</div>
+		<!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
+		<div class="input-validation-wrapper">
+			<div class="mqtt-password-input-container">
+				<input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+				<button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
+				<img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+				</button>
+			</div>
+			<span class="validation-tooltip"></span>
+		</div>
 		<button type="button" id="saveMqttAuth" class="mqtt-save-buttonModal">Сохранить</button>
         <!-- Новый блок для управления резервным аккаунтом -->
         <div class="reserve-account-container">
@@ -170,7 +196,7 @@
         </div>
         <!-- Поле рабочей папки -->
         <div class="command-modal-field">
-          <label for="workingFolder">Рабочая папка (опционально):</label>
+          <label for="workingFolder" class="command-tooltip-label" data-tooltip="Папка, в которой будет выполняться cmd или PowerShell команда/скрипт. Если не указана, используется системный каталог по умолчанию.">Рабочая папка (опционально):</label>
           <input type="text" id="workingFolder" name="workingFolder" placeholder="C:\путь\к\папке">
         </div>
         <!-- Выбор выполнения для пользователей -->
@@ -201,9 +227,10 @@
         </div>
         <!-- Флаг задачи -->
         <div class="command-modal-checkbox">
-          <label>
-            <input type="checkbox" id="highestPrivileges" name="highestPrivileges">Запуск с наивысшими привилегиями </label>
-        </div>
+			<label class="command-tooltip-label" data-tooltip="Использовать только для пользователей с административными правами. При указании пользователя с ограниченными правами запрос с командой не сможет выполниться!">
+				<input type="checkbox" id="highestPrivileges" name="highestPrivileges">Запуск с наивысшими привилегиями
+			</label>
+		</div>
         <button type="submit" class="command-modal-submit">Отправить</button>
       </form>
     </div>
@@ -730,7 +757,7 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
 		</div>
 		<!-- Информация об авторе и лицензия-->
 		<div class="about-version">
-		  Автор: © <span id="currentYear"></span> Otto
+		  Автор: © 2025-<span id="currentYear"></span> Otto
 		  <br>
 		  Лицензия: <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a>
 		</div>
@@ -744,13 +771,13 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
 		<span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>
 		<h2 id="uninstallTitle">Полное удаление FiReAgent</h2>
 
-		<!-- Оффлайн-очередь на удаление -->
-		<p class="pending-caption">Ожидают удаления (оффлайн):</p>
+		<!-- Офлайн-очередь на удаление -->
+		<p class="pending-caption uninstall-tooltip-label" data-tooltip="Список ID клиентов, ожидающих самоудаления при переходе в онлайн. Пока клиент офлайн, его можно исключить из этого списка.">Ожидают удаления (офлайн):</p>
 		<div id="pendingUninstallList" class="client-id-list" aria-live="polite">
 		  <div class="list-empty">Загрузка...</div>
 		</div>
 
-		<p class="pending-caption">Этим клиентам будут отправлен запрос на удаление FiReAgent:</p>
+		<p class="pending-caption uninstall-tooltip-label" data-tooltip="Этим клиентам будет отправлен запрос на самоудаление. Онлайн-клиенты удалятся немедленно, офлайн — после подключения к серверу.">Запрос на удаление будет отправлен:</p>
 		<div id="uninstallClientsList" class="client-id-list"></div>
 
 		<p class="delete-confirm-caption">Напишите <strong class="delete-confirmation-text">"Удаляем!"</strong> для подтверждения.</p>

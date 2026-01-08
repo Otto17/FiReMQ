@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Otto
+// Copyright (c) 2025-2026 Otto
 // Лицензия: MIT (см. LICENSE)
 
 //go:build linux
@@ -188,6 +188,14 @@ func restoreFromManifestBackup(zipPath string) error {
 			return closeOutErr
 		}
 
+		// Определение размера восстановленного файла
+		var sizeStr string
+		if info, err := os.Stat(tmp); err == nil {
+			sizeStr = formatSize(info.Size())
+		} else {
+			sizeStr = "неизвестно"
+		}
+
 		// Атомарно заменяет файл назначения временным файлом
 		_ = os.Remove(e.DestPath)
 		if err := os.Rename(tmp, e.DestPath); err != nil {
@@ -198,7 +206,7 @@ func restoreFromManifestBackup(zipPath string) error {
 		// Устанавливает владельца и права доступа на восстановленный файл
 		setOwnerAndPerms(e.DestPath, zf.Mode())
 
-		log.Printf("ВОССТАНОВЛЕНИЕ: %s (права=%o)", e.DestPath, zf.Mode())
+		log.Printf("ВОССТАНОВЛЕНИЕ: %s (размер=%s, права=%o)", e.DestPath, sizeStr, zf.Mode())
 	}
 	return nil
 }
