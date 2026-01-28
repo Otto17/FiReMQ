@@ -27,6 +27,12 @@ import (
 // shutdownFn хранит функцию для мягкого завершения работы сервера
 var shutdownFn func()
 
+// GetAuthInfo функция для получения информации об авторизованном админе из запроса (защита от циклического импорта)
+var GetAuthInfo func(r *http.Request) (login, name string, err error)
+
+// CheckPermSystemSettings функция для проверки права на системные настройки (защита от циклического импорта)
+var CheckPermSystemSettings func(login string) bool
+
 // BindShutdown устанавливает функцию, которая будет вызвана для завершения работы сервера
 func BindShutdown(fn func()) { shutdownFn = fn }
 
@@ -152,7 +158,30 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Под Windows кастомные обновления больше не поддерживается!
+	// Получение информации об инициаторе (текущем админе)
+	var adminLogin, adminName string
+	if GetAuthInfo != nil {
+		login, name, err := GetAuthInfo(r)
+		if err == nil {
+			adminLogin = login
+			adminName = name
+		}
+	}
+
+	// Проверка прав на системные настройки
+	if CheckPermSystemSettings != nil && adminLogin != "" {
+		if !CheckPermSystemSettings(adminLogin) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"UpdateAnswer": "Ошибка",
+				"Description":  "У вас нет прав на обновление FiReMQ",
+			})
+			return
+		}
+	}
+
+	// Под Windows кастомные обновления не поддерживаются!
 	if runtime.GOOS == "windows" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -160,7 +189,7 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 			"UpdateAnswer": "Ошибка",
 			"Description":  "Обновление FiReMQ недоступно под Windows. Используйте Linux для полноценной работы с FiReMQ.",
 		})
-		logging.LogUpdate("Обновление FiReMQ: Запрос обновления отклонён — автообновление не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ.")
+		logging.LogUpdate("Обновление FiReMQ: Запрос обновления отклонён — автообновление не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ")
 		return
 	}
 
@@ -196,6 +225,11 @@ func UpdateHandler(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"Description": err.Error()})
 		return
 	}
+
+	// Логирование начала обновления
+	if adminLogin != "" {
+		logging.LogAction("Обновление FiReMQ: Админ \"%s\" (с именем: %s) начал обновление FiReMQ до версии \"%s\"", adminLogin, adminName, meta.RemoteVersion)
+	}
 	logging.LogUpdate("Обновление FiReMQ: Инициировано обновление сервера до версии %s. ServerUpdater запущен (PID=%d), архив: %s", meta.RemoteVersion, cmd.Process.Pid, zipAbs)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -215,7 +249,30 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Под Windows откат версий больше не поддерживается!
+	// Получение информации об инициаторе (текущем админе)
+	var adminLogin, adminName string
+	if GetAuthInfo != nil {
+		login, name, err := GetAuthInfo(r)
+		if err == nil {
+			adminLogin = login
+			adminName = name
+		}
+	}
+
+	// Проверка прав на системные настройки
+	if CheckPermSystemSettings != nil && adminLogin != "" {
+		if !CheckPermSystemSettings(adminLogin) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"RollbackAnswer": "Ошибка",
+				"Description":    "У вас нет прав на откат FiReMQ",
+			})
+			return
+		}
+	}
+
+	// Под Windows откат версий не поддерживается!
 	if runtime.GOOS == "windows" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -223,7 +280,7 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 			"RollbackAnswer": "Ошибка",
 			"Description":    "Откат версии FiReMQ недоступно под Windows. Используйте Linux для полноценной работы с FiReMQ.",
 		})
-		logging.LogUpdate("Обновление FiReMQ: Запрос отката отклонён — откат не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ.")
+		logging.LogUpdate("Обновление FiReMQ: Запрос отката отклонён — откат не поддерживается под Windows. Используйте Linux для полноценной работы с FiReMQ")
 		return
 	}
 
@@ -286,7 +343,11 @@ func RollbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logging.LogUpdate("Обновление FiReMQ: Инициирован откат сервера к версии %s. ServerUpdater запущен для отката (PID=%d) с бэкапом: %s.", bkpVer, cmd.Process.Pid, backupPath)
+	// Логирование начала обновления
+	if adminLogin != "" {
+		logging.LogAction("Обновление FiReMQ: Админ \"%s\" (с именем: %s) начал откат FiReMQ до версии \"%s\"", adminLogin, adminName, bkpVer)
+	}
+	logging.LogUpdate("Обновление FiReMQ: Инициирован откат сервера к версии %s. ServerUpdater запущен для отката (PID=%d) с бэкапом: %s", bkpVer, cmd.Process.Pid, backupPath)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{

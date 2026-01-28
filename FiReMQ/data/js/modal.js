@@ -3,7 +3,7 @@
 // Глобальный обработчик нажатия клавиш (для закрытия окна кнопкой "Esc")
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-	// Проверяем окно "Список полезных команд"
+	// Проверка окна "Список полезных команд"
 	const cheatsheetModal = document.getElementById("commandCheatsheetModal");
 	if (cheatsheetModal && cheatsheetModal.style.display === "flex") {
 	  cheatsheetModal.style.display = "none";
@@ -12,7 +12,26 @@ document.addEventListener("keydown", (event) => {
 	  return; // Закрыли только "Список полезных команд"
 	}
 	
-    // Проверяем окно подтверждения отмены загрузки
+	// Проверка окна подтверждения изменения разрешений прав доступа
+	const permissionConfirmModal = document.getElementById("permissionConfirmModal");
+	if (permissionConfirmModal && permissionConfirmModal.style.display === "flex") {
+		closePermissionConfirmModal();
+		event.stopPropagation();
+		event.preventDefault();
+		return;
+	}
+	
+	
+	// Проверка окна выбора прав с разрешёнными группами
+	const groupsSelectModal = document.getElementById("groupsSelectModal");
+	if (groupsSelectModal && groupsSelectModal.style.display === "flex") {
+		closeGroupsSelectModal();
+		event.stopPropagation();
+		event.preventDefault();
+		return;
+	}
+	
+    // Проверка окна подтверждения отмены загрузки
     const confirmCancelUploadModal = document.getElementById("confirmCancelUploadModal");
     if (confirmCancelUploadModal && confirmCancelUploadModal.style.display === "flex") {
       confirmCancelUploadModal.style.display = "none";
@@ -21,7 +40,7 @@ document.addEventListener("keydown", (event) => {
       return;
     }
 
-    // Проверяем другие окна подтверждения
+    // Проверка других окна подтверждения
     const confirmModal = document.getElementById("confirmDeleteRequestModal");
     if (confirmModal && confirmModal.style.display === "flex") {
       // Если окно подтверждения на переднем плане, закрываем его и не закрываем окно отчётов
@@ -269,44 +288,48 @@ document.getElementById("deleteConfirmationInput").addEventListener("input", fun
 
 // Подтверждение удаления выделенных клиентов
 function confirmDeleteCheckClients() {
-  const checkedClients = Object.keys(checkboxStates)
-    .filter((clientId) => checkboxStates[clientId] === true)
-    .map((clientId) => clientId.replace("checkbox_", "")); // Убираем префикс "checkbox_"
+	const checkedClients = Object.keys(checkboxStates)
+		.filter((clientId) => checkboxStates[clientId] === true)
+		.map((clientId) => clientId.replace("checkbox_", "")); // Убираем префикс "checkbox_"
 
-  if (checkedClients.length === 0) {
-	showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
-    return;
-  }
+	if (checkedClients.length === 0) {
+		showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
+		return;
+	}
 
 	apiPostJson("/delete-selected-clients", checkedClients)
-	
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.text();
-    })
-    .then((data) => {
-      // Удаляем удалённых клиентов из sessionStorage
-      checkedClients.forEach((clientId) => {
-        const checkboxKey = `checkbox_${clientId}`; // Восстанавливаем ключ с префиксом
-        delete checkboxStates[checkboxKey];
-        sessionStorage.removeItem(checkboxKey);
-      });
 
-      // Обновляем sessionStorage с изменённым состоянием
-      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+		.then((response) => {
+			if (!response.ok) {
+				// Получает текст ошибки от сервера для отображения в PUSH
+				return response.text().then((errorText) => {
+					throw new Error(errorText);
+				});
+			}
+			return response.text();
+		})
+		.then((data) => {
+			// Удаляем удалённых клиентов из sessionStorage
+			checkedClients.forEach((clientId) => {
+				const checkboxKey = `checkbox_${clientId}`; // Восстанавливаем ключ с префиксом
+				delete checkboxStates[checkboxKey];
+				sessionStorage.removeItem(checkboxKey);
+			});
 
-      // Сохраняем сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
-      sessionStorage.setItem("pushMessage", data);
-	  sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
-      location.reload(); // Перезагрузка страницы
-    })
-    .catch((error) => {
-      console.error("Ошибка удаления выделенных клиентов:", error);
-    });
+			// Обновляем sessionStorage с изменённым состоянием
+			sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
 
-  closeDeleteCheckModal(); // Закрыть модальное окно
+			// Сохраняем сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
+			sessionStorage.setItem("pushMessage", data);
+			sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
+
+			closeDeleteCheckModal(); // Закрыть модальное окно только при успехе
+			location.reload(); // Перезагрузка страницы
+		})
+		.catch((error) => {
+			// Показывает PUSH с сообщением об ошибке, модальное окно остаётся открытым
+			showPush(error.message, "#ff4d4d"); // Красный
+		});
 }
 
 // Привязка событий к новому модальному окну
@@ -597,40 +620,39 @@ document.getElementById("confirmMoveCheckClientsButton").addEventListener("click
         newSubgroup: newSubgroupID,
 	};
 
-	apiPostJson("/move-selected-clients", requestData)
-	.then((response) => {
-		if (!response.ok) {
-			// Читает текст ошибки
-			return response.text().then((errorText) => {
-				throw new Error(errorText || "Ошибка перемещения клиентов");
-			});
-		}
-		// Если ответ успешный, парсит его как JSON
-		return response.json();
-	})
-    .then((data) => {
-        clearAllCheckboxStates(); // Снимаем все галочки в sessionStorage
+		apiPostJson("/move-selected-clients", requestData)
+		.then((response) => {
+			if (!response.ok) {
+				// Читает текст ошибки
+				return response.text().then((errorText) => {
+					throw new Error(errorText || "Ошибка перемещения клиентов");
+				});
+			}
+			// Если ответ успешный, парсит его как JSON
+			return response.json();
+		})
+		.then((data) => {
+			clearAllCheckboxStates(); // Снимаем все галочки в sessionStorage
 
-        let pushMessage = data.message;
-        let pushColor;
+			let pushMessage = data.message;
+			let pushColor;
 
-        // Определяем цвет на основе поля "status"
-        if (data.status === "Предупреждение") {
-            pushColor = "#ff4081"; // Розовый
-        } else { // "Успех" или любой другой положительный статус
-            pushColor = "#4CAF50"; // Зелёный
-        }
+			// Определяем цвет на основе поля "status"
+			if (data.status === "Предупреждение") {
+				pushColor = "#ff4081"; // Розовый
+			} else { // "Успех" или любой другой положительный статус
+				pushColor = "#4CAF50"; // Зелёный
+			}
 
-        // Сохраняем сообщение и цвет push-уведомления в sessionStorage
-        sessionStorage.setItem("pushMessage", pushMessage);
-        sessionStorage.setItem("pushColor", pushColor);
-        
-        location.reload(); // Перезагружаем страницу для отображения изменений
-    })
-	// Критические ошибоки
-    .catch((error) => showPush(error.message, "#ff4d4d")); // Красный
+			// Сохраняем сообщение и цвет push-уведомления в sessionStorage
+			sessionStorage.setItem("pushMessage", pushMessage);
+			sessionStorage.setItem("pushColor", pushColor);
 
-  closeMoveCheckModal(); // Закрываем модальное окно
+			closeMoveCheckModal(); // Закрываем модальное окно только при успехе
+			location.reload(); // Перезагружаем страницу для отображения изменений
+		})
+		// Критические ошибки — модальное окно остаётся открытым
+		.catch((error) => showPush(error.message, "#ff4d4d")); // Красный
 });
 
 // Очистка (false) выделенных клиентов в "sessionStorage" после массового премещения клиентов
@@ -693,7 +715,21 @@ document.getElementById("moveCheckClientsForm").addEventListener("keydown", func
 
 
 
+
 // МОДАЛЬНОЕ ОКНО УЧЁТНЫЕ ЗАПИСИ АДМИНОВ
+
+// Данные для модального окна подтверждения изменения разрешения
+let pendingPermissionChange = null;
+
+// Данные для модального окна выбора групп перемещения
+let pendingGroupsSelection = {
+    context: null, 			// 'new' для новой учётки, 'existing' для существующей
+	permissionType: null, 	// 'move' для перемещения, 'delete' для удаления клиентов
+	login: null, 			// Логин учётки (для existing)
+	userName: null, 		// Имя учётки (для existing)
+	allowAllGroups: true,	// Разрешить все группы
+	selectedGroups: [] 		// Список выбранных групп
+};
 
 // Открытие модального окна
 function openAccountsModal() {
@@ -797,12 +833,298 @@ function loadAccounts() {
 				passwordWrapper.appendChild(passwordContainer);
 				passwordWrapper.appendChild(passwordTooltip);
 
-                // Информация о датах
-                const dateInfo = document.createElement("div");
-                dateInfo.className = "date-info";
-                if (user.date_change === "--.--.--(--:--)")
-                    dateInfo.classList.add("padding-right-26");
-                dateInfo.innerHTML = `Создан: ${user.date_create} | Изменён: ${user.date_change}`;
+                // Контейнер для иконок разрешений
+				const permissionsIcons = document.createElement("div");
+				permissionsIcons.className = "permissions-icons";
+
+				// Обёртка для иконки создания с подсказкой
+				const createWrapper = document.createElement("span");
+				createWrapper.className = "permission-icon-wrapper";
+				createWrapper.setAttribute("data-tooltip", user.perm_create 
+					? "Создание новых учётных записей разрешено" 
+					: "Создание новых учётных записей запрещено");
+				const createIcon = document.createElement("img");
+				createIcon.src = user.perm_create ? "../icon/Permission_Create_ON.svg" : "../icon/Permission_Create_OFF.svg";
+				createIcon.alt = user.perm_create ? "Создание разрешено" : "Создание запрещено";
+				createIcon.className = "permission-icon";
+				createWrapper.appendChild(createIcon);
+
+				// Обёртка для иконки изменения с подсказкой
+				const updateWrapper = document.createElement("span");
+				updateWrapper.className = "permission-icon-wrapper";
+				updateWrapper.setAttribute("data-tooltip", user.perm_update 
+					? "Обновление действующих учётных записей разрешено" 
+					: "Обновление действующих учётных записей запрещено");
+				const updateIcon = document.createElement("img");
+				updateIcon.src = user.perm_update ? "../icon/Permission_Update_ON.svg" : "../icon/Permission_Update_OFF.svg";
+				updateIcon.alt = user.perm_update ? "Обновление разрешено" : "Обновление запрещено";
+				updateIcon.className = "permission-icon";
+				updateWrapper.appendChild(updateIcon);
+
+				// Обёртка для иконки удаления с подсказкой
+				const deleteWrapper = document.createElement("span");
+				deleteWrapper.className = "permission-icon-wrapper";
+				deleteWrapper.setAttribute("data-tooltip", user.perm_delete
+					? "Удаление действующих учётных записей разрешено"
+					: "Удаление действующих учётных записей запрещено");
+				const deleteIcon = document.createElement("img");
+				deleteIcon.src = user.perm_delete ? "../icon/Permission_Delete_ON.svg" : "../icon/Permission_Delete_OFF.svg";
+				deleteIcon.alt = user.perm_delete ? "Удаление разрешено" : "Удаление запрещено";
+				deleteIcon.className = "permission-icon";
+				deleteWrapper.appendChild(deleteIcon);
+
+				// Обёртка для иконки переименования клиентов с подсказкой
+				const renameClientsWrapper = document.createElement("span");
+				renameClientsWrapper.className = "permission-icon-wrapper";
+
+				// Формирует подсказку с учётом разрешённых групп для переименования
+				let renameClientsTooltip;
+				if (!user.perm_rename_clients) {
+				renameClientsTooltip = "Переименование клиентов запрещено";
+				} else if (!user.perm_rename_clients_groups || user.perm_rename_clients_groups.length === 0) {
+				renameClientsTooltip = "Переименование клиентов разрешено (все группы)";
+				} else {
+				renameClientsTooltip = `Переименование клиентов разрешено (группы: ${user.perm_rename_clients_groups.join(", ")})`;
+				}
+				renameClientsWrapper.setAttribute("data-tooltip", renameClientsTooltip);
+
+				const renameClientsIcon = document.createElement("img");
+				// Определяет иконку для переименования клиентов: OFF/HALF/ON
+				if (!user.perm_rename_clients) {
+				renameClientsIcon.src = "../icon/Permission_Rename_OFF.svg";
+				renameClientsIcon.alt = "Переименование запрещено";
+				} else if (user.perm_rename_clients_groups && user.perm_rename_clients_groups.length > 0) {
+				renameClientsIcon.src = "../icon/Permission_Rename_HALF.svg";
+				renameClientsIcon.alt = "Переименование разрешено (частично)";
+				} else {
+				renameClientsIcon.src = "../icon/Permission_Rename_ON.svg";
+				renameClientsIcon.alt = "Переименование разрешено (все группы)";
+				}
+				renameClientsIcon.className = "permission-icon";
+				renameClientsWrapper.appendChild(renameClientsIcon);
+
+				// Обёртка для иконки удаления клиентов с подсказкой
+				const deleteClientsWrapper = document.createElement("span");
+				deleteClientsWrapper.className = "permission-icon-wrapper";
+
+				// Формирует подсказку с учётом разрешённых групп для удаления
+				let deleteClientsTooltip;
+				if (!user.perm_delete_clients) {
+				deleteClientsTooltip = "Удаление клиентов запрещено";
+				} else if (!user.perm_delete_clients_groups || user.perm_delete_clients_groups.length === 0) {
+				deleteClientsTooltip = "Удаление клиентов разрешено (все группы)";
+				} else {
+				deleteClientsTooltip = `Удаление клиентов разрешено (группы: ${user.perm_delete_clients_groups.join(", ")})`;
+				}
+				deleteClientsWrapper.setAttribute("data-tooltip", deleteClientsTooltip);
+
+				const deleteClientsIcon = document.createElement("img");
+                // Определяет иконку для удаления клиентов: OFF/HALF/ON
+                if (!user.perm_delete_clients) {
+                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_OFF.svg";
+                    deleteClientsIcon.alt = "Удаление клиентов запрещено";
+                } else if (user.perm_delete_clients_groups && user.perm_delete_clients_groups.length > 0) {
+                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_HALF.svg";
+                    deleteClientsIcon.alt = "Удаление клиентов разрешено (частично)";
+                } else {
+                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_ON.svg";
+                    deleteClientsIcon.alt = "Удаление клиентов разрешено (все группы)";
+                }
+                deleteClientsIcon.className = "permission-icon";
+                deleteClientsWrapper.appendChild(deleteClientsIcon);
+
+				// Обёртка для иконки перемещения клиентов с подсказкой
+				const moveClientsWrapper = document.createElement("span");
+				moveClientsWrapper.className = "permission-icon-wrapper";
+
+				// Формирует подсказку с учётом разрешённых групп
+				let moveTooltip;
+				if (!user.perm_move_clients) {
+					moveTooltip = "Перемещение клиентов запрещено";
+				} else if (!user.perm_move_clients_groups || user.perm_move_clients_groups.length === 0) {
+					moveTooltip = "Перемещение клиентов разрешено (все группы)";
+				} else {
+					moveTooltip = `Перемещение клиентов разрешено (группы: ${user.perm_move_clients_groups.join(", ")})`;
+				}
+				moveClientsWrapper.setAttribute("data-tooltip", moveTooltip);
+
+				const moveClientsIcon = document.createElement("img");
+                // Определяет иконку для перемещения клиентов: OFF/HALF/ON
+                if (!user.perm_move_clients) {
+                    moveClientsIcon.src = "../icon/Permission_MovingGroup_OFF.svg";
+                    moveClientsIcon.alt = "Перемещение клиентов запрещено";
+                } else if (user.perm_move_clients_groups && user.perm_move_clients_groups.length > 0) {
+                    moveClientsIcon.src = "../icon/Permission_MovingGroup_HALF.svg";
+                    moveClientsIcon.alt = "Перемещение клиентов разрешено (частично)";
+                } else {
+                    moveClientsIcon.src = "../icon/Permission_MovingGroup_ON.svg";
+                    moveClientsIcon.alt = "Перемещение клиентов разрешено (все группы)";
+                }
+                moveClientsIcon.className = "permission-icon";
+                moveClientsWrapper.appendChild(moveClientsIcon);
+
+				// Обёртка для иконки полного удаления FiReAgent с подсказкой
+				const uninstallAgentsWrapper = document.createElement("span");
+				uninstallAgentsWrapper.className = "permission-icon-wrapper";
+				uninstallAgentsWrapper.setAttribute("data-tooltip", user.perm_uninstall_agents
+					? "Полное удаление FiReAgent разрешено"
+					: "Полное удаление FiReAgent запрещено");
+				const uninstallAgentsIcon = document.createElement("img");
+				uninstallAgentsIcon.src = user.perm_uninstall_agents ? "../icon/Permission_DeleteFiReAgent_ON.svg" : "../icon/Permission_DeleteFiReAgent_OFF.svg";
+				uninstallAgentsIcon.alt = user.perm_uninstall_agents ? "Удаление FiReAgent разрешено" : "Удаление FiReAgent запрещено";
+				uninstallAgentsIcon.className = "permission-icon";
+				uninstallAgentsWrapper.appendChild(uninstallAgentsIcon);
+
+				// Обёртка для иконки отправки cmd/PowerShell команд с подсказкой
+                const terminalCommandsWrapper = document.createElement("span");
+                terminalCommandsWrapper.className = "permission-icon-wrapper";
+
+                // Формирует подсказку с учётом разрешённых групп для cmd/PowerShell команд
+                let terminalCommandsTooltip;
+                if (!user.perm_terminal_commands) {
+                    terminalCommandsTooltip = "Отправка cmd/PowerShell команд запрещена";
+                } else if (!user.perm_terminal_commands_groups || user.perm_terminal_commands_groups.length === 0) {
+                    terminalCommandsTooltip = "Отправка cmd/PowerShell команд разрешена (все группы)";
+                } else {
+                    terminalCommandsTooltip = `Отправка cmd/PowerShell команд разрешена (группы: ${user.perm_terminal_commands_groups.join(", ")})`;
+                }
+                terminalCommandsWrapper.setAttribute("data-tooltip", terminalCommandsTooltip);
+
+                const terminalCommandsIcon = document.createElement("img");
+                // Определяет иконку для cmd/PowerShell команд: OFF/HALF/ON
+                if (!user.perm_terminal_commands) {
+                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_OFF.svg";
+                    terminalCommandsIcon.alt = "Терминальные команды запрещены";
+                } else if (user.perm_terminal_commands_groups && user.perm_terminal_commands_groups.length > 0) {
+                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_HALF.svg";
+                    terminalCommandsIcon.alt = "Терминальные команды разрешены (частично)";
+                } else {
+                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_ON.svg";
+                    terminalCommandsIcon.alt = "Терминальные команды разрешены (все группы)";
+                }
+                terminalCommandsIcon.className = "permission-icon";
+                terminalCommandsWrapper.appendChild(terminalCommandsIcon);
+
+				// Обёртка для иконки установки ПО с подсказкой
+                const installProgramsWrapper = document.createElement("span");
+                installProgramsWrapper.className = "permission-icon-wrapper";
+
+                // Формирует подсказку с учётом разрешённых групп для установки ПО
+                let installProgramsTooltip;
+                if (!user.perm_install_programs) {
+                    installProgramsTooltip = "Установка ПО запрещена";
+                } else if (!user.perm_install_programs_groups || user.perm_install_programs_groups.length === 0) {
+                    installProgramsTooltip = "Установка ПО разрешена (все группы)";
+                } else {
+                    installProgramsTooltip = `Установка ПО разрешена (группы: ${user.perm_install_programs_groups.join(", ")})`;
+                }
+                installProgramsWrapper.setAttribute("data-tooltip", installProgramsTooltip);
+
+                const installProgramsIcon = document.createElement("img");
+                // Определяет иконку для установки ПО: OFF/HALF/ON
+                if (!user.perm_install_programs) {
+                    installProgramsIcon.src = "../icon/Permission_InstallProgram_OFF.svg";
+                    installProgramsIcon.alt = "Установка ПО запрещена";
+                } else if (user.perm_install_programs_groups && user.perm_install_programs_groups.length > 0) {
+                    installProgramsIcon.src = "../icon/Permission_InstallProgram_HALF.svg";
+                    installProgramsIcon.alt = "Установка ПО разрешена (частично)";
+                } else {
+                    installProgramsIcon.src = "../icon/Permission_InstallProgram_ON.svg";
+                    installProgramsIcon.alt = "Установка ПО разрешена (все группы)";
+                }
+                installProgramsIcon.className = "permission-icon";
+                installProgramsWrapper.appendChild(installProgramsIcon);
+
+				// Обёртка для иконки системных настроек с подсказкой
+				const systemSettingsWrapper = document.createElement("span");
+				systemSettingsWrapper.className = "permission-icon-wrapper";
+				systemSettingsWrapper.setAttribute("data-tooltip", user.perm_system_settings
+					? "Системные настройки разрешены (обновление/откат, MQTT авторизация)"
+					: "Системные настройки запрещены (обновление/откат, MQTT авторизация)");
+				const systemSettingsIcon = document.createElement("img");
+				systemSettingsIcon.src = user.perm_system_settings ? "../icon/Permission_SystemSettings_ON.svg" : "../icon/Permission_SystemSettings_OFF.svg";
+				systemSettingsIcon.alt = user.perm_system_settings ? "Системные настройки разрешены" : "Системные настройки запрещены";
+				systemSettingsIcon.className = "permission-icon";
+				systemSettingsWrapper.appendChild(systemSettingsIcon);
+
+				// Добавляет обработчики для корректировки позиции подсказок
+				createWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				updateWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				deleteWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				renameClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				deleteClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				moveClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				uninstallAgentsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				terminalCommandsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+				installProgramsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+
+				// Добавляет обработчики клика для изменения разрешений
+				createWrapper.addEventListener('click', () => {
+					showPermissionConfirmModal(encodedLogin, user.auth_name, 'create', !user.perm_create);
+				});
+				updateWrapper.addEventListener('click', () => {
+					showPermissionConfirmModal(encodedLogin, user.auth_name, 'update', !user.perm_update);
+				});
+				deleteWrapper.addEventListener('click', () => {
+					showPermissionConfirmModal(encodedLogin, user.auth_name, 'delete', !user.perm_delete);
+				});
+				renameClientsWrapper.addEventListener('click', () => {
+					// Открывает модальное окно выбора групп для переименования клиентов
+					openGroupsSelectModal('existing', 'rename', encodedLogin, user.auth_name, user.perm_rename_clients, user.perm_rename_clients_groups || []);
+				});
+				deleteClientsWrapper.addEventListener('click', () => {
+					// Открывает модальное окно выбора групп для удаления клиентов
+					openGroupsSelectModal('existing', 'delete', encodedLogin, user.auth_name, user.perm_delete_clients, user.perm_delete_clients_groups || []);
+				});
+				moveClientsWrapper.addEventListener('click', () => {
+					// Открывает модальное окно выбора групп для перемещения клиентов
+					openGroupsSelectModal('existing', 'move', encodedLogin, user.auth_name, user.perm_move_clients, user.perm_move_clients_groups || []);
+				});
+				uninstallAgentsWrapper.addEventListener('click', () => {
+				showPermissionConfirmModal(encodedLogin, user.auth_name, 'uninstall_agents', !user.perm_uninstall_agents);
+				});
+				terminalCommandsWrapper.addEventListener('click', () => {
+                    // Открывает модальное окно выбора групп для cmd/PowerShell команд
+                    openGroupsSelectModal('existing', 'terminal', encodedLogin, user.auth_name, user.perm_terminal_commands, user.perm_terminal_commands_groups || []);
+                });
+				installProgramsWrapper.addEventListener('click', () => {
+                    // Открывает модальное окно выбора групп для установки ПО
+                    openGroupsSelectModal('existing', 'install', encodedLogin, user.auth_name, user.perm_install_programs, user.perm_install_programs_groups || []);
+                });
+				systemSettingsWrapper.addEventListener('click', () => {
+					showPermissionConfirmModal(encodedLogin, user.auth_name, 'system_settings', !user.perm_system_settings);
+				});
+
+				// Добавляет стиль курсора для кликабельных иконок
+				createWrapper.style.cursor = 'pointer';
+				updateWrapper.style.cursor = 'pointer';
+				deleteWrapper.style.cursor = 'pointer';
+				renameClientsWrapper.style.cursor = 'pointer';
+				deleteClientsWrapper.style.cursor = 'pointer';
+				moveClientsWrapper.style.cursor = 'pointer';
+				uninstallAgentsWrapper.style.cursor = 'pointer';
+				terminalCommandsWrapper.style.cursor = 'pointer';
+				installProgramsWrapper.style.cursor = 'pointer';
+				systemSettingsWrapper.style.cursor = 'pointer';
+
+				// Добавляет обёртки с иконками в контейнер
+				permissionsIcons.appendChild(createWrapper);
+				permissionsIcons.appendChild(updateWrapper);
+				permissionsIcons.appendChild(deleteWrapper);
+				permissionsIcons.appendChild(renameClientsWrapper);
+				permissionsIcons.appendChild(deleteClientsWrapper);
+				permissionsIcons.appendChild(moveClientsWrapper);
+				permissionsIcons.appendChild(uninstallAgentsWrapper);
+				permissionsIcons.appendChild(terminalCommandsWrapper);
+				permissionsIcons.appendChild(installProgramsWrapper);
+				permissionsIcons.appendChild(systemSettingsWrapper);
+
+				// Информация о датах
+				const dateInfo = document.createElement("div");
+				dateInfo.className = "date-info";
+				if (user.date_change === "--.--.--(--:--)")
+					dateInfo.classList.add("padding-right-26");
+				dateInfo.innerHTML = `Создан: ${user.date_create} | Изменён: ${user.date_change}`;
 
                 // Кнопка "Обновить"
                 const updateButton = document.createElement("button");
@@ -822,6 +1144,7 @@ function loadAccounts() {
 				accountItem.appendChild(nameWrapper);
 				accountItem.appendChild(loginDisplay);
 				accountItem.appendChild(passwordWrapper);
+				accountItem.appendChild(permissionsIcons);
                 accountItem.appendChild(dateInfo);
                 accountItem.appendChild(updateButton);
                 accountItem.appendChild(deleteButton);
@@ -1009,64 +1332,151 @@ function toggleDeleteButtonState(login) {
 
 // Добавление новой учётной записи
 document.getElementById("addUserForm").addEventListener("submit", function(event) {
-  event.preventDefault();
+	event.preventDefault();
 
-  const newName = document.getElementById("newName").value;
-  const newLogin = document.getElementById("newLogin").value;
-  const newPassword = document.getElementById("newPassword").value;
+	const newName = document.getElementById("newName").value;
+	const newLogin = document.getElementById("newLogin").value;
+	const newPassword = document.getElementById("newPassword").value;
 
-  // Проверка на пустые поля
-  if (!newName || !newLogin || !newPassword) {
-    showPush("Все поля должны быть заполнены.", "#ff4081"); // Розовый
-    return;
-  }
+	// Получает состояние чекбоксов разрешений
+	const permCreate = document.getElementById("permCreate").checked;
+	const permUpdate = document.getElementById("permUpdate").checked;
+	const permDelete = document.getElementById("permDelete").checked;
+	const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+	const permRenameClients = permRenameClientsCheckbox.checked;
+	const permRenameClientsGroups = permRenameClientsCheckbox.dataset.allowedGroups
+	? JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups)
+	: [];
+	const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+	const permDeleteClients = permDeleteClientsCheckbox.checked;
+	const permDeleteClientsGroups = permDeleteClientsCheckbox.dataset.allowedGroups
+	? JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups)
+	: [];
+	const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+	const permMoveClients = permMoveClientsCheckbox.checked;
+	const permMoveClientsGroups = permMoveClientsCheckbox.dataset.allowedGroups
+	? JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups)
+	: [];
+	const permUninstallAgents = document.getElementById("permUninstallAgents").checked;
+    const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+    const permTerminalCommands = permTerminalCommandsCheckbox.checked;
+    const permTerminalCommandsGroups = permTerminalCommandsCheckbox.dataset.allowedGroups
+        ? JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups)
+        : [];
+    const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+    const permInstallPrograms = permInstallProgramsCheckbox.checked;
+    const permInstallProgramsGroups = permInstallProgramsCheckbox.dataset.allowedGroups
+        ? JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups)
+        : [];
+	const permSystemSettings = document.getElementById("permSystemSettings").checked;
 
-  // Проверка на спецсимволы по каждому полю отдельно
-    if (!validateInput(newName, true)) {
-        showPush("Имя нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-        return;
-    }
-	
-    if (!validateInput(newLogin)) {
-        showPush("Логин нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-        return;
-    }
-	
-    if (!validateInput(newPassword)) {
-        showPush("Пароль нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-        return;
-    }
+	// Проверка на пустые поля
+	if (!newName || !newLogin || !newPassword) {
+		showPush("Все поля должны быть заполнены.", "#ff4081"); // Розовый
+		return;
+	}
 
-  const addData = {
-    auth_name: newName,
-    auth_login: newLogin,
-    auth_password: newPassword,
-  };
+	// Проверка на спецсимволы по каждому полю отдельно
+	if (!validateInput(newName, true)) {
+		showPush("Имя нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+		return;
+	}
 
-  apiPostJson("/add-admin", addData)
-  
-    .then(response => {
-        if (response.ok) {
-            return response.text();
-        } else if (response.status === 409) {
-            return response.text().then(text => Promise.reject(text));
-        } else {
-            return response.text().then(text => Promise.reject("Ошибка сервера: " + text));
-        }
-    })
-    .then(message => {
-        showPush(message, "#4CAF50"); // Зелёный
-        loadAccounts();
-        document.getElementById("addUserForm").reset();
-    })
-    .catch(errorMessage => {
-        showPush(errorMessage, "#ff4081"); // Розовый
-    });
+	if (!validateInput(newLogin)) {
+		showPush("Логин нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+		return;
+	}
+
+	if (!validateInput(newPassword)) {
+		showPush("Пароль нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+		return;
+	}
+
+		const addData = {
+			auth_name: newName,
+			auth_login: newLogin,
+			auth_password: newPassword,
+			perm_create: permCreate,
+			perm_update: permUpdate,
+			perm_delete: permDelete,
+			perm_rename_clients: permRenameClients,
+			perm_rename_clients_groups: permRenameClientsGroups,
+			perm_delete_clients: permDeleteClients,
+			perm_delete_clients_groups: permDeleteClientsGroups,
+			perm_move_clients: permMoveClients,
+			perm_move_clients_groups: permMoveClientsGroups,
+			perm_uninstall_agents: permUninstallAgents,
+			perm_terminal_commands: permTerminalCommands,
+			perm_terminal_commands_groups: permTerminalCommandsGroups,
+			perm_install_programs: permInstallPrograms,
+			perm_install_programs_groups: permInstallProgramsGroups,
+			perm_system_settings: permSystemSettings,
+		};
+
+	apiPostJson("/add-admin", addData)
+
+	.then(response => {
+		if (response.ok) {
+			return response.text();
+		} else if (response.status === 409) {
+			return response.text().then(text => Promise.reject(text));
+		} else {
+			return response.text().then(text => Promise.reject(text));
+		}
+	})
+	.then(message => {
+	  showPush(message, "#4CAF50"); // Зелёный
+	  loadAccounts();
+	  document.getElementById("addUserForm").reset();
+
+	  // Сбрасывает данные о группах переименования клиентов
+	  const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+	  if (permRenameClientsCheckbox) {
+		permRenameClientsCheckbox.dataset.allowedGroups = '[]';
+		const renameIndicator = permRenameClientsCheckbox.parentElement.querySelector('.groups-indicator');
+		if (renameIndicator) renameIndicator.remove();
+	  }
+
+	  // Сбрасывает данные о группах перемещения
+	  const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+	  if (permMoveClientsCheckbox) {
+		permMoveClientsCheckbox.dataset.allowedGroups = '[]';
+		const moveIndicator = permMoveClientsCheckbox.parentElement.querySelector('.groups-indicator');
+		if (moveIndicator) moveIndicator.remove();
+	  }
+
+        // Сбрасывает данные о группах удаления клиентов
+        const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+            if (permDeleteClientsCheckbox) {
+                permDeleteClientsCheckbox.dataset.allowedGroups = '[]';
+                const deleteIndicator = permDeleteClientsCheckbox.parentElement.querySelector('.groups-indicator');
+                    if (deleteIndicator) deleteIndicator.remove();
+            }
+
+        // Сбрасывает данные о группах cmd/PowerShell команд
+        const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+            if (permTerminalCommandsCheckbox) {
+                permTerminalCommandsCheckbox.dataset.allowedGroups = '[]';
+                const terminalIndicator = permTerminalCommandsCheckbox.parentElement.querySelector('.groups-indicator');
+                    if (terminalIndicator) terminalIndicator.remove();
+            }
+
+        // Сбрасывает данные о группах установки ПО
+        const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+            if (permInstallProgramsCheckbox) {
+                permInstallProgramsCheckbox.dataset.allowedGroups = '[]';
+                const installIndicator = permInstallProgramsCheckbox.parentElement.querySelector('.groups-indicator');
+                    if (installIndicator) installIndicator.remove();
+            }
+        })
+	.catch(errorMessage => {
+		showPush(errorMessage, "#ff4081"); // Розовый
+	});
 });
 
 // Обработка клика по ссылке "Учётные записи"
 document.getElementById("accountsLink").addEventListener("click", function(event) {
-  event.preventDefault(); // Предотвращаем стандартное поведение ссылки
+  event.preventDefault(); // Предотвращает стандартное поведение ссылки
   openAccountsModal();
 });
 
@@ -1096,9 +1506,82 @@ document.addEventListener("DOMContentLoaded", function() {
     if (closeButton) {
         closeButton.addEventListener("click", closeAccountsModal);
     }
-    
+
     // Инициализация валидации для статических полей
     initStaticFieldsValidation();
+
+    // Обработчик клика на чекбокс перемещения клиентов для новой учётки
+	const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+	if (permMoveClientsCheckbox) {
+		permMoveClientsCheckbox.addEventListener("click", function(e) {
+			// Предотвращает стандартное поведение чекбокса
+			e.preventDefault();
+			// Открывает модальное окно выбора групп
+			const currentChecked = permMoveClientsCheckbox.checked;
+			const currentGroups = permMoveClientsCheckbox.dataset.allowedGroups ?
+				JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups) : [];
+			openGroupsSelectModal('new', 'move', null, null, currentChecked, currentGroups);
+		});
+	}
+
+	// Обработчик клика на чекбокс переименования клиентов для новой учётки
+	const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+	if (permRenameClientsCheckbox) {
+	  permRenameClientsCheckbox.addEventListener("click", function(e) {
+		// Предотвращает стандартное поведение чекбокса
+		e.preventDefault();
+		// Открывает модальное окно выбора групп
+		const currentChecked = permRenameClientsCheckbox.checked;
+		const currentGroups = permRenameClientsCheckbox.dataset.allowedGroups ?
+		  JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups) : [];
+		openGroupsSelectModal('new', 'rename', null, null, currentChecked, currentGroups);
+	  });
+	}
+
+    // Обработчик клика на чекбокс удаления клиентов для новой учётки
+    const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+    if (permDeleteClientsCheckbox) {
+        permDeleteClientsCheckbox.addEventListener("click", function(e) {
+            // Предотвращает стандартное поведение чекбокса
+            e.preventDefault();
+            // Открывает модальное окно выбора групп
+            const currentChecked = permDeleteClientsCheckbox.checked;
+            const currentGroups = permDeleteClientsCheckbox.dataset.allowedGroups ?
+                JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups) : [];
+            openGroupsSelectModal('new', 'delete', null, null, currentChecked, currentGroups);
+        });
+    }
+
+    // Обработчик клика на чекбокс cmd/PowerShell команд для новой учётки
+    const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+    if (permTerminalCommandsCheckbox) {
+        permTerminalCommandsCheckbox.addEventListener("click", function(e) {
+            // Предотвращает стандартное поведение чекбокса
+            e.preventDefault();
+            // Открывает модальное окно выбора групп
+            const currentChecked = permTerminalCommandsCheckbox.checked;
+            const currentGroups = permTerminalCommandsCheckbox.dataset.allowedGroups ?
+                JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups) : [];
+            openGroupsSelectModal('new', 'terminal', null, null, currentChecked, currentGroups);
+        });
+    }
+
+    // Обработчик клика на чекбокс установки ПО для новой учётки
+    const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+    if (permInstallProgramsCheckbox) {
+        permInstallProgramsCheckbox.addEventListener("click", function(e) {
+            // Предотвращает стандартное поведение чекбокса
+            e.preventDefault();
+            // Открывает модальное окно выбора групп
+            const currentChecked = permInstallProgramsCheckbox.checked;
+            const currentGroups = permInstallProgramsCheckbox.dataset.allowedGroups ?
+                JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups) : [];
+            openGroupsSelectModal('new', 'install', null, null, currentChecked, currentGroups);
+        });
+    }
+
+    // Обработчики для универсального модального окна выбора групп
+    initGroupsSelectModalHandlers();
 });
 
 // Инициализация валидации для статических полей (добавление нового админа)
@@ -1126,6 +1609,381 @@ function initDynamicFieldValidation(nameInput, passwordInput) {
     if (passwordInput) {
         passwordInput.addEventListener('input', () => updateFieldValidation(passwordInput, false));
     }
+}
+
+// Корректирует позицию всплывающей подсказки, чтобы она не выходила за пределы модального окна
+function adjustTooltipPosition(event) {
+	const wrapper = event.currentTarget;
+	const modal = document.getElementById('accountsModal').querySelector('.modal-window-content');
+	if (!modal) return;
+
+	const modalRect = modal.getBoundingClientRect();
+	const wrapperRect = wrapper.getBoundingClientRect();
+
+	// Примерная ширина подсказки (максимальная)
+	const tooltipWidth = 280;
+	const tooltipHalfWidth = tooltipWidth / 2;
+
+	// Вычисляет позицию центра иконки относительно модального окна
+	const wrapperCenter = wrapperRect.left + (wrapperRect.width / 2);
+
+	// Сбрасывает предыдущие классы выравнивания
+	wrapper.classList.remove('tooltip-align-left', 'tooltip-align-right');
+
+	// Проверяет, хватает ли места слева для центрированной подсказки
+	const spaceLeft = wrapperCenter - modalRect.left;
+	// Проверяет, хватает ли места справа для центрированной подсказки
+	const spaceRight = modalRect.right - wrapperCenter;
+
+	if (spaceLeft < tooltipHalfWidth + 15) {
+		// Мало места слева — выравнивает подсказку по левому краю иконки
+		wrapper.classList.add('tooltip-align-left');
+	} else if (spaceRight < tooltipHalfWidth + 15) {
+		// Мало места справа — выравнивает подсказку по правому краю иконки
+		wrapper.classList.add('tooltip-align-right');
+	}
+}
+
+// Показывает модальное окно подтверждения изменения разрешения
+function showPermissionConfirmModal(login, userName, permissionType, newValue) {
+	const modal = document.getElementById('permissionConfirmModal');
+	const textElement = document.getElementById('permissionConfirmText');
+	const confirmBtn = document.getElementById('confirmPermissionBtn');
+
+	// Определяет название разрешения для отображения
+    let permissionName;
+    switch (permissionType) {
+        case 'create':
+            permissionName = 'создание новых учётных записей';
+            break;
+        case 'update':
+            permissionName = 'изменение действующих учётных записей';
+            break;
+        case 'delete':
+            permissionName = 'удаление действующих учётных записей';
+            break;
+        case 'uninstall_agents':
+            permissionName = 'полное удаление FiReAgent';
+            break;
+        case 'system_settings':
+            permissionName = 'системные настройки (обновление/откат, MQTT авторизация)';
+            break;
+    }
+
+	// Формирует текст подтверждения с цветовым выделением
+	const actionWord = newValue ? 'Разрешить' : 'Запретить';
+	const actionClass = newValue ? 'action-allow' : 'action-deny';
+	textElement.innerHTML = `<span class="${actionClass}">${actionWord}</span> ${permissionName} для <strong>"${userName}"</strong>?`;
+
+	// Сохраняет данные для подтверждения
+	pendingPermissionChange = {
+		login: login,
+		permissionType: permissionType,
+		newValue: newValue
+	};
+
+	modal.style.display = 'flex';
+
+	// Устанавливает фокус на кнопку подтверждения с небольшой задержкой
+	setTimeout(() => {
+		if (confirmBtn) {
+			confirmBtn.focus();
+		}
+	}, 50);
+}
+
+// Закрывает модальное окно подтверждения
+function closePermissionConfirmModal() {
+	const modal = document.getElementById('permissionConfirmModal');
+	modal.style.display = 'none';
+	pendingPermissionChange = null;
+}
+
+// Отправляет запрос на изменение разрешения
+async function confirmPermissionChange() {
+	if (!pendingPermissionChange) return;
+
+	const { login, permissionType, newValue } = pendingPermissionChange;
+
+	try {
+		const response = await apiPostJson('/toggle-admin-permission', {
+			auth_login: login,
+			permission_type: permissionType,
+			new_value: newValue
+		});
+
+		const status = response.status;
+		const text = await response.text();
+
+		if (status === 200) {
+			showPush(text, '#4CAF50'); // Зелёный
+			loadAccounts(); // Перезагружает список учётных записей
+		} else if (status === 403) {
+			showPush(text, '#ff4081'); // Розовый
+		} else {
+			showPush(text, '#ff4d4d'); // Красный
+		}
+	} catch (error) {
+		console.error('Ошибка изменения разрешения:', error);
+		showPush('Ошибка при изменении разрешения', '#ff4d4d'); // Красный
+	} finally {
+		closePermissionConfirmModal();
+	}
+}
+
+// Обработчики для модального окна подтверждения изменения разрешения
+document.getElementById('closePermissionConfirmModal')?.addEventListener('click', closePermissionConfirmModal);
+document.getElementById('confirmPermissionBtn')?.addEventListener('click', confirmPermissionChange);
+
+
+
+
+// УНИВЕРСАЛЬНОЕ МОДАЛЬНОЕ ОКНО ВЫБОРА ПРАВ С РАЗРЕШЁННЫМИ ГРУППАМИ
+
+// Конфигурация для разных типов разрешений
+const groupsSelectConfig = {
+    rename: {
+        title: 'Разрешённые группы для переименования',
+        description: 'Выберите группы, в которых разрешено переименовывать клиентов, без выбора — переименование запрещено.',
+        checkboxId: 'permRenameClients',
+        endpoint: '/update-rename-clients-groups'
+    },
+    move: {
+        title: 'Разрешённые группы для перемещения',
+        description: 'Выберите группы, между которыми разрешено перемещать клиентов, без выбора — перемещение запрещено.',
+        checkboxId: 'permMoveClients',
+        endpoint: '/update-move-clients-groups'
+    },
+    delete: {
+        title: 'Разрешённые группы для удаления',
+        description: 'Выберите группы, в которых разрешено удалять клиентов, без выбора — удаление запрещено.',
+        checkboxId: 'permDeleteClients',
+        endpoint: '/update-delete-clients-groups'
+    },
+    terminal: {
+        title: 'Разрешённые группы для cmd/PowerShell',
+        description: 'Выберите группы, в которых разрешено отправлять cmd/PowerShell команды клиентам, без выбора — отправка команд запрещена.',
+        checkboxId: 'permTerminalCommands',
+        endpoint: '/update-terminal-commands-groups'
+    },
+    install: {
+        title: 'Разрешённые группы для установки ПО',
+        description: 'Выберите группы, в которых разрешена установка ПО клиентам, без выбора — установка запрещена.',
+        checkboxId: 'permInstallPrograms',
+        endpoint: '/update-install-programs-groups'
+    }
+};
+
+// Открывает универсальное модальное окно выбора групп
+async function openGroupsSelectModal(context, permissionType, login, userName, currentEnabled, currentGroups) {
+  const modal = document.getElementById('groupsSelectModal');
+  const titleElement = document.getElementById('groupsSelectModalTitle');
+  const descriptionElement = document.getElementById('groupsSelectModalDescription');
+  const groupsList = document.getElementById('groupsSelectList');
+  const allowAllCheckbox = document.getElementById('allowAllGroupsCheckbox');
+
+  // Получает конфигурацию для текущего типа разрешения
+  const config = groupsSelectConfig[permissionType];
+  if (!config) {
+    console.error('Неизвестный тип разрешения:', permissionType);
+    return;
+  }
+
+  // Устанавливает заголовок и описание
+  titleElement.textContent = config.title;
+  descriptionElement.textContent = config.description;
+
+  // Сохраняет контекст
+  pendingGroupsSelection = {
+    context: context,
+    permissionType: permissionType,
+    login: login,
+    userName: userName,
+    allowAllGroups: currentEnabled && (!currentGroups || currentGroups.length === 0),
+    selectedGroups: currentGroups || []
+  };
+
+  // Загружает список групп с сервера
+  try {
+    const response = await fetch('/get-all-groups-and-sub-groups');
+    const data = await response.json();
+    const groups = Object.keys(data).sort((a, b) => a.localeCompare(b, 'ru'));
+
+    // Очищает список
+    groupsList.innerHTML = '';
+
+    if (groups.length === 0) {
+      groupsList.innerHTML = '<p class="groups-select-empty">Нет доступных групп</p>';
+    } else {
+      // Создаёт чекбоксы для каждой группы
+      groups.forEach(group => {
+        const groupItem = document.createElement('label');
+        groupItem.className = 'groups-select-item permission-checkbox';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = group;
+        checkbox.checked = pendingGroupsSelection.selectedGroups.includes(group);
+        checkbox.addEventListener('change', () => {
+          updateSelectedGroupsList();
+        });
+
+        // Кастомный чекбокс (галочка)
+        const checkmark = document.createElement('span');
+        checkmark.className = 'checkmark';
+
+        const label = document.createElement('span');
+        label.className = 'permission-label';
+        label.textContent = group;
+
+        groupItem.appendChild(checkbox);
+        groupItem.appendChild(checkmark);
+        groupItem.appendChild(label);
+        groupsList.appendChild(groupItem);
+      });
+    }
+
+    // Устанавливает состояние чекбокса "Разрешить все группы"
+    allowAllCheckbox.checked = pendingGroupsSelection.allowAllGroups;
+    updateGroupsListDisabledState();
+
+  } catch (error) {
+    console.error('Ошибка загрузки групп:', error);
+    groupsList.innerHTML = '<p class="groups-select-empty">Ошибка загрузки групп</p>';
+  }
+
+  modal.style.display = 'flex';
+}
+
+// Закрывает универсальное модальное окно выбора групп
+function closeGroupsSelectModal() {
+  const modal = document.getElementById('groupsSelectModal');
+  modal.style.display = 'none';
+}
+
+// Обновляет состояние списка групп (включён/выключен)
+function updateGroupsListDisabledState() {
+  const allowAllCheckbox = document.getElementById('allowAllGroupsCheckbox');
+  const groupsList = document.getElementById('groupsSelectList');
+
+  if (allowAllCheckbox.checked) {
+    groupsList.classList.add('disabled');
+  } else {
+    groupsList.classList.remove('disabled');
+  }
+}
+
+// Обновляет массив выбранных групп
+function updateSelectedGroupsList() {
+  const checkboxes = document.querySelectorAll('#groupsSelectList input[type="checkbox"]:checked');
+  pendingGroupsSelection.selectedGroups = Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Подтверждает выбор групп
+async function confirmGroupsSelection() {
+  const allowAllCheckbox = document.getElementById('allowAllGroupsCheckbox');
+  const allowAll = allowAllCheckbox.checked;
+
+  // Обновляет список выбранных групп
+  updateSelectedGroupsList();
+  const selectedGroups = pendingGroupsSelection.selectedGroups;
+
+  // Определяет, включено ли разрешение:
+  // - allowAll = true → действие разрешено для всех групп
+  // - selectedGroups.length > 0 → действие разрешено только для выбранных групп
+  // - ничего не выбрано → действие полностью запрещено
+  const permissionEnabled = allowAll || selectedGroups.length > 0;
+
+  const config = groupsSelectConfig[pendingGroupsSelection.permissionType];
+
+  if (pendingGroupsSelection.context === 'new') {
+    // Для новой учётки - обновляет чекбокс и сохраняет данные
+    const checkbox = document.getElementById(config.checkboxId);
+    checkbox.checked = permissionEnabled;
+
+    // Если allowAll — пустой массив означает "все группы"
+    // Если выбраны конкретные группы — сохраняет их
+    // Если ничего не выбрано — permissionEnabled = false, массив пустой
+    checkbox.dataset.allowedGroups = JSON.stringify(permissionEnabled && allowAll ? [] : selectedGroups);
+
+    // Обновляет индикатор рядом с чекбоксом
+    updateGroupsIndicator(checkbox, permissionEnabled, allowAll, selectedGroups);
+
+    closeGroupsSelectModal();
+
+  } else if (pendingGroupsSelection.context === 'existing') {
+    // Для существующей учётки - отправляет запрос на сервер
+    const login = pendingGroupsSelection.login;
+
+    try {
+      const response = await apiPostJson(config.endpoint, {
+        auth_login: login,
+        allow_all_groups: allowAll,
+        allowed_groups: allowAll ? [] : selectedGroups
+      });
+
+      const status = response.status;
+      const text = await response.text();
+
+      if (status === 200) {
+        showPush(text, '#4CAF50'); // Зелёный
+        loadAccounts(); // Перезагружает список учётных записей
+      } else if (status === 403) {
+        showPush(text, '#ff4081'); // Розовый
+      } else {
+        showPush(text, '#ff4d4d'); // Красный
+      }
+    } catch (error) {
+      console.error('Ошибка изменения групп:', error);
+      showPush('Ошибка при изменении разрешённых групп', '#ff4d4d');
+    }
+
+    closeGroupsSelectModal();
+  }
+}
+
+// Обновляет индикатор рядом с чекбоксом разрешения
+function updateGroupsIndicator(checkbox, enabled, allowAll, groups) {
+  // Удаляет старый индикатор, если есть
+  const existingIndicator = checkbox.parentElement.querySelector('.groups-indicator');
+  if (existingIndicator) {
+    existingIndicator.remove();
+  }
+
+  // Создаёт новый индикатор
+  const indicator = document.createElement('span');
+  indicator.className = 'groups-indicator';
+
+  if (!enabled) {
+    indicator.textContent = '(запрещено)';
+    indicator.classList.add('no-groups');
+  } else if (allowAll) {
+    indicator.textContent = '(все группы)';
+    indicator.classList.add('all-groups');
+  } else {
+    indicator.textContent = `(групп: ${groups.length})`;
+    indicator.classList.add('limited-groups');
+  }
+
+  // Добавляет после текста метки
+  const permLabel = checkbox.parentElement.querySelector('.permission-label');
+  if (permLabel) {
+    permLabel.after(indicator);
+  }
+}
+
+// Инициализирует обработчики для универсального модального окна выбора групп
+function initGroupsSelectModalHandlers() {
+  // Закрытие по крестику
+  document.getElementById('closeGroupsSelectModal')?.addEventListener('click', closeGroupsSelectModal);
+
+  // Кнопка подтверждения
+  document.getElementById('confirmGroupsSelectBtn')?.addEventListener('click', confirmGroupsSelection);
+
+  // Чекбокс "Разрешить все группы"
+  document.getElementById('allowAllGroupsCheckbox')?.addEventListener('change', function() {
+    updateGroupsListDisabledState();
+  });
 }
 
 
@@ -1268,24 +2126,27 @@ function resetReserveAccountButtonState() {
 
 // Функция для обновления статуса резервного аккаунта
 function updateReserveAccountStatus(allow) {
-  apiPostJson("/update-allow-mqtt", { allow })
+    apiPostJson("/update-allow-mqtt", { allow })
 
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
-        // Сбрасываем состояние кнопки после успешного подтверждения
-        resetReserveAccountButtonState();
-        // Перезагружаем модальное окно для обновления состояния
-        showMqttAuthModal();
-      } else {
-        showPush("Ошибка при обновлении статуса", "#ff4081"); // Розовый
-      }
-    })
-    .catch((error) => {
-      console.error("Ошибка при обновлении статуса:", error);
-      showPush("Ошибка при обновлении статуса", "#ff4081"); // Розовый
-    });
+        .then(async (response) => {
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
+                // Сбрасываем состояние кнопки после успешного подтверждения
+                resetReserveAccountButtonState();
+                // Перезагружаем модальное окно для обновления состояния
+                showMqttAuthModal();
+            } else if (response.status === 403) {
+                // Показываем сообщение от сервера при ошибке прав доступа
+                showPush(data.message || "У вас нет прав на это действие", "#ff4d4d"); // Красный
+            } else {
+                showPush(data.message || "Ошибка при обновлении статуса", "#ff4081"); // Розовый
+            }
+        })
+        .catch((error) => {
+            console.error("Ошибка при обновлении статуса:", error);
+            showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
+        });
 }
 
 // Закрытие модального окна
@@ -1319,14 +2180,16 @@ function saveMqttAuth() {
   apiPostJson("/update-account-mqtt", { username, password })
  
     .then(async (response) => {
-        const data = await response.text();
-        if (response.ok) {
-            showPush(data, "#2196F3"); // Голубой
-            closeMqttAuthModal();      // Закрываем модальное окно только при успехе
-        } else {
-            showPush(data, "#ff4081"); // Красный
-        }
-    })
+    const data = await response.text();
+    if (response.ok) {
+        showPush(data, "#2196F3"); // Голубой
+        closeMqttAuthModal(); // Закрываем модальное окно только при успехе
+    } else if (response.status === 403) {
+        showPush(data, "#ff4d4d"); // Красный для ошибки прав доступа
+    } else {
+        showPush(data, "#ff4081"); // Розовый для других ошибок
+    }
+})
     .catch((error) => {
         console.error("Ошибка сохранения данных:", error);
         showPush("Ошибка соединения с сервером", "#ff4081");
@@ -1688,19 +2551,27 @@ document.getElementById("executeCommandForm").addEventListener("submit", functio
 
   // Отправка POST-запроса на сервер
 	apiPostJson("/send-terminal-command", requestData)
-    .then((response) => response.json())
-    .then((data) => {
-      // Проверяем статус ответа от сервера
-      if (data.status === "Ошибка") {
-        showPush(data.message, "#ff4d4d"); // Красный
-      } else if (data.status === "Успех") {
-        showPush(data.message, "#4CAF50"); // Зелёный
-        closeExecuteCommandModal(); // Закрываем модальное окно только при успехе
-      }
-    })
-    .catch((error) => {
-      showPush("Не удалось отправить команду.", "#ff4081"); // Розовый
-    });
+	.then(async (response) => {
+	// Проверяем статус ответа перед парсингом
+	if (!response.ok) {
+		// При ошибке (403, 500 и т.д.) читаем текст ответа
+		const errorText = await response.text();
+		showPush(errorText || "Ошибка отправки команды", "#ff4d4d"); // Красный
+		return;
+	}
+	// При успешном ответе парсим JSON
+	const data = await response.json();
+	if (data.status === "Ошибка") {
+		showPush(data.message, "#ff4d4d"); // Красный
+	} else if (data.status === "Успех") {
+		showPush(data.message, "#4CAF50"); // Зелёный
+		closeExecuteCommandModal(); // Закрываем модальное окно только при успехе
+	}
+	})
+	.catch((error) => {
+		console.error("Ошибка отправки команды:", error);
+		showPush("Не удалось отправить команду.", "#ff4081"); // Розовый
+	});
 });
 
 // Обработчик изменений в поле "Имя пользователя"
@@ -1940,15 +2811,24 @@ function uploadFile(file) {
   } catch (_) {}
 
   if (uploadXHR.status === 403) {
-    // Обновим токен и сообщим админу
-    fetchCsrfToken().finally(() => {
-      showPush("Сессия обновлена. Повторите загрузку файла.", "#2196F3"); // Голубой
-    });
+    // Читаем сообщение от сервера и парсим JSON
+    let serverMessage = "Доступ запрещён";
+    try {
+        const errorData = JSON.parse(uploadXHR.responseText);
+        serverMessage = errorData.message || serverMessage;
+    } catch (e) {
+        // Если не JSON, используем текст как есть
+        serverMessage = uploadXHR.responseText || serverMessage;
+    }
+    showPush(serverMessage, "#ff4d4d"); // Красный
+    // Обновляем CSRF токен на всякий случай
+    fetchCsrfToken();
 
     // Сброс визуального состояния
     isUploading = false;
     currentUploadFile = null;
     lastUploadPercent = -1;
+    dropArea.classList.remove("blocked");
 
     document.getElementById("uploadProgress").style.display = "none";
     document.getElementById("cancelUploadText").style.display = "none";
@@ -2428,30 +3308,40 @@ function deleteSelectedRequest(url, selectId, reportType) {
     }
     const selectedOptionText = selectElement.options[selectElement.selectedIndex].text;
     showConfirmModal(`От "${selectedOptionText}"?`, function() {
-        
-	apiPostJson(url, { Date_Of_Creation: selectedDate })
-		
-        .then((response) => response.json())
-        .then((result) => {
-            if (result.status === "Успех") {
-                showPush(result.message, "#4CAF50"); // Зелёный
-                if (reportType === 'cmd') {
-                    loadCmdDates();
-                    document.getElementById("cmdDetails").innerHTML = "";
-                    document.getElementById("clientsTableBody").innerHTML = "";
-                } else if (reportType === 'install') {
-                    loadInstallDates();
-                    document.getElementById("installDetails").innerHTML = "";
-                    document.getElementById("installClientsTableBody").innerHTML = "";
+
+        apiPostJson(url, {
+                Date_Of_Creation: selectedDate
+            })
+
+            .then(async (response) => {
+                // Проверяем статус ответа перед парсингом
+                if (!response.ok) {
+                    // При ошибке (403, 500 и т.д.) читаем текст ответа
+                    const errorText = await response.text();
+                    showPush(errorText || "Ошибка удаления запроса", "#ff4d4d"); // Красный
+                    return;
                 }
-            } else {
-                showPush("Ошибка: " + result.message, "#ff4d4d"); // Красный
-            }
-        })
-        .catch((error) => {
-            console.error("Ошибка:", error);
-            showPush("Ошибка: " + error.message, "#ff4d4d"); // Красный
-        });
+                // При успешном ответе парсим JSON
+                const result = await response.json();
+                if (result.status === "Успех") {
+                    showPush(result.message, "#4CAF50"); // Зелёный
+                    if (reportType === 'cmd') {
+                        loadCmdDates();
+                        document.getElementById("cmdDetails").innerHTML = "";
+                        document.getElementById("clientsTableBody").innerHTML = "";
+                    } else if (reportType === 'install') {
+                        loadInstallDates();
+                        document.getElementById("installDetails").innerHTML = "";
+                        document.getElementById("installClientsTableBody").innerHTML = "";
+                    }
+                } else {
+                    showPush(result.message, "#ff4d4d"); // Красный
+                }
+            })
+            .catch((error) => {
+                console.error("Ошибка:", error);
+                showPush("Ошибка: " + error.message, "#ff4d4d"); // Красный
+            });
     });
 }
 
@@ -3060,43 +3950,51 @@ function hideTooltip() {
 
 // Функция отправки запросов для операций удаления клиента или повторной отправки команды
 function sendActionRequest(url, data) {
-  apiPostJson(url, data)
-  
-    .then(response => response.json())
-    .then(result => {
-      if (result.status === 'Успех') {
-        let pushColor = '#4CAF50'; // Зелёный по умолчанию
-        if (url.includes('/resend-')) {
-          pushColor = '#2196F3'; // Голубой для повторной отправки
-        } else if (url.includes('/delete-client-')) {
-          pushColor = '#4CAF50'; // Зелёный для удаления клиента
-        }
-        showPush(result.message, pushColor);
-        if (url.includes('QUIC')) {
-          loadInstallReport(); // Обновляем вкладку "По установкам ПО"
-          setTimeout(() => {
-            const tbody = document.getElementById('installClientsTableBody');
-            if (tbody.children.length === 0) {
-              loadInstallDates(); // Обновляем выпадающий список, если клиентов не осталось
+    apiPostJson(url, data)
+
+        .then(async (response) => {
+            // Проверяем статус ответа перед парсингом
+            if (!response.ok) {
+                // При ошибке (403, 500 и т.д.) читаем текст ответа
+                const errorText = await response.text();
+                showPush(errorText || "Ошибка выполнения действия", "#ff4d4d"); // Красный
+                return;
             }
-          }, 100);
-        } else {
-          loadCmdReport(); // Обновляем вкладку "По cmd / PowerShell"
-          setTimeout(() => {
-            const tbody = document.getElementById('clientsTableBody');
-            if (tbody.children.length === 0) {
-              loadCmdDates(); // Обновляем выпадающий список, если клиентов не осталось
+            // При успешном ответе парсим JSON
+            const result = await response.json();
+            if (result.status === 'Успех') {
+                let pushColor = '#4CAF50'; // Зелёный по умолчанию
+                if (url.includes('/resend-')) {
+                    pushColor = '#2196F3'; // Голубой для повторной отправки
+                } else if (url.includes('/delete-client-')) {
+                    pushColor = '#4CAF50'; // Зелёный для удаления клиента
+                }
+                showPush(result.message, pushColor);
+                if (url.includes('QUIC')) {
+                    loadInstallReport(); // Обновляем вкладку "По установкам ПО"
+                    setTimeout(() => {
+                        const tbody = document.getElementById('installClientsTableBody');
+                        if (tbody.children.length === 0) {
+                            loadInstallDates(); // Обновляем выпадающий список, если клиентов не осталось
+                        }
+                    }, 100);
+                } else {
+                    loadCmdReport(); // Обновляем вкладку "По cmd / PowerShell"
+                    setTimeout(() => {
+                        const tbody = document.getElementById('clientsTableBody');
+                        if (tbody.children.length === 0) {
+                            loadCmdDates(); // Обновляем выпадающий список, если клиентов не осталось
+                        }
+                    }, 100);
+                }
+            } else {
+                showPush(result.message, '#ff4d4d'); // Красный
             }
-          }, 100);
-        }
-      } else {
-        showPush(result.message, '#ff4081'); // Розовый
-      }
-    })
-    .catch(error => {
-      console.error('Ошибка:', error);
-      showPush("Ошибка: " + error.message, '#ff4d4d'); // Красный
-    });
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            showPush("Ошибка: " + error.message, '#ff4d4d'); // Красный
+        });
 }
 
 // Функция для отображения кастомного модального окна подтверждения удаления запроса
@@ -3301,12 +4199,23 @@ document.addEventListener("DOMContentLoaded", function() {
     btnOwaspUpdate.disabled = true;
     btnOwaspRollback.disabled = true;
     try {
-		  const resp = await apiPostJson("/update-OWASP-CRS", {});
-		  const data = await resp.json().catch(() => ({}));
+        const resp = await apiPostJson("/update-OWASP-CRS", {});
+        
+        // Сначала пробуем прочитать как текст
+        const text = await resp.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch {
+            // Если не JSON, используем текст как сообщение об ошибке
+            if (!resp.ok) {
+                throw new Error(text || `Ошибка HTTP ${resp.status}`);
+            }
+        }
 
-		  if (!resp.ok) {
-			throw new Error(data?.Description);
-		  }
+        if (!resp.ok) {
+            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+        }
 
 		  const answer = data?.UpdateAnswer;
 		  if (answer === "Успех") {
@@ -3320,7 +4229,7 @@ document.addEventListener("DOMContentLoaded", function() {
       showPush(e.message, "#ff4d4d"); // Красный
     } finally {
       await refreshOWASPCRSStatus();
-      btnOwaspRollback.disabled = false; // состояние кнопки "Обновить" установит refresh
+      btnOwaspRollback.disabled = false; // Состояние кнопки "Обновить" установит refresh
     }
   }
 
@@ -3330,10 +4239,21 @@ document.addEventListener("DOMContentLoaded", function() {
     btnOwaspRollback.disabled = true;
     try {
         const resp = await apiPostJson("/rollback-backup-OWASP-CRS", {});
-        const data = await resp.json().catch(() => ({}));
+        
+        // Сначала пробуем прочитать как текст
+        const text = await resp.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch {
+            // Если не JSON, используем текст как сообщение об ошибке
+            if (!resp.ok) {
+                throw new Error(text || `Ошибка HTTP ${resp.status}`);
+            }
+        }
 
         if (!resp.ok) {
-            throw new Error(data?.Description);
+            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
         }
 
         if (data?.RollbackAnswer === "Успех") {
@@ -3442,15 +4362,30 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 
-	async function handleUpdateFiReMQ() {
-	  if (!btnFiUpdate || !btnFiRollback) return;
-	  btnFiUpdate.disabled = true;
-	  btnFiRollback.disabled = true;
-	  try {
-		const resp = await apiPostJson("/update-FiReMQ", {});
-		const data = await resp.json().catch(() => ({}));
+  async function handleUpdateFiReMQ() {
+    if (!btnFiUpdate || !btnFiRollback) return;
+    btnFiUpdate.disabled = true;
+    btnFiRollback.disabled = true;
+	
+	// Флаг для предотвращения PUSH о старой версии в репозитории при ошибке прав
+	let skipRefreshPush = false;
 
-		if (resp.ok) {
+    try {
+        const resp = await apiPostJson("/update-FiReMQ", {});
+        
+        // Сначала пробуем прочитать как текст
+        const text = await resp.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch {
+            // Если не JSON, используем текст как сообщение об ошибке
+            if (!resp.ok) {
+                throw new Error(text || `Ошибка HTTP ${resp.status}`);
+            }
+        }
+
+        if (resp.ok) {
 		  // Успех: сервер запланирует shutdown через ~1 сек
 		  const targetVer = data?.latest || data?.Version || elFiNew.textContent || "";
 		  showPush(`FiReMQ обновляется до версии ${targetVer}. Сервер перезапустится автоматически.`, "#4CAF50"); // Зелёный
@@ -3461,30 +4396,64 @@ document.addEventListener("DOMContentLoaded", function() {
 			location.reload();
 		}, 5500);
 		} else if (data?.Description?.toLowerCase().includes("обновление не требуется")) {
-			showPush("Обновление не требуется.", "#ff4081"); // Розовый
+		showPush("Обновление не требуется.", "#ff4081"); // Розовый
 		} else {
-			throw new Error(data?.Description);
+			skipRefreshPush = true;
+			throw new Error(data?.Description || text || "Неизвестная ошибка");
 		}
 	  } catch (e) {
 		showPush(e.message, "#ff4d4d"); // Красный
-	  } finally {
-		// Сервер может уже уйти на перезагрузку. Пробуем обновить статусы "по возможности".
-		try { await refreshFiReMQStatus(); } catch {}
-		btnFiRollback.disabled = false; // состояние "Обновить" установит refresh
-	  }
+		} finally {
+			// Обновляем статус без показа PUSH о старой версии при ошибке прав
+			if (!skipRefreshPush) {
+				try { await refreshFiReMQStatus(); } catch {}
+			} else {
+				// Только обновляем UI без PUSH
+				try {
+					const resp = await fetch("/check-FiReMQ", {
+						method: "GET",
+						headers: { "Accept": "application/json" },
+						cache: "no-store",
+					});
+					if (resp.ok) {
+						const data = await resp.json();
+						if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
+						if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
+					}
+				} catch {}
+			}
+			btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
+		}
 	}
 
-	async function handleRollbackFiReMQ() {
-	  if (!btnFiUpdate || !btnFiRollback) return;
-	  btnFiUpdate.disabled = true;
-	  btnFiRollback.disabled = true;
-	  try {
-		const resp = await apiPostJson("/rollback-backup-FiReMQ", {});
-		const data = await resp.json().catch(() => ({}));
+async function handleRollbackFiReMQ() {
+    if (!btnFiUpdate || !btnFiRollback) return;
+    btnFiUpdate.disabled = true;
+    btnFiRollback.disabled = true;
+    
+    // Флаг для предотвращения PUSH о старой версии в репозитории при ошибке прав
+    let skipRefreshPush = false;
+    
+    try {
+        const resp = await apiPostJson("/rollback-backup-FiReMQ", {});
+        
+        // Сначала пробуем прочитать как текст
+        const text = await resp.text();
+        let data = {};
+        try {
+            data = JSON.parse(text);
+        } catch {
+            // Если не JSON, используем текст как сообщение об ошибке
+            if (!resp.ok) {
+                skipRefreshPush = true;
+                throw new Error(text || `Ошибка HTTP ${resp.status}`);
+            }
+        }
 
-		if (!resp.ok) {
-		  throw new Error(data?.Description);
-		}
+        if (!resp.ok) {
+            skipRefreshPush = true;
+            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+        }
 
 		if (data?.ok === true || (data?.RollbackAnswer === "Успех")) {
 		  // После ответа сервер завершится и ServerUpdater восстановит предыдущий релиз
@@ -3503,10 +4472,27 @@ document.addEventListener("DOMContentLoaded", function() {
 		}
 	  } catch (e) {
 		showPush(e.message, "#ff4d4d"); // Красный
-	  } finally {
-		try { await refreshFiReMQStatus(); } catch {}
-		btnFiRollback.disabled = false; // состояние "Обновить" установит refresh
-	  }
+		} finally {
+			// Обновляем статус без показа PUSH о старой версии при ошибке прав
+			if (!skipRefreshPush) {
+				try { await refreshFiReMQStatus(); } catch {}
+			} else {
+				// Только обновляем UI без PUSH
+				try {
+					const resp = await fetch("/check-FiReMQ", {
+						method: "GET",
+						headers: { "Accept": "application/json" },
+						cache: "no-store",
+					});
+					if (resp.ok) {
+						const data = await resp.json();
+						if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
+						if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
+					}
+				} catch {}
+			}
+			btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
+		}
 	}
 
   // Функция показа модального окна
@@ -3769,62 +4755,68 @@ document.getElementById("uninstallConfirmationInput")?.addEventListener("input",
 
 // Подтверждение и отправка запроса на удаление FiReAgent
 async function confirmUninstallFiReAgent() {
-  const checkedClients = Object.keys(checkboxStates)
-    .filter((key) => checkboxStates[key] === true)
-    .map((key) => key.replace("checkbox_", ""));
+    const checkedClients = Object.keys(checkboxStates)
+        .filter((key) => checkboxStates[key] === true)
+        .map((key) => key.replace("checkbox_", ""));
 
-  if (checkedClients.length === 0) {
-	showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
-    return;
-  }
-
-  try {
-    const response = await apiPostJson("/uninstall-fireagent", checkedClients);
-    const contentType = response.headers.get("content-type") || "";
-    let message = "";
-    let category = "unknown";
-
-    if (contentType.includes("application/json")) {
-      const data = await response.json();
-      message = (data.message || "").trim();
-      category = statusCategory(data.status);
-    } else {
-      message = (await response.text()).trim();
+    if (checkedClients.length === 0) {
+        showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
+        return;
     }
 
-    if (!response.ok) {
-      category = "error";
+    try {
+        const response = await apiPostJson("/uninstall-fireagent", checkedClients);
+        const contentType = response.headers.get("content-type") || "";
+        let message = "";
+        let category = "unknown";
+
+        if (contentType.includes("application/json")) {
+            const data = await response.json();
+            message = (data.message || "").trim();
+            category = statusCategory(data.status);
+        } else {
+            message = (await response.text()).trim();
+        }
+
+        if (!response.ok) {
+            category = "error";
+        }
+
+        if (!message) {
+            message = category === "error" ? `Ошибка ${response.status}` : "Готово";
+        }
+
+        // Цвет PUSH: зелёный — успех, розовый — предупреждение, красный — ошибка
+        let pushColor = "#4CAF50"; // Зелёный
+        if (category === "warning") pushColor = "#ff4081"; // Розовый
+        if (category === "error") pushColor = "#ff4d4d"; // Красный
+
+        // При ошибке прав доступа (403) не закрываем модальное окно
+        if (response.status === 403) {
+            showPush(message, pushColor);
+            return;
+        }
+
+        // Чистим состояния чекбоксов для success и warning
+        if (category !== "error") {
+            checkedClients.forEach((clientId) => {
+                const key = `checkbox_${clientId}`;
+                delete checkboxStates[key];
+                sessionStorage.removeItem(key);
+            });
+            sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+        }
+
+        sessionStorage.setItem("pushMessage", message);
+        sessionStorage.setItem("pushColor", pushColor);
+
+        closeUninstallFiReAgentModal();
+        location.reload();
+
+    } catch (err) {
+        // При сетевых ошибках показываем PUSH, но не закрываем модальное окно
+        showPush(`Ошибка: ${err.message}`, "#ff4d4d"); // Красный
     }
-
-    if (!message) {
-      message = category === "error" ? `Ошибка ${response.status}` : "Готово";
-    }
-
-    // Чистим состояния чекбоксов для success и warning
-    if (category !== "error") {
-      checkedClients.forEach((clientId) => {
-        const key = `checkbox_${clientId}`;
-        delete checkboxStates[key];
-        sessionStorage.removeItem(key);
-      });
-      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
-    }
-
-    // Цвет PUSH: зелёный — успех, розовый — предупреждение, красный — ошибка
-    let pushColor = "#4CAF50"; // Зелёный
-    if (category === "warning") pushColor = "#ff4081"; // Розовый
-    if (category === "error") pushColor = "#ff4d4d";   // Красный
-
-    sessionStorage.setItem("pushMessage", message);
-    sessionStorage.setItem("pushColor", pushColor);
-
-  } catch (err) {
-    sessionStorage.setItem("pushMessage", `Ошибка: ${err.message}`);
-    sessionStorage.setItem("pushColor", "#ff4d4d");	// Красный
-  } finally {
-    closeUninstallFiReAgentModal();
-    location.reload();
-  }
 }
 
 // Категории статуса

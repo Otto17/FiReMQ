@@ -80,6 +80,18 @@ func UploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на установку ПО
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка получения данных текущего админа")
+		return
+	}
+
+	if !currentAdmin.Perm_InstallPrograms {
+		sendErrorResponse(w, http.StatusForbidden, "У вас нет прав на загрузку файлов для установки ПО")
+		return
+	}
+
 	// Создаёт директорию для загрузки исполняемых файлов, если её нет
 	if err := pathsOS.EnsureDir(pathsOS.Path_QUIC_Downloads); err != nil {
 		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка создания папки для загрузки исполняемых файлов QUIC-сервера")
@@ -238,6 +250,42 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 	if errs != nil {
 		logging.LogError("QUIC WEB: Ошибка получения информации о админе: %v", err)
 		sendErrorResponse(w, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
+
+	// Проверяет права текущего админа на установку ПО
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка получения данных текущего админа")
+		return
+	}
+
+	if !currentAdmin.Perm_InstallPrograms {
+		sendErrorResponse(w, http.StatusForbidden, "У вас нет прав на установку ПО")
+		return
+	}
+
+	// Проверяет права на установку ПО клиентам в их группах
+	var forbiddenClients []string
+	for _, clientID := range data.ClientIDs {
+		clientGroup, err := GetClientGroup(clientID)
+		if err != nil {
+			continue // Клиент не найден, будет обработан позже
+		}
+		if !CanInstallProgramInGroup(currentAdmin, clientGroup) {
+			forbiddenClients = append(forbiddenClients, clientID)
+		}
+	}
+
+	if len(forbiddenClients) > 0 {
+		var errMsg string
+		if len(currentAdmin.Perm_InstallProgramsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_InstallProgramsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Установка ПО некоторым клиентам запрещена! Разрешённые группы: %s", allowedGroupsStr)
+		} else {
+			errMsg = "Установка ПО некоторым клиентам запрещена!"
+		}
+		sendErrorResponse(w, http.StatusForbidden, errMsg)
 		return
 	}
 
@@ -441,6 +489,20 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав на управление
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
 	// Загружает текущих админов
 	usersMap, err := loadAdminsMap()
 	if err != nil {
@@ -513,10 +575,46 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// Получает карту клиентов
+			clientMapping, ok := record["ClientID_QUIC"].(map[string]any)
+			if !ok {
+				continue
+			}
+
+			// Обогащает данные клиентов информацией о возможности управления
+			enrichedClientMapping := make(map[string]any)
+			for clientID, clientData := range clientMapping {
+				clientDataMap := make(map[string]any)
+
+				// Копирует существующие данные клиента
+				if existingData, ok := clientData.(map[string]any); ok {
+					for k, v := range existingData {
+						clientDataMap[k] = v
+					}
+				}
+
+				// Проверяет, может ли админ управлять этим клиентом (удалять/повторно отправлять)
+				canManage := false // По умолчанию запрещено
+				if currentAdmin.Perm_InstallPrograms {
+					// Права на установку ПО включены — проверяет группу клиента
+					clientGroup, err := GetClientGroup(clientID)
+					if err != nil {
+						// Клиент не найден в БД — разрешает управление
+						canManage = true
+					} else {
+						// Клиент существует — проверяет права на его группу
+						canManage = CanInstallProgramInGroup(currentAdmin, clientGroup)
+					}
+				}
+				clientDataMap["CanManage"] = canManage
+
+				enrichedClientMapping[clientID] = clientDataMap
+			}
+
 			itemResponse := map[string]any{
 				"Date_Of_Creation": record["Date_Of_Creation"],
 				"QUIC_Command":     record["QUIC_Command"],
-				"ClientID_QUIC":    record["ClientID_QUIC"],
+				"ClientID_QUIC":    enrichedClientMapping,
 				"Created_By":       record["Created_By"], // Имя админа, создавшего запрос
 				"File_Size_Bytes":  fileSize,             // Размер загруженного на сервер файла
 			}
@@ -549,12 +647,39 @@ func ResendQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на управление установкой ПО
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_InstallPrograms {
+		http.Error(w, "У вас нет прав на повторную отправку запросов установки ПО", http.StatusForbidden)
+		return
+	}
+
 	var req struct {
 		ClientID         string `json:"client_id"`
 		Date_Of_Creation string `json:"Date_Of_Creation"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ClientID == "" || req.Date_Of_Creation == "" {
 		http.Error(w, "Ошибка парсинга данных или отсутствует client_id/Date_Of_Creation", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет права на повторную отправку клиенту в его группе
+	clientGroup, erro := GetClientGroup(req.ClientID)
+	if erro == nil && !CanInstallProgramInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_InstallProgramsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_InstallProgramsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Повторная отправка клиенту из группы '%s' запрещена! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Повторная отправка клиенту из группы '%s' запрещена!", clientGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 
@@ -780,15 +905,31 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на управление установкой ПО
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_InstallPrograms {
+		http.Error(w, "У вас нет прав на удаление записей установки ПО", http.StatusForbidden)
+		return
+	}
+
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Ошибка парсинга данных: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	found := false
+	// Флаг для ошибки прав доступа
+	accessDenied := false
+	var forbiddenGroup string
 	var filesToMaybeDelete []string // Файл, подлежащий удалению
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
@@ -807,6 +948,22 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 
 			if record["Date_Of_Creation"] == req.Date_Of_Creation {
 				found = true
+
+				// Проверяет права на удаление всех клиентов в записи
+				if clientMapping, ok := record["ClientID_QUIC"].(map[string]any); ok {
+					for clientID := range clientMapping {
+						clientGroup, err := GetClientGroup(clientID)
+						if err != nil {
+							continue // Клиент не найден в БД — разрешает удаление
+						}
+						if !CanInstallProgramInGroup(currentAdmin, clientGroup) {
+							accessDenied = true
+							forbiddenGroup = clientGroup
+							return nil // Прерывает транзакцию без удаления
+						}
+					}
+				}
+
 				// Сохранит имя файла, чтобы удалить его после коммита транзакции
 				if fn, err := extractFileNameFromQUICRecord(record); err == nil && fn != "" {
 					filesToMaybeDelete = append(filesToMaybeDelete, fn)
@@ -822,6 +979,22 @@ func DeleteQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		http.Error(w, "Ошибка удаления запроса: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if accessDenied {
+		var errMsg string
+		if len(currentAdmin.Perm_InstallProgramsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_InstallProgramsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление запроса запрещено! Запись содержит клиентов из группы '%s'. Разрешённые группы: %s", forbiddenGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Удаление запроса запрещено! Запись содержит клиентов из группы '%s'", forbiddenGroup)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "Ошибка",
+			"message": errMsg,
+		})
 		return
 	}
 
@@ -871,6 +1044,18 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на управление установкой ПО
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_InstallPrograms {
+		http.Error(w, "У вас нет прав на удаление клиентов из записей установки ПО", http.StatusForbidden)
+		return
+	}
+
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
 		ClientID         string `json:"client_id"`
@@ -885,6 +1070,24 @@ func DeleteClientFromQUICByDateHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{
 			"status":  "Ошибка",
 			"message": "Не указан ID клиента для удаления",
+		})
+		return
+	}
+
+	// Проверяет права на управление клиентом в его группе
+	clientGroup, erro := GetClientGroup(req.ClientID)
+	if erro == nil && !CanInstallProgramInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_InstallProgramsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_InstallProgramsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено!", clientGroup)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "Ошибка",
+			"message": errMsg,
 		})
 		return
 	}

@@ -28,6 +28,18 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на перемещение клиентов
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_MoveClients {
+		http.Error(w, "У вас нет прав на перемещение клиентов", http.StatusForbidden)
+		return
+	}
+
 	var data struct {
 		ClientID      string `json:"clientID"`
 		NewGroupID    string `json:"newGroupID"`
@@ -82,6 +94,28 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получает текущую группу клиента для проверки прав
+	currentGroup, err := GetClientGroup(clientID)
+	if err != nil {
+		logging.LogError("Группы: Ошибка получения текущей группы клиента [%s]: %v", clientID, err)
+		http.Error(w, "Ошибка получения данных клиента", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет права на перемещение из текущей группы в новую
+	if !CanMoveBetweenGroups(currentAdmin, currentGroup, newGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_MoveClientsGroups) > 0 {
+			// Формируем список разрешённых групп через запятую
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_MoveClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Перемещение в группу '%s' запрещено! Разрешённые группы: %s", newGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Перемещение в группу '%s' запрещено!", newGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
+		return
+	}
+
 	err = MoveClient(clientID, newGroup, newSubgroup)
 	if err != nil {
 		logging.LogError("Группы: Ошибка перемещения клиента [%s] в %s/%s: %v", clientID, newGroup, newSubgroup, err)
@@ -89,7 +123,7 @@ func MoveClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logging.LogAction("Группы: Админ \"%s\" (с именем: %s) переместил клиента [%s] группу '%s', подгруппу '%s'", authInfo.Login, authInfo.Name, clientID, newGroup, newSubgroup)
+	logging.LogAction("Группы: Админ \"%s\" (с именем: %s) переместил клиента [%s] в группу '%s', подгруппу '%s'", authInfo.Login, authInfo.Name, clientID, newGroup, newSubgroup)
 	w.Write([]byte("Клиент перемещён"))
 }
 
@@ -104,6 +138,18 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	authInfo, errs := getAuthInfoFromRequest(r)
 	if errs != nil {
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверяет права текущего админа на перемещение клиентов
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_MoveClients {
+		http.Error(w, "У вас нет прав на перемещение клиентов", http.StatusForbidden)
 		return
 	}
 
@@ -168,6 +214,45 @@ func MoveSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	// Использование валидных данных
 	payload.NewGroup = sanitized["newGroup"]
 	payload.NewSubgroup = sanitized["newSubgroup"]
+
+	// Проверяет права на перемещение в целевую группу
+	if !CanMoveToGroup(currentAdmin, payload.NewGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_MoveClientsGroups) > 0 {
+			// Формируем список разрешённых групп через запятую
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_MoveClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Перемещение в группу '%s' запрещено! Разрешённые группы: %s", payload.NewGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Перемещение в группу '%s' запрещено!", payload.NewGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
+		return
+	}
+
+	// Проверяет права на перемещение из текущих групп клиентов
+	var forbiddenClients []string
+	for _, clientID := range payload.ClientIDs {
+		currentGroup, err := GetClientGroup(clientID)
+		if err != nil {
+			continue // Клиент будет добавлен в notFoundIDs при перемещении
+		}
+		if !CanMoveToGroup(currentAdmin, currentGroup) {
+			forbiddenClients = append(forbiddenClients, clientID)
+		}
+	}
+
+	if len(forbiddenClients) > 0 {
+		var errMsg string
+		if len(currentAdmin.Perm_MoveClientsGroups) > 0 {
+			// Формируем список разрешённых групп через запятую
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_MoveClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Перемещение некоторых клиентов запрещено! Разрешённые группы: %s", allowedGroupsStr)
+		} else {
+			errMsg = "Перемещение некоторых клиентов запрещено!"
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
+		return
+	}
 
 	// Перемещение клиентов
 	notFoundIDs, err := MoveSelectedClients(payload.ClientIDs, payload.NewGroup, payload.NewSubgroup)

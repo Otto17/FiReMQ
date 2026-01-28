@@ -5,8 +5,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"FiReMQ/db"         // Локальный пакет с БД BadgerDB
 	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
@@ -39,13 +41,47 @@ func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на переименование клиентов
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_RenameClients {
+		http.Error(w, "У вас нет прав на переименование клиентов", http.StatusForbidden)
+		return
+	}
+
 	var data struct {
 		ClientID string `json:"clientID"`
 		Name     string `json:"name"`
 	}
+
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		http.Error(w, "Неверное тело запроса", http.StatusBadRequest)
+		return
+	}
+
+	// Получает текущую группу клиента для проверки прав
+	clientGroup, err := GetClientGroup(data.ClientID)
+	if err != nil {
+		logging.LogError("Клиенты: Ошибка получения группы клиента [%s]: %v", data.ClientID, err)
+		http.Error(w, "Ошибка получения данных клиента", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет права на переименование в этой группе
+	if !CanRenameInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_RenameClientsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_RenameClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Переименование клиента из группы '%s' запрещено! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Переименование клиента из группы '%s' запрещено!", clientGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 
@@ -136,13 +172,47 @@ func DeleteClientHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на удаление клиентов
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
 	var data struct {
 		ClientID string `json:"clientID"`
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&data)
-	if err != nil {
+	erro = json.NewDecoder(r.Body).Decode(&data)
+	if erro != nil {
 		http.Error(w, "Неверное тело запроса", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет базовое право на удаление клиентов
+	if !currentAdmin.Perm_DeleteClients {
+		http.Error(w, "У вас нет прав на удаление клиентов", http.StatusForbidden)
+		return
+	}
+
+	// Получает текущую группу клиента для проверки прав
+	clientGroup, err := GetClientGroup(data.ClientID)
+	if err != nil {
+		logging.LogError("Клиенты: Ошибка получения группы клиента [%s]: %v", data.ClientID, err)
+		http.Error(w, "Ошибка получения данных клиента", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет права на удаление в этой группе
+	if !CanDeleteInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_DeleteClientsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_DeleteClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено!", clientGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 
@@ -170,6 +240,19 @@ func DeleteSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на удаление клиентов
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет базовое право на удаление клиентов
+	if !currentAdmin.Perm_DeleteClients {
+		http.Error(w, "У вас нет прав на удаление клиентов", http.StatusForbidden)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Ошибка чтения тела запроса", http.StatusInternalServerError)
@@ -179,6 +262,30 @@ func DeleteSelectedClientsHandler(w http.ResponseWriter, r *http.Request) {
 	var clientIDs []string
 	if err := json.Unmarshal(body, &clientIDs); err != nil {
 		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет права на удаление из групп каждого клиента
+	var forbiddenClients []string
+	for _, clientID := range clientIDs {
+		clientGroup, err := GetClientGroup(clientID)
+		if err != nil {
+			continue // Клиент не найден, будет обработан позже
+		}
+		if !CanDeleteInGroup(currentAdmin, clientGroup) {
+			forbiddenClients = append(forbiddenClients, clientID)
+		}
+	}
+
+	if len(forbiddenClients) > 0 {
+		var errMsg string
+		if len(currentAdmin.Perm_DeleteClientsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_DeleteClientsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление некоторых клиентов запрещено! Разрешённые группы: %s", allowedGroupsStr)
+		} else {
+			errMsg = "Удаление некоторых клиентов запрещено!"
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 

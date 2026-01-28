@@ -140,9 +140,10 @@ func CreateFullBackup(exeDir, currentVersion string, conf map[string]string, ser
 		{"Path_Rules_Base", get("Path_Rules_Base"), true},
 		{"Path_Setup_OWASP_CRS", get("Path_Setup_OWASP_CRS"), false},
 
-		{"Path_7zip", get("Path_7zip"), false},
+		{"Path_7zip", get("Path_7zip"), true},
 		{"Path_Info", get("Path_Info"), true},
 
+		{"Path_Web_Data", get("Path_Web_Data"), true},
 		{"Path_Web_Cert", get("Path_Web_Cert"), false},
 		{"Path_Web_Key", get("Path_Web_Key"), false},
 

@@ -60,6 +60,18 @@ func UninstallFiReAgentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на полное удаление FiReAgent
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_UninstallAgents {
+		http.Error(w, "У вас нет прав на полное удаление FiReAgent", http.StatusForbidden)
+		return
+	}
+
 	var firstError string
 	var offlineIDs []string
 
@@ -180,6 +192,18 @@ func CancelPendingUninstallHandler(w http.ResponseWriter, r *http.Request) {
 	authInfo, errs := getAuthInfoFromRequest(r)
 	if errs != nil {
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверяет права текущего админа на полное удаление FiReAgent
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_UninstallAgents {
+		http.Error(w, "У вас нет прав на отмену удаления FiReAgent", http.StatusForbidden)
 		return
 	}
 

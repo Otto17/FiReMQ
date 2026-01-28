@@ -263,7 +263,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ищет пользователя и проверяет хеш пароля
-	user, err := getAdminByLogin(credentials.Auth_Login)
+	user, err := GetAdminByLogin(credentials.Auth_Login)
 	if err == nil && protection.CompareHash(user.Auth_PasswordHash, credentials.Auth_Password) {
 		// Обрабатывает успешную авторизацию
 		// Генерирует и сохраняет новый токен сессии

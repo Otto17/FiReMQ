@@ -38,6 +38,27 @@ func MoveClient(clientID, newGroup, newSubgroup string) error {
 	})
 }
 
+// GetClientGroup возвращает текущую группу клиента по его ID
+func GetClientGroup(clientID string) (string, error) {
+	var group string
+	err := db.DBInstance.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte("client:" + clientID))
+		if err != nil {
+			return err
+		}
+
+		return item.Value(func(val []byte) error {
+			var data map[string]string
+			if err := json.Unmarshal(val, &data); err != nil {
+				return err
+			}
+			group = data["group"]
+			return nil
+		})
+	})
+	return group, err
+}
+
 // MoveSelectedClients массово перемещает список клиентов в новую группу и подгруппу
 func MoveSelectedClients(clientIDs []string, newGroup, newSubgroup string) ([]string, error) {
 	var notFoundIDs []string // Слайс для хранения ID ненайденных клиентов

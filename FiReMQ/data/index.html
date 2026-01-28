@@ -102,17 +102,17 @@
     </div>
   </div>
 
-  <!-- Модальное окно для учётных записей Админов -->
+  <!-- Модальное окно учётные записи Админов -->
   <div id="accountsModal" class="modal-window">
     <div class="modal-window-content accounts-modal">
       <span class="close" id="closeAccountsModal">&times;</span>
-      <h2>Учётные записи</h2>
+      <h2>Учётные записи Админов</h2>
       <div id="accountsList"></div>
         <br><hr><br>
         <h2>Добавить нового Админа</h2>
         <div class="admin-form-container">
             <form id="addUserForm">
-                <div class="input-validation-wrapper">
+				<div class="input-validation-wrapper">
 					<input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
 					<span class="validation-tooltip"></span>
 				</div>
@@ -129,10 +129,98 @@
 					</div>
 					<span class="validation-tooltip"></span>
 				</div>
-                <button type="submit" class="save-buttonModal">Добавить</button>
-            </form>
+				<!-- Блок разрешений для новой учётной записи -->
+				<div class="permissions-container">
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permCreate">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить создание новых учётных записей</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permUpdate">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить обновление действующих учётных записей</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permDelete">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить удаление действующих учётных записей</span>
+					</label>
+					<label class="permission-checkbox">
+					<input type="checkbox" id="permRenameClients">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить переименование клиентов</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permDeleteClients">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить удаление клиентов</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permMoveClients">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить перемещение клиентов</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permUninstallAgents">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить полное удаление FiReAgent</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permTerminalCommands">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить отправку cmd/PowerShell команд</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permInstallPrograms">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить установку ПО</span>
+					</label>
+					<label class="permission-checkbox">
+						<input type="checkbox" id="permSystemSettings">
+						<span class="checkmark"></span>
+						<span class="permission-label">Разрешить системные настройки</span>
+					</label>
+				</div>
+				<button type="submit" class="save-buttonModal">Добавить</button>
+			</form>
         </div>
     </div>
+</div>
+
+<!-- Модальное окно выбора прав с разрешёнными группами -->
+<div id="groupsSelectModal" class="modal-window">
+    <div class="modal-window-content groups-select-modal">
+        <span class="close" id="closeGroupsSelectModal">&times;</span>
+        <h2 id="groupsSelectModalTitle">Разрешённые группы</h2>
+        <p id="groupsSelectModalDescription" class="groups-select-description">Выберите группы, без выбора — действие запрещено.</p>
+
+        <!-- Чекбокс "Разрешить все группы" -->
+        <label class="permission-checkbox groups-select-all-checkbox">
+            <input type="checkbox" id="allowAllGroupsCheckbox">
+            <span class="checkmark"></span>
+            <span class="permission-label">Разрешить все группы (полные права)</span>
+        </label>
+
+        <!-- Контейнер для списка групп -->
+        <div id="groupsSelectList" class="groups-select-list">
+            <!-- Группы будут добавлены динамически -->
+        </div>
+
+        <div class="groups-select-buttons">
+            <button type="button" id="confirmGroupsSelectBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения изменения разрешения из учётных записей Админов -->
+<div id="permissionConfirmModal" class="modal-window">
+	<div class="modal-window-content permission-confirm-modal">
+		<span class="close" id="closePermissionConfirmModal">&times;</span>
+		<h2>Изменение разрешения</h2>
+		<p id="permissionConfirmText" class="permission-confirm-text"></p>
+		<button id="confirmPermissionBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
+	</div>
 </div>
 
   <!-- Модальное окно MQTT авторизация -->
@@ -765,7 +853,7 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
 	  </div>
 	</div>
 
-	<!-- Модальное окно удаления FiReAgent -->
+	<!-- Модальное окно полное удаление FiReAgent -->
 	<div id="uninstallFiReAgentModal" class="modal-window" role="dialog" aria-modal="true" aria-labelledby="uninstallTitle">
 	  <div class="modal-window-content uninstall-fireagent">
 		<span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>

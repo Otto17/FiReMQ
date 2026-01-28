@@ -26,9 +26,16 @@ import (
 	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
-// LogSecurity используется для логирования событий безопасности (защита от циклического импорта)
+// Используются для логирования событий (защита от циклического импорта)
+var LogAction func(format string, args ...any)
 var LogSystem func(format string, args ...any)
 var LogError func(format string, args ...any)
+
+// GetAuthInfo функция для получения информации об авторизованном админе из запроса (защита от циклического импорта)
+var GetAuthInfo func(r *http.Request) (login, name string, err error)
+
+// CheckPermSystemSettings функция для проверки права на системные настройки (защита от циклического импорта)
+var CheckPermSystemSettings func(login string) bool
 
 // currentWAF хранит текущий активный экземпляр Coraza WAF
 var currentWAF coraza.WAF
@@ -110,6 +117,24 @@ func UpdateOWASPHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение информации об инициаторе (текущем админе)
+	var adminLogin, adminName string
+	if GetAuthInfo != nil {
+		login, name, err := GetAuthInfo(r)
+		if err == nil {
+			adminLogin = login
+			adminName = name
+		}
+	}
+
+	// Проверка прав на системные настройки
+	if CheckPermSystemSettings != nil && adminLogin != "" {
+		if !CheckPermSystemSettings(adminLogin) {
+			http.Error(w, "У вас нет прав на обновление правил OWASP CRS", http.StatusForbidden)
+			return
+		}
+	}
+
 	latestVersion, downloadURL, err := getLatestReleaseInfo()
 	if err != nil {
 		response := UpdateResponse{
@@ -142,6 +167,11 @@ func UpdateOWASPHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Логирование начала обновления
+	if LogAction != nil && adminLogin != "" {
+		LogAction("OWASP CRS: Админ \"%s\" (с именем: %s) начал обновление OWASP CRS правил до версии \"%s\"", adminLogin, adminName, latestVersion)
+	}
+
 	err = performUpdate(downloadURL)
 	if err != nil {
 		response := UpdateResponse{
@@ -166,6 +196,24 @@ func RollbackBackupOWASPHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
 		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	var adminLogin, adminName string
+	if GetAuthInfo != nil {
+		login, name, err := GetAuthInfo(r)
+		if err == nil {
+			adminLogin = login
+			adminName = name
+		}
+	}
+
+	// Проверка прав на системные настройки
+	if CheckPermSystemSettings != nil && adminLogin != "" {
+		if !CheckPermSystemSettings(adminLogin) {
+			http.Error(w, "У вас нет прав на откат правил OWASP CRS", http.StatusForbidden)
+			return
+		}
 	}
 
 	// Получает текущую версию для проверки необходимости отката
@@ -245,6 +293,11 @@ func RollbackBackupOWASPHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(response)
 		return
+	}
+
+	// Логирование успешного отката
+	if LogAction != nil && adminLogin != "" {
+		LogAction("OWASP CRS: Админ \"%s\" (с именем: %s) откатил правила OWASP CRS до версии \"%s\"", adminLogin, adminName, version)
 	}
 
 	response := RollbackResponse{

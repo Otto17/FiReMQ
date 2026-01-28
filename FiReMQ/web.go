@@ -183,9 +183,9 @@ func StartWebServer(getWAF func() coraza.WAF) {
 
 	// Авторизация (применяет Middleware для проверки авторизации и Coraza WAF), DoS логи в данном случае пишутся ТОЛЬКО в консоль
 	http.HandleFunc("/auth", protection.RateLimitMiddleware(rate.Every(6*time.Second), 10, protection.DoSLogConsoleOnly)(AuthHandler)) // POST команда для авторизации (1 запрос каждые 6 секунд = 10 запросов в минуту)
-	http.HandleFunc("/logout", LogoutHandler)                                                            // GET команда для разлогинивания
-	http.HandleFunc("/check-auth", CheckAuthHandler)                                                     // GET Проверка авторизации
-	http.HandleFunc("/refresh-token", RefreshTokenHandler)                                               // GET Обновление токена
+	http.HandleFunc("/logout", LogoutHandler)                                                                                          // GET команда для разлогинивания
+	http.HandleFunc("/check-auth", CheckAuthHandler)                                                                                   // GET Проверка авторизации
+	http.HandleFunc("/refresh-token", RefreshTokenHandler)                                                                             // GET Обновление токена
 
 	// Публичный статический файл "auth.css" (доступен до авторизации)
 	http.HandleFunc("/css/auth.css", func(w http.ResponseWriter, r *http.Request) {
@@ -227,11 +227,18 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	protectedMux.HandleFunc("/get-clients-by-group", FetchClientsByGroupHandler)      // GET команда для формирования сортировки отображаемых клиентов
 
 	// Маршруты для "Учётные записи админов"
-	protectedMux.HandleFunc("/add-admin", AddAdminHandler)             // POST команда для добавления новой учетной записи
-	protectedMux.HandleFunc("/delete-admin", DeleteAdminHandler)       // POST команда для удаления учетной записи
-	protectedMux.HandleFunc("/update-admin", UpdateAdminHandler)       // POST команда для обновления учетной записи
-	protectedMux.HandleFunc("/get-admin-names", GetAdminsNamesHandler) // GET команда для получения списка имён
-	protectedMux.HandleFunc("/get-authname", GetAuthNameHandler)       // GET команда для получения имени авторизованного админа в WEB админке
+	protectedMux.HandleFunc("/add-admin", AddAdminHandler)                                           // POST команда для добавления новой учетной записи
+	protectedMux.HandleFunc("/delete-admin", DeleteAdminHandler)                                     // POST команда для удаления учетной записи
+	protectedMux.HandleFunc("/update-admin", UpdateAdminHandler)                                     // POST команда для обновления учетной записи
+	protectedMux.HandleFunc("/get-admin-names", GetAdminsNamesHandler)                               // GET команда для получения списка имён
+	protectedMux.HandleFunc("/get-authname", GetAuthNameHandler)                                     // GET команда для получения имени авторизованного админа в WEB админке
+	protectedMux.HandleFunc("/get-current-permissions", GetCurrentAdminPermissionsHandler)           // GET команда для получения прав текущего авторизованного админа
+	protectedMux.HandleFunc("/toggle-admin-permission", ToggleAdminPermissionHandler)                // POST команда для изменения конкретного разрешения учётной записи
+	protectedMux.HandleFunc("/update-rename-clients-groups", UpdateRenameClientsGroupsHandler)       // POST команда для изменения списка разрешённых групп для переименования клиентов
+	protectedMux.HandleFunc("/update-delete-clients-groups", UpdateDeleteClientsGroupsHandler)       // POST команда для изменения списка разрешённых групп для удаления клиентов
+	protectedMux.HandleFunc("/update-move-clients-groups", UpdateMoveClientsGroupsHandler)           // POST команда для изменения списка разрешённых групп для перемещения
+	protectedMux.HandleFunc("/update-terminal-commands-groups", UpdateTerminalCommandsGroupsHandler) // POST команда для изменения списка разрешённых групп для cmd/PowerShell команд
+	protectedMux.HandleFunc("/update-install-programs-groups", UpdateInstallProgramsGroupsHandler)   // POST команда для изменения списка разрешённых групп для установки ПО через QUIC
 
 	// Маршруты MQTT сервера
 	protectedMux.HandleFunc("/get-accounts-mqtt", mqtt_server.GetAccountsHandler)     // GET команда для получения данных учетных записей
@@ -262,20 +269,20 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	protectedMux.HandleFunc("/delete-by-date-QUIC-report", DeleteQUICByDateHandler)          // POST команда для удаления всех QUIC записей по дате создания
 	protectedMux.HandleFunc("/delete-client-QUIC-report", DeleteClientFromQUICByDateHandler) // POST команда для удаления конкретной QUIC записи ClientID по дате создания
 
-	// Маршруты для обновления или отката правил OWASP CRS для Coraza WAF с GitHub
+	// Маршруты для обновления или отката правил OWASP CRS для Coraza WAF с GitHub (О проекте)
 	protectedMux.HandleFunc("/check-OWASP-CRS", protection.CheckOWASPHandler)                    // GET команда проверяет наличие новой версии правил
 	protectedMux.HandleFunc("/update-OWASP-CRS", protection.UpdateOWASPHandler)                  // POST команда обновляет правила
 	protectedMux.HandleFunc("/rollback-backup-OWASP-CRS", protection.RollbackBackupOWASPHandler) // POST команда для отката правил из бэкапа
+
+	// Маршруты для обновления или отката серверной части FiReMQ с GitHub/GitFlic (О проекте)
+	protectedMux.HandleFunc("/check-FiReMQ", update.CheckHandler)              // GET команда проверяет наличие новой версии FiReMQ
+	protectedMux.HandleFunc("/update-FiReMQ", update.UpdateHandler)            // POST команда скачивает, проверяет, запускает утилиту "ServerUpdater" и корректно завершает работу FiReMQ
+	protectedMux.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler) // POST команда для отката версии FiReMQ на предыдущий релиз (через утилиту ServerUpdater)
 
 	// Маршруты для отправки команды самоудаления клиентам "FiReAgent"
 	protectedMux.HandleFunc("/uninstall-fireagent", UninstallFiReAgentHandler)    // POST команда на запроса самоудаления конкретных клиентов по их ID
 	protectedMux.HandleFunc("/uninstall-pending", GetPendingUninstallListHandler) // GET команда показывает список ID, находящихся в офлайне и ожидающих удаления
 	protectedMux.HandleFunc("/uninstall-cancel", CancelPendingUninstallHandler)   // POST команда отменяет удаление конкретного офлайн ID (если клиент ещё не был в онлайне, при запросе удаления, удаление можно отменить)
-
-	// Маршруты для обновления или отката серверной части FiReMQ с GitHub/GitFlic
-	protectedMux.HandleFunc("/check-FiReMQ", update.CheckHandler)              // GET команда проверяет наличие новой версии FiReMQ
-	protectedMux.HandleFunc("/update-FiReMQ", update.UpdateHandler)            // POST команда скачивает, проверяет, запускает утилиту "ServerUpdater" и корректно завершает работу FiReMQ
-	protectedMux.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler) // POST команда для отката версии FiReMQ на предыдущий релиз (через утилиту ServerUpdater)
 
 	// Маршруты для просмотра и/или скачивания HTML лога сервера
 	protectedMux.HandleFunc("/getServer-log", protection.RateLimitMiddleware(rate.Every(1500*time.Millisecond), 1)(logging.HandleLogFileRequest)) // POST команда для создания одноразовой ссылки на просмотр или скачивание файла лога (1 запрос каждые 1,5 секунды = 40 запросов в минуту)

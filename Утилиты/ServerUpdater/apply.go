@@ -26,6 +26,8 @@ type PlanOp struct {
 	DestAbs   string // Абсолютный путь назначения
 	ConfKey   string // Ключ конфигурации (если применимо)
 	SkipApply bool   // Указывает, что эту операцию следует пропустить
+	IsDir     bool   // true = это директория
+	Replace   bool   // true = удалить старое содержимое перед копированием
 }
 
 // ApplyStats содержит сводку по выполненным операциям обновления
@@ -114,10 +116,12 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 			Action:   it.Action,
 			SrcInZip: strings.TrimPrefix(path.Clean(it.Src), "/"),
 			DestAbs:  dest,
+			IsDir:    it.IsDir,
+			Replace:  it.Replace,
 		}
 
 		// Определяет, нужно ли заменять главный бинарный файл FiReMQ
-		if strings.EqualFold(filepath.Clean(dest), filepath.Join(exeDir, exeName())) {
+		if !it.IsDir && strings.EqualFold(filepath.Clean(dest), filepath.Join(exeDir, exeName())) {
 			if it.Action == ActUpdate {
 				needReplaceExe = true
 			}
@@ -190,10 +194,20 @@ func dumpPlan(ops []PlanOp) {
 		src := op.SrcInZip
 		sec := ruSection(op.Section)
 		act := ruAction(op.Action)
+
+		dirMark := ""
+		if op.IsDir {
+			if op.Replace {
+				dirMark = " [КАТАЛОГ, ЗАМЕНА]"
+			} else {
+				dirMark = " [КАТАЛОГ]"
+			}
+		}
+
 		if op.Action == ActDelete {
-			log.Printf("ПЛАН: [%s] %s -> %s", sec, act, op.DestAbs)
+			log.Printf("ПЛАН: [%s] %s -> %s%s", sec, act, op.DestAbs, dirMark)
 		} else {
-			log.Printf("ПЛАН: [%s] %s %s -> %s", sec, act, src, op.DestAbs)
+			log.Printf("ПЛАН: [%s] %s %s -> %s%s", sec, act, src, op.DestAbs, dirMark)
 		}
 	}
 }
@@ -283,6 +297,127 @@ func extractFromArchiveToTemp(a *Archive, srcInZip, tempDest string) (os.FileMod
 	return 0, fmt.Errorf("в архиве не найден файл: .../FiReMQ/%s", srcInZip)
 }
 
+// extractDirFromArchive извлекает все файлы из директории внутри архива
+func extractDirFromArchive(a *Archive, srcDirInZip, destDir string, replace bool) (int, error) {
+	srcDirInZip = strings.ReplaceAll(srcDirInZip, "\\", "/")
+	srcDirInZip = path.Clean(strings.TrimPrefix(srcDirInZip, "/"))
+
+	// Нормализует префикс для поиска
+	wantPrefix := strings.ToLower("firemq/" + srcDirInZip)
+	if !strings.HasSuffix(wantPrefix, "/") {
+		wantPrefix += "/"
+	}
+
+	// Если нужна полная замена — удаляет существующую директорию
+	if replace {
+		if _, err := os.Stat(destDir); err == nil {
+			log.Printf("  Удаление существующего каталога для замены: %s", destDir)
+			if err := os.RemoveAll(destDir); err != nil {
+				return 0, fmt.Errorf("не удалось удалить каталог %s: %w", destDir, err)
+			}
+		}
+	}
+
+	// Создаёт целевую директорию
+	if err := ensureDirAllAndSetOwner(destDir, 0755); err != nil {
+		return 0, fmt.Errorf("не удалось создать каталог %s: %w", destDir, err)
+	}
+
+	// Открывает архив и извлекает файлы
+	f, err := os.Open(a.Path)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return 0, err
+	}
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
+	count := 0
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return count, err
+		}
+
+		// Пропускает директории
+		if hdr.Typeflag == tar.TypeDir {
+			continue
+		}
+
+		n := strings.ReplaceAll(hdr.Name, "\\", "/")
+		n = strings.TrimPrefix(n, "./")
+		ln := strings.ToLower(n)
+
+		// Проверяет, что файл внутри нужной директории
+		idx := strings.Index(ln, wantPrefix)
+		if idx < 0 {
+			continue
+		}
+
+		// Вычисляет относительный путь внутри директории
+		relPath := n[idx+len(wantPrefix):]
+		if relPath == "" {
+			continue
+		}
+
+		// Полный путь назначения
+		destPath := filepath.Join(destDir, filepath.FromSlash(relPath))
+
+		// Создаёт родительскую директорию
+		if err := ensureDirAllAndSetOwner(filepath.Dir(destPath), 0755); err != nil {
+			return count, err
+		}
+
+		// Извлекает файл
+		mode := hdr.FileInfo().Mode()
+		out, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
+		if err != nil {
+			return count, err
+		}
+
+		_, copyErr := io.Copy(out, tr)
+		out.Close()
+		if copyErr != nil {
+			return count, copyErr
+		}
+
+		// Нормализация прав
+		ext := strings.ToLower(filepath.Ext(destPath))
+		if ext == "" || ext == ".sh" || ext == ".bin" {
+			mode = 0755
+		} else {
+			mode = 0644
+		}
+		setOwnerAndPerms(destPath, mode)
+
+		// Определение размера
+		var sizeStr string
+		if info, err := os.Stat(destPath); err == nil {
+			sizeStr = formatSize(info.Size())
+		} else {
+			sizeStr = "неизвестно"
+		}
+
+		log.Printf("  ФАЙЛ: %s (размер=%s, права=%o)", destPath, sizeStr, mode)
+		count++
+	}
+
+	if count == 0 {
+		return 0, fmt.Errorf("каталог %s пуст или не найден в архиве", srcDirInZip)
+	}
+
+	return count, nil
+}
+
 // atomicReplace атомарно заменяет файл назначения dest временным файлом tempFile
 func atomicReplace(dest, tempFile string) error {
 	_ = os.Remove(dest)
@@ -313,19 +448,53 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 				continue
 			}
 
-			if err := os.Remove(op.DestAbs); err != nil {
+			// Проверяет, существует ли путь и что это - файл или каталог
+			info, err := os.Stat(op.DestAbs)
+			if err != nil {
 				if os.IsNotExist(err) {
 					stats.SkippedDelete++
-					log.Printf("ПРОПУСК УДАЛЕНИЯ: %s (файл уже отсутствует)", op.DestAbs)
+					log.Printf("ПРОПУСК УДАЛЕНИЯ: %s (уже отсутствует)", op.DestAbs)
 					continue
 				}
-				return stats, fmt.Errorf("delete %s: %w", op.DestAbs, err)
+				return stats, fmt.Errorf("stat %s: %w", op.DestAbs, err)
 			}
 
-			stats.Deleted++
-			log.Printf("УДАЛЕНИЕ: %s", op.DestAbs)
+			if info.IsDir() {
+				// Удаляет каталог со всем содержимым
+				if err := os.RemoveAll(op.DestAbs); err != nil {
+					return stats, fmt.Errorf("delete dir %s: %w", op.DestAbs, err)
+				}
+				stats.Deleted++
+				log.Printf("УДАЛЕНИЕ КАТАЛОГА: %s (со всем содержимым)", op.DestAbs)
+			} else {
+				// Удаляет файл
+				if err := os.Remove(op.DestAbs); err != nil {
+					return stats, fmt.Errorf("delete %s: %w", op.DestAbs, err)
+				}
+				stats.Deleted++
+				log.Printf("УДАЛЕНИЕ: %s", op.DestAbs)
+			}
 
 		case ActUpdate:
+			// Обработка директории
+			if op.IsDir {
+				replaceMark := ""
+				if op.Replace {
+					replaceMark = " (полная замена)"
+				}
+				log.Printf("ОБНОВЛЕНИЕ КАТАЛОГА: %s%s", op.DestAbs, replaceMark)
+
+				count, err := extractDirFromArchive(a, op.SrcInZip, op.DestAbs, op.Replace)
+				if err != nil {
+					return stats, fmt.Errorf("ошибка обновления каталога %s: %w", op.DestAbs, err)
+				}
+
+				log.Printf("  Извлечено файлов: %d", count)
+				stats.Updated += count
+				continue
+			}
+
+			// Обработка обычного файла
 			temp := op.DestAbs + ".tmp"
 
 			mode, err := extractFromArchiveToTemp(a, op.SrcInZip, temp)

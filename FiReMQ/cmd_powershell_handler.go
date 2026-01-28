@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
@@ -50,6 +51,20 @@ type FullMQTTCommand struct {
 func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Только GET запросы поддерживаются", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав на управление
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
 		return
 	}
 
@@ -97,11 +112,47 @@ func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Формирует ответ, поле "ClientID_Command" уже содержит вложенную структуру с Answer для каждого клиента
+			// Получает карту клиентов (без фильтрации — показывает все записи)
+			clientMapping, ok := record["ClientID_Command"].(map[string]any)
+			if !ok {
+				continue
+			}
+
+			// Обогащает данные клиентов информацией о возможности управления
+			enrichedClientMapping := make(map[string]any)
+			for clientID, clientData := range clientMapping {
+				clientDataMap := make(map[string]any)
+
+				// Копирует существующие данные клиента
+				if existingData, ok := clientData.(map[string]any); ok {
+					for k, v := range existingData {
+						clientDataMap[k] = v
+					}
+				}
+
+				// Проверяет, может ли админ управлять этим клиентом (удалять/повторно отправлять)
+				canManage := false // По умолчанию запрещено
+				if currentAdmin.Perm_TerminalCommands {
+					// Права на команды включены — проверяет группу клиента
+					clientGroup, err := GetClientGroup(clientID)
+					if err != nil {
+						// Клиент не найден в БД — разрешает управление
+						canManage = true
+					} else {
+						// Клиент существует — проверяет права на его группу
+						canManage = CanTerminalCommandInGroup(currentAdmin, clientGroup)
+					}
+				}
+				clientDataMap["CanManage"] = canManage
+
+				enrichedClientMapping[clientID] = clientDataMap
+			}
+
+			// Формирует ответ со всеми клиентами и флагами управления
 			itemResponse := map[string]any{
 				"Date_Of_Creation": record["Date_Of_Creation"],
 				"Team_Command":     record["Team_Command"],
-				"ClientID_Command": record["ClientID_Command"],
+				"ClientID_Command": enrichedClientMapping,
 				"Created_By":       record["Created_By"], // Отправляет имя админа, создавшего запрос
 			}
 			results = append(results, itemResponse)
@@ -132,6 +183,18 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на управление cmd/PowerShell командами
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_TerminalCommands {
+		http.Error(w, "У вас нет прав на удаление записей cmd/PowerShell команд", http.StatusForbidden)
+		return
+	}
+
 	// Ожидает JSON: {"Date_Of_Creation": "02.01.06(15:04:05)"}
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
@@ -142,8 +205,11 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//Флаг для ошибки, если неверно указана дата/время
+	// Флаг для ошибки, если неверно указана дата/время
 	found := false
+	// Флаг для ошибки прав доступа
+	accessDenied := false
+	var forbiddenGroup string
 
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
@@ -162,6 +228,22 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			if record["Date_Of_Creation"] == req.Date_Of_Creation {
 				found = true
+
+				// Проверяет права на удаление всех клиентов в записи
+				if clientMapping, ok := record["ClientID_Command"].(map[string]any); ok {
+					for clientID := range clientMapping {
+						clientGroup, err := GetClientGroup(clientID)
+						if err != nil {
+							continue // Клиент не найден в БД — разрешает удаление
+						}
+						if !CanTerminalCommandInGroup(currentAdmin, clientGroup) {
+							accessDenied = true
+							forbiddenGroup = clientGroup
+							return nil // Прерывает транзакцию без удаления
+						}
+					}
+				}
+
 				if err := txn.Delete(item.Key()); err != nil {
 					return err
 				}
@@ -172,6 +254,22 @@ func DeleteCommandsByDateHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Ошибка удаления запроса: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if accessDenied {
+		var errMsg string
+		if len(currentAdmin.Perm_TerminalCommandsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_TerminalCommandsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление запроса запрещено! Запись содержит клиентов из группы '%s'. Разрешённые группы: %s", forbiddenGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Удаление запроса запрещено! Запись содержит клиентов из группы '%s'", forbiddenGroup)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "Ошибка",
+			"message": errMsg,
+		})
 		return
 	}
 
@@ -207,6 +305,18 @@ func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Проверяет права текущего админа на управление cmd/PowerShell командами
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_TerminalCommands {
+		http.Error(w, "У вас нет прав на удаление клиентов из записей cmd/PowerShell команд", http.StatusForbidden)
+		return
+	}
+
 	// Ожидает JSON: {"Date_Of_Creation": "<timestamp>", "client_id": "id"}
 	var req struct {
 		Date_Of_Creation string `json:"Date_Of_Creation"`
@@ -223,6 +333,24 @@ func DeleteClientFromCommandByDateHandler(w http.ResponseWriter, r *http.Request
 		json.NewEncoder(w).Encode(map[string]string{
 			"status":  "Ошибка",
 			"message": "Не указан ID клиента для удаления",
+		})
+		return
+	}
+
+	// Проверяет права на управление клиентом в его группе
+	clientGroup, erro := GetClientGroup(req.ClientID)
+	if erro == nil && !CanTerminalCommandInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_TerminalCommandsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_TerminalCommandsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Удаление клиента из группы '%s' запрещено!", clientGroup)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "Ошибка",
+			"message": errMsg,
 		})
 		return
 	}
@@ -317,6 +445,18 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на отправку cmd/PowerShell команд
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_TerminalCommands {
+		http.Error(w, "У вас нет прав на повторную отправку cmd/PowerShell команд", http.StatusForbidden)
+		return
+	}
+
 	// Ожидает JSON с двумя параметрами: "client_id" и "Date_Of_Creation"
 	var req struct {
 		ClientID         string `json:"client_id"`
@@ -325,6 +465,25 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ClientID == "" || req.Date_Of_Creation == "" {
 		http.Error(w, "Ошибка парсинга данных или отсутствует client_id/Date_Of_Creation", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет права на отправку команд клиенту в его группе
+	clientGroup, erro := GetClientGroup(req.ClientID)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных клиента", http.StatusInternalServerError)
+		return
+	}
+
+	if !CanTerminalCommandInGroup(currentAdmin, clientGroup) {
+		var errMsg string
+		if len(currentAdmin.Perm_TerminalCommandsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_TerminalCommandsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Повторная отправка команды клиенту из группы '%s' запрещена! Разрешённые группы: %s", clientGroup, allowedGroupsStr)
+		} else {
+			errMsg = fmt.Sprintf("Повторная отправка команды клиенту из группы '%s' запрещена!", clientGroup)
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 
@@ -573,6 +732,42 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 	if errs != nil {
 		logging.LogError("CMD/PowerShell: Ошибка получения информации о админах: %v", err)
 		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Проверяет права текущего админа на отправку cmd/PowerShell команд
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_TerminalCommands {
+		http.Error(w, "У вас нет прав на отправку cmd/PowerShell команд", http.StatusForbidden)
+		return
+	}
+
+	// Проверяет права на отправку команд клиентам в их группах
+	var forbiddenClients []string
+	for _, clientID := range cmdReq.ClientIDs {
+		clientGroup, err := GetClientGroup(clientID)
+		if err != nil {
+			continue // Клиент не найден, будет обработан позже
+		}
+		if !CanTerminalCommandInGroup(currentAdmin, clientGroup) {
+			forbiddenClients = append(forbiddenClients, clientID)
+		}
+	}
+
+	if len(forbiddenClients) > 0 {
+		var errMsg string
+		if len(currentAdmin.Perm_TerminalCommandsGroups) > 0 {
+			allowedGroupsStr := "'" + strings.Join(currentAdmin.Perm_TerminalCommandsGroups, "', '") + "'"
+			errMsg = fmt.Sprintf("Отправка команд некоторым клиентам запрещена! Разрешённые группы: %s", allowedGroupsStr)
+		} else {
+			errMsg = "Отправка команд некоторым клиентам запрещена!"
+		}
+		http.Error(w, errMsg, http.StatusForbidden)
 		return
 	}
 

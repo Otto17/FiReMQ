@@ -32,6 +32,9 @@ type User struct {
 	Auth_Date_Create  string `json:"date_create"`
 	Auth_Date_Change  string `json:"date_change"`
 	Auth_Session_ID   string `json:"auth_session_id"`
+	Perm_Create       bool   `json:"perm_create"` // Разрешить создавать новые учётные записи
+	Perm_Update       bool   `json:"perm_update"` // Разрешить изменять действующие учётные записи
+	Perm_Delete       bool   `json:"perm_delete"` // Разрешить удалять текущие учётные записи
 }
 
 // SimpleUser, содержит упрощенные данные для отображения

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -102,12 +103,38 @@ func main() {
 		}
 	}
 
-	// Инъекции функций логирования в пакет protection и pathsOS, чтобы избежать циклических импортов
+	// Инъекции функций логирования в пакет protection и pathsOS, для избежания циклических импортов
 	pathsOS.LogSystem = logging.LogSystem
 	pathsOS.LogError = logging.LogError
+
 	protection.LogSecurity = logging.LogSecurity
 	protection.LogSystem = logging.LogSystem
 	protection.LogError = logging.LogError
+	protection.LogAction = logging.LogAction
+
+	// Получение информации об авторизованном админе из HTTP-запроса
+	getAuthInfoFunc := func(r *http.Request) (login, name string, err error) {
+		authInfo, err := getAuthInfoFromRequest(r)
+		if err != nil {
+			return "", "", err
+		}
+		return authInfo.Login, authInfo.Name, nil
+	}
+
+	// Инъекция функции в пакеты protection и update
+	protection.GetAuthInfo = getAuthInfoFunc
+	update.GetAuthInfo = getAuthInfoFunc
+
+	// Инъекция функции проверки права на системные настройки (обновление/откат, MQTT авторизация)
+	checkPermSystemSettings := func(login string) bool {
+		user, err := GetAdminByLogin(login)
+		if err != nil {
+			return false
+		}
+		return user.Perm_SystemSettings
+	}
+	protection.CheckPermSystemSettings = checkPermSystemSettings
+	update.CheckPermSystemSettings = checkPermSystemSettings
 
 	// Проверка запуска FiReMQ от суперпользователя в Linux
 	if runtime.GOOS == "linux" && os.Geteuid() == 0 {
@@ -178,6 +205,8 @@ func main() {
 	mqtt_server.SaveClientInfo = SaveClientInfo                   // Из файла "clients.go"
 	mqtt_server.HandleAnswerMessage = HandleAnswerMessage         // Для cmd/PowerShell
 	mqtt_server.HandleQUICAnswerMessage = HandleQUICAnswerMessage // Для Установки ПО (QUIC)
+	mqtt_server.GetAuthInfo = getAuthInfoFunc                     // Для получения информации об авторизованном админе
+	mqtt_server.CheckPermSystemSettings = checkPermSystemSettings // Для проверки права на системные настройки
 
 	// Инициализация БД
 	if err := db.InitDB(); err != nil {

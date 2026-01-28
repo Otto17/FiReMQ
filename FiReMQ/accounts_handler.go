@@ -20,10 +20,25 @@ import (
 
 // SafeUser представляет безопасное представление учетной записи администратора без хеша пароля
 type SafeUser struct {
-	Auth_Name        string `json:"auth_name"`
-	Auth_Login       string `json:"auth_login"`
-	Auth_Date_Create string `json:"date_create"`
-	Auth_Date_Change string `json:"date_change"`
+	Auth_Name                   string   `json:"auth_name"`
+	Auth_Login                  string   `json:"auth_login"`
+	Auth_Date_Create            string   `json:"date_create"`
+	Auth_Date_Change            string   `json:"date_change"`
+	Perm_Create                 bool     `json:"perm_create"`                   // Права на создание новых учётных записей
+	Perm_Update                 bool     `json:"perm_update"`                   // Права на изменение действующих учётных записей
+	Perm_Delete                 bool     `json:"perm_delete"`                   // Права на удаление действующих учётных записей
+	Perm_RenameClients          bool     `json:"perm_rename_clients"`           // Права на переименовывание клиентов
+	Perm_RenameClientsGroups    []string `json:"perm_rename_clients_groups"`    // Список групп для переименования (пустой = все группы)
+	Perm_DeleteClients          bool     `json:"perm_delete_clients"`           // Права на удаление клиентов
+	Perm_DeleteClientsGroups    []string `json:"perm_delete_clients_groups"`    // Список групп для удаления (пустой = все группы)
+	Perm_MoveClients            bool     `json:"perm_move_clients"`             // Права на перемещение клиентов
+	Perm_MoveClientsGroups      []string `json:"perm_move_clients_groups"`      // Список разрешённых групп (пустой = все группы)
+	Perm_UninstallAgents        bool     `json:"perm_uninstall_agents"`         // Права на полное удаление FiReAgent
+	Perm_TerminalCommands       bool     `json:"perm_terminal_commands"`        // Права на отправку cmd/PowerShell команд
+	Perm_TerminalCommandsGroups []string `json:"perm_terminal_commands_groups"` // Список групп для cmd/PowerShell (пустой = все группы)
+	Perm_InstallPrograms        bool     `json:"perm_install_programs"`         // Права на установку ПО через QUIC
+	Perm_InstallProgramsGroups  []string `json:"perm_install_programs_groups"`  // Список групп для установки ПО (пустой = все группы)
+	Perm_SystemSettings         bool     `json:"perm_system_settings"`          // Права на системные настройки (обновление/откат OWASP CRS и FiReMQ, MQTT авторизация)
 }
 
 // AddAdminHandler обрабатывает запросы на добавление новой учетной записи администратора
@@ -34,9 +49,24 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var newUser struct {
-		Auth_Name     string `json:"auth_name"`
-		Auth_Login    string `json:"auth_login"`
-		Auth_Password string `json:"auth_password"`
+		Auth_Name                   string   `json:"auth_name"`
+		Auth_Login                  string   `json:"auth_login"`
+		Auth_Password               string   `json:"auth_password"`
+		Perm_Create                 *bool    `json:"perm_create"`                   // Права на создание новых учётных записей (указатель для проверки наличия)
+		Perm_Update                 *bool    `json:"perm_update"`                   // Права на изменение действующих учётных записей
+		Perm_Delete                 *bool    `json:"perm_delete"`                   // Права на удаление действующих учётных записей
+		Perm_RenameClients          *bool    `json:"perm_rename_clients"`           // Права на переименовывание клиентов
+		Perm_RenameClientsGroups    []string `json:"perm_rename_clients_groups"`    // Список групп для переименования (пустой = все группы)
+		Perm_DeleteClients          *bool    `json:"perm_delete_clients"`           // Права на удаление клиентов
+		Perm_DeleteClientsGroups    []string `json:"perm_delete_clients_groups"`    // Список групп для удаления (пустой = все группы)
+		Perm_MoveClients            *bool    `json:"perm_move_clients"`             // Права на перемещение клиентов
+		Perm_MoveClientsGroups      []string `json:"perm_move_clients_groups"`      // Список разрешённых групп (пустой = все группы)
+		Perm_UninstallAgents        *bool    `json:"perm_uninstall_agents"`         // Права на полное удаление FiReAgent
+		Perm_TerminalCommands       *bool    `json:"perm_terminal_commands"`        // Права на отправку cmd/PowerShell команд
+		Perm_TerminalCommandsGroups []string `json:"perm_terminal_commands_groups"` // Список групп для cmd/PowerShell (пустой = все группы)
+		Perm_InstallPrograms        *bool    `json:"perm_install_programs"`         // Права на установку ПО через QUIC
+		Perm_InstallProgramsGroups  []string `json:"perm_install_programs_groups"`  // Список групп для установки ПО (пустой = все группы)
+		Perm_SystemSettings         *bool    `json:"perm_system_settings"`          // Права на системные настройки (обновление/откат OWASP CRS и FiReMQ, MQTT авторизация)
 	}
 
 	// Получение информации об инициаторе (текущем админе)
@@ -46,8 +76,26 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяет права текущего админа на создание учётных записей
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_Create {
+		http.Error(w, "У вас нет прав на создание новых учётных записей", http.StatusForbidden)
+		return
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&newUser); err != nil {
 		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет обязательное наличие всех параметров разрешений
+	if newUser.Perm_Create == nil || newUser.Perm_Update == nil || newUser.Perm_Delete == nil || newUser.Perm_RenameClients == nil || newUser.Perm_DeleteClients == nil || newUser.Perm_MoveClients == nil || newUser.Perm_UninstallAgents == nil || newUser.Perm_TerminalCommands == nil || newUser.Perm_InstallPrograms == nil || newUser.Perm_SystemSettings == nil {
+		http.Error(w, "Необходимо указать все параметры разрешений", http.StatusBadRequest)
 		return
 	}
 
@@ -96,7 +144,7 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 	newUser.Auth_Password = sanitized["auth_password"]
 
 	// Проверяет, занят ли указанный логин
-	_, err = getAdminByLogin(newUser.Auth_Login)
+	_, err = GetAdminByLogin(newUser.Auth_Login)
 	if err == nil {
 		// Возвращает ошибку, если логин уже существует
 		http.Error(w, "Логин занят, используйте другой!", http.StatusConflict)
@@ -111,11 +159,26 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 	dateCreate := fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)", now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
 
 	user := User{
-		Auth_Name:         newUser.Auth_Name,
-		Auth_Login:        newUser.Auth_Login,
-		Auth_PasswordHash: protection.HashPassword(newUser.Auth_Password),
-		Auth_Date_Create:  dateCreate,
-		Auth_Date_Change:  "--.--.--(--:--)",
+		Auth_Name:                   newUser.Auth_Name,
+		Auth_Login:                  newUser.Auth_Login,
+		Auth_PasswordHash:           protection.HashPassword(newUser.Auth_Password),
+		Auth_Date_Create:            dateCreate,
+		Auth_Date_Change:            "--.--.--(--:--)",
+		Perm_Create:                 *newUser.Perm_Create, // Разыменовывает указатель
+		Perm_Update:                 *newUser.Perm_Update,
+		Perm_Delete:                 *newUser.Perm_Delete,
+		Perm_RenameClients:          *newUser.Perm_RenameClients,
+		Perm_RenameClientsGroups:    newUser.Perm_RenameClientsGroups,
+		Perm_DeleteClients:          *newUser.Perm_DeleteClients,
+		Perm_DeleteClientsGroups:    newUser.Perm_DeleteClientsGroups,
+		Perm_MoveClients:            *newUser.Perm_MoveClients,
+		Perm_MoveClientsGroups:      newUser.Perm_MoveClientsGroups,
+		Perm_UninstallAgents:        *newUser.Perm_UninstallAgents,
+		Perm_TerminalCommands:       *newUser.Perm_TerminalCommands,
+		Perm_TerminalCommandsGroups: newUser.Perm_TerminalCommandsGroups,
+		Perm_InstallPrograms:        *newUser.Perm_InstallPrograms,
+		Perm_InstallProgramsGroups:  newUser.Perm_InstallProgramsGroups,
+		Perm_SystemSettings:         *newUser.Perm_SystemSettings,
 	}
 
 	if err := saveAdmin(user); err != nil {
@@ -124,8 +187,77 @@ func AddAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) добавил новую учётную запись: \"%s\" (с именем: %s)", authInfo.Login, authInfo.Name, user.Auth_Login, user.Auth_Name)
+	// Формирует строку с информацией о разрешённых группах для переименования клиентов
+	var renameGroupsInfo string
+	if user.Perm_RenameClients {
+		if len(user.Perm_RenameClientsGroups) == 0 {
+			renameGroupsInfo = "все группы"
+		} else {
+			renameGroupsInfo = fmt.Sprintf("группы: %v", user.Perm_RenameClientsGroups)
+		}
+	} else {
+		renameGroupsInfo = "запрещено"
+	}
+
+	// Формирует строку с информацией о разрешённых группах для перемещения
+	var moveGroupsInfo string
+	if user.Perm_MoveClients {
+		if len(user.Perm_MoveClientsGroups) == 0 {
+			moveGroupsInfo = "все группы"
+		} else {
+			moveGroupsInfo = fmt.Sprintf("группы: %v", user.Perm_MoveClientsGroups)
+		}
+	} else {
+		moveGroupsInfo = "запрещено"
+	}
+
+	// Формирует строку с информацией о разрешённых группах для удаления клиентов
+	var deleteGroupsInfo string
+	if user.Perm_DeleteClients {
+		if len(user.Perm_DeleteClientsGroups) == 0 {
+			deleteGroupsInfo = "все группы"
+		} else {
+			deleteGroupsInfo = fmt.Sprintf("группы: %v", user.Perm_DeleteClientsGroups)
+		}
+	} else {
+		deleteGroupsInfo = "запрещено"
+	}
+
+	// Формирует строку с информацией о разрешённых группах для cmd/PowerShell команд
+	var terminalGroupsInfo string
+	if user.Perm_TerminalCommands {
+		if len(user.Perm_TerminalCommandsGroups) == 0 {
+			terminalGroupsInfo = "все группы"
+		} else {
+			terminalGroupsInfo = fmt.Sprintf("группы: %v", user.Perm_TerminalCommandsGroups)
+		}
+	} else {
+		terminalGroupsInfo = "запрещено"
+	}
+
+	// Формирует строку с информацией о разрешённых группах для установки ПО
+	var installGroupsInfo string
+	if user.Perm_InstallPrograms {
+		if len(user.Perm_InstallProgramsGroups) == 0 {
+			installGroupsInfo = "все группы"
+		} else {
+			installGroupsInfo = fmt.Sprintf("группы: %v", user.Perm_InstallProgramsGroups)
+		}
+	} else {
+		installGroupsInfo = "запрещено"
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) добавил новую учётную запись: \"%s\" (с именем: %s, ПРАВА: создание уч. записей=%s, обновление уч. записей=%s, удаление уч. записей=%s, переименование клиентов=%s, удаление клиентов=%s, перемещение клиентов=%s, самоудаление FiReAgent=%s, отправка терминальных команд=%s, установка ПО=%s, системные настройки=%s)",
+		authInfo.Login, authInfo.Name, user.Auth_Login, user.Auth_Name, permText(user.Perm_Create), permText(user.Perm_Update), permText(user.Perm_Delete), renameGroupsInfo, deleteGroupsInfo, moveGroupsInfo, permText(user.Perm_UninstallAgents), terminalGroupsInfo, installGroupsInfo, permText(user.Perm_SystemSettings))
 	w.Write([]byte("Админ добавлен"))
+}
+
+// permText преобразует булево право доступа в читаемый текст для логов
+func permText(v bool) string {
+	if v {
+		return "разрешено"
+	}
+	return "запрещено"
 }
 
 // DeleteAdminHandler обрабатывает запросы на удаление учетной записи администратора
@@ -160,6 +292,20 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 	currentUserLogin := authInfo.Login
 	currentUserName := authInfo.Name
 
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(currentUserLogin)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет права на удаление (самоудаление разрешено всегда)
+	isSelfDelete := currentUserLogin == decodedLogin
+	if !isSelfDelete && !currentAdmin.Perm_Delete {
+		http.Error(w, "У вас нет прав на удаление учётных записей", http.StatusForbidden)
+		return
+	}
+
 	// Загружает все учетные записи для проверки их количества
 	usersMap, err := loadAdminsMap()
 	if err != nil {
@@ -173,16 +319,25 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получение имени удаляемого админа из карты
+	// Получение данных удаляемого админа из карты
 	targetUser, exists := usersMap[decodedLogin]
-	targetUserName := "Неизвестный"
-
-	if exists {
-		targetUserName = targetUser.Auth_Name
-	} else {
-		// Если пользователя нет в базе
+	if !exists {
 		http.Error(w, "Пользователь не найден", http.StatusNotFound)
 		return
+	}
+	targetUserName := targetUser.Auth_Name
+
+	// Проверяет, не удаляется ли последняя учётка с полными правами
+	if hasFullPermissions(targetUser) {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя удалить последнюю учётную запись с полными правами!", http.StatusForbidden)
+			return
+		}
 	}
 
 	// Удаляет запись администратора из БД
@@ -200,7 +355,7 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) удалил учётную запись: \"%s\" (с именем: %s)", currentUserLogin, currentUserName, decodedLogin, targetUserName)
 
 	// Очищает куки, если был удалён текущий авторизованный пользователь (самоудаление)
-	if currentUserLogin == decodedLogin {
+	if isSelfDelete {
 		clearAuthCookie(w)
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Ваш аккаунт удалён!"))
@@ -210,7 +365,7 @@ func DeleteAdminHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Админ удалён"))
 }
 
-// UpdateAdminHandler обрабатывает запросы на изменение данных учетной записи
+// UpdateAdminHandler обрабатывает запросы на обновление данных учетной записи
 func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
@@ -233,6 +388,27 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&updateUser); err != nil {
 		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин, извлеченный из тела запроса
+	decodedLogin, err := url.QueryUnescape(updateUser.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет права на обновление (обновление себя разрешено всегда)
+	isSelfUpdate := authInfo.Login == decodedLogin
+	if !isSelfUpdate && !currentAdmin.Perm_Update {
+		http.Error(w, "У вас нет прав на обновление других учётных записей", http.StatusForbidden)
 		return
 	}
 
@@ -274,13 +450,6 @@ func UpdateAdminHandler(w http.ResponseWriter, r *http.Request) {
 	// Требует наличия хотя бы одного поля для обновления
 	if updateUser.Auth_NewName == "" && updateUser.Auth_NewPassword == "" {
 		http.Error(w, "Необходимо указать хотя бы одно поле для обновления", http.StatusBadRequest)
-		return
-	}
-
-	// Декодирует логин, извлеченный из тела запроса
-	decodedLogin, err := url.QueryUnescape(updateUser.Auth_Login)
-	if err != nil {
-		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
 		return
 	}
 
@@ -397,10 +566,25 @@ func GetAdminsNamesHandler(w http.ResponseWriter, r *http.Request) {
 					return err
 				}
 				safeUsers = append(safeUsers, SafeUser{
-					Auth_Name:        user.Auth_Name,
-					Auth_Login:       user.Auth_Login,
-					Auth_Date_Create: user.Auth_Date_Create,
-					Auth_Date_Change: user.Auth_Date_Change,
+					Auth_Name:                   user.Auth_Name,
+					Auth_Login:                  user.Auth_Login,
+					Auth_Date_Create:            user.Auth_Date_Create,
+					Auth_Date_Change:            user.Auth_Date_Change,
+					Perm_Create:                 user.Perm_Create,
+					Perm_Update:                 user.Perm_Update,
+					Perm_Delete:                 user.Perm_Delete,
+					Perm_RenameClients:          user.Perm_RenameClients,
+					Perm_RenameClientsGroups:    user.Perm_RenameClientsGroups,
+					Perm_DeleteClients:          user.Perm_DeleteClients,
+					Perm_DeleteClientsGroups:    user.Perm_DeleteClientsGroups,
+					Perm_MoveClients:            user.Perm_MoveClients,
+					Perm_MoveClientsGroups:      user.Perm_MoveClientsGroups,
+					Perm_UninstallAgents:        user.Perm_UninstallAgents,
+					Perm_TerminalCommands:       user.Perm_TerminalCommands,
+					Perm_TerminalCommandsGroups: user.Perm_TerminalCommandsGroups,
+					Perm_InstallPrograms:        user.Perm_InstallPrograms,
+					Perm_InstallProgramsGroups:  user.Perm_InstallProgramsGroups,
+					Perm_SystemSettings:         user.Perm_SystemSettings,
 				})
 				return nil
 			})
@@ -477,4 +661,792 @@ func GetAuthNameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Админ не найден", http.StatusNotFound)
+}
+
+// GetCurrentAdminPermissionsHandler возвращает права текущего авторизованного администратора
+func GetCurrentAdminPermissionsHandler(w http.ResponseWriter, r *http.Request) {
+	// Получение информации об авторизованном админе
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает полные данные текущего админа
+	user, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Админ не найден", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"login":                         user.Auth_Login,
+		"perm_create":                   user.Perm_Create,
+		"perm_update":                   user.Perm_Update,
+		"perm_delete":                   user.Perm_Delete,
+		"perm_rename_clients":           user.Perm_RenameClients,
+		"perm_rename_clients_groups":    user.Perm_RenameClientsGroups,
+		"perm_delete_clients":           user.Perm_DeleteClients,
+		"perm_delete_clients_groups":    user.Perm_DeleteClientsGroups,
+		"perm_move_clients":             user.Perm_MoveClients,
+		"perm_move_clients_groups":      user.Perm_MoveClientsGroups,
+		"perm_uninstall_agents":         user.Perm_UninstallAgents,
+		"perm_terminal_commands":        user.Perm_TerminalCommands,
+		"perm_terminal_commands_groups": user.Perm_TerminalCommandsGroups,
+		"perm_install_programs":         user.Perm_InstallPrograms,
+		"perm_install_programs_groups":  user.Perm_InstallProgramsGroups,
+		"perm_system_settings":          user.Perm_SystemSettings,
+	})
+}
+
+// ToggleAdminPermissionHandler обрабатывает запросы на изменение конкретного разрешения учётной записи
+func ToggleAdminPermissionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string `json:"auth_login"`      // Логин изменяемого админа
+		PermissionType string `json:"permission_type"` // Тип разрешения: "create", "update", "delete"
+		NewValue       bool   `json:"new_value"`       // Новое значение разрешения
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяет корректность типа разрешения
+	validTypes := map[string]bool{"create": true, "update": true, "delete": true, "rename_clients": true, "delete_clients": true, "move_clients": true, "uninstall_agents": true, "terminal_commands": true, "install_programs": true, "system_settings": true}
+	if !validTypes[request.PermissionType] {
+		http.Error(w, "Неверный тип разрешения", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	if hasFullPermissions(targetAdmin) && !request.NewValue {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя отобрать права у последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Определяет название разрешения для логирования
+	var permissionName string
+	var oldValue bool
+
+	switch request.PermissionType {
+	case "create":
+		permissionName = "создание учётных записей"
+		oldValue = targetAdmin.Perm_Create
+		targetAdmin.Perm_Create = request.NewValue
+	case "update":
+		permissionName = "изменение учётных записей"
+		oldValue = targetAdmin.Perm_Update
+		targetAdmin.Perm_Update = request.NewValue
+	case "delete":
+		permissionName = "удаление учётных записей"
+		oldValue = targetAdmin.Perm_Delete
+		targetAdmin.Perm_Delete = request.NewValue
+	case "rename_clients":
+		permissionName = "переименование клиентов"
+		oldValue = targetAdmin.Perm_RenameClients
+		targetAdmin.Perm_RenameClients = request.NewValue
+		// При отключении права на переименование клиентов очищает список групп
+		if !request.NewValue {
+			targetAdmin.Perm_RenameClientsGroups = []string{}
+		}
+	case "delete_clients":
+		permissionName = "удаление клиентов"
+		oldValue = targetAdmin.Perm_DeleteClients
+		targetAdmin.Perm_DeleteClients = request.NewValue
+		// При отключении права на удаление клиентов очищает список групп
+		if !request.NewValue {
+			targetAdmin.Perm_DeleteClientsGroups = []string{}
+		}
+	case "move_clients":
+		permissionName = "перемещение клиентов"
+		oldValue = targetAdmin.Perm_MoveClients
+		targetAdmin.Perm_MoveClients = request.NewValue
+		// При отключении права на перемещение очищает список групп
+		if !request.NewValue {
+			targetAdmin.Perm_MoveClientsGroups = []string{}
+		}
+	case "uninstall_agents":
+		permissionName = "полное удаление FiReAgent"
+		oldValue = targetAdmin.Perm_UninstallAgents
+		targetAdmin.Perm_UninstallAgents = request.NewValue
+	case "terminal_commands":
+		permissionName = "отправка cmd/PowerShell команд"
+		oldValue = targetAdmin.Perm_TerminalCommands
+		targetAdmin.Perm_TerminalCommands = request.NewValue
+		// При отключении права на отправку команд очищает список групп
+		if !request.NewValue {
+			targetAdmin.Perm_TerminalCommandsGroups = []string{}
+		}
+	case "install_programs":
+		permissionName = "установка ПО через QUIC"
+		oldValue = targetAdmin.Perm_InstallPrograms
+		targetAdmin.Perm_InstallPrograms = request.NewValue
+		// При отключении права на установку ПО очищает список групп
+		if !request.NewValue {
+			targetAdmin.Perm_InstallProgramsGroups = []string{}
+		}
+	case "system_settings":
+		permissionName = "системные настройки (обновление/откат, MQTT авторизация)"
+		oldValue = targetAdmin.Perm_SystemSettings
+		targetAdmin.Perm_SystemSettings = request.NewValue
+	}
+
+	// Проверяет, изменилось ли значение
+	if oldValue == request.NewValue {
+		w.Write([]byte("Разрешение уже имеет это значение"))
+		return
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения разрешения для %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешения", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для ответа и лога
+	var actionWord string
+	if request.NewValue {
+		actionWord = "разрешил"
+	} else {
+		actionWord = "запретил"
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) %s %s для учётной записи \"%s\" (с именем: %s)",
+		authInfo.Login, authInfo.Name, actionWord, permissionName, decodedLogin, targetAdmin.Auth_Name)
+
+	fmt.Fprintf(w, "Разрешение изменено: %s", permissionName)
+}
+
+// UpdateMoveClientsGroupsHandler обрабатывает запросы на изменение списка разрешённых групп для перемещения
+func UpdateMoveClientsGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string   `json:"auth_login"`       // Логин изменяемого админа
+		AllowAllGroups bool     `json:"allow_all_groups"` // Разрешить все группы (true = полные права на перемещение)
+		AllowedGroups  []string `json:"allowed_groups"`   // Список разрешённых групп (если не все)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	wasFullPerm := hasFullPermissions(targetAdmin)
+
+	// Определяет, какие группы будут установлены
+	var newGroups []string
+	if request.AllowAllGroups {
+		newGroups = []string{} // Пустой список = все группы
+	} else {
+		newGroups = request.AllowedGroups
+	}
+
+	// Устанавливает новые значения для проверки
+	targetAdmin.Perm_MoveClientsGroups = newGroups
+
+	// Устанавливает флаг перемещения в зависимости от выбора
+	if len(newGroups) > 0 || request.AllowAllGroups {
+		targetAdmin.Perm_MoveClients = true
+	} else {
+		// Если список пуст и не все группы — запрещает перемещение полностью
+		targetAdmin.Perm_MoveClients = false
+	}
+
+	// Проверяет, будут ли полные права после изменения
+	willHaveFullPerm := hasFullPermissions(targetAdmin)
+
+	// Если был с полными правами, а станет без — проверяет, не последний ли он
+	if wasFullPerm && !willHaveFullPerm {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя ограничить права последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения списка групп для %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешений", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для лога
+	var groupsInfo string
+	if request.AllowAllGroups || len(newGroups) == 0 {
+		groupsInfo = "все группы"
+	} else {
+		groupsInfo = fmt.Sprintf("группы: %v", newGroups)
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) изменил разрешённые группы для перемещения учётной записи \"%s\" (с именем: %s) на: %s",
+		authInfo.Login, authInfo.Name, decodedLogin, targetAdmin.Auth_Name, groupsInfo)
+
+	w.Write([]byte("Разрешённые группы обновлены"))
+}
+
+// UpdateDeleteClientsGroupsHandler обрабатывает запросы на изменение списка разрешённых групп для удаления клиентов
+func UpdateDeleteClientsGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string   `json:"auth_login"`       // Логин изменяемого админа
+		AllowAllGroups bool     `json:"allow_all_groups"` // Разрешить все группы (true = полные права на удаление)
+		AllowedGroups  []string `json:"allowed_groups"`   // Список разрешённых групп (если не все)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	wasFullPerm := hasFullPermissions(targetAdmin)
+
+	// Определяет, какие группы будут установлены
+	var newGroups []string
+	if request.AllowAllGroups {
+		newGroups = []string{} // Пустой список = все группы
+	} else {
+		newGroups = request.AllowedGroups
+	}
+
+	// Устанавливает новые значения для проверки
+	targetAdmin.Perm_DeleteClientsGroups = newGroups
+
+	// Устанавливает флаг удаления в зависимости от выбора
+	if len(newGroups) > 0 || request.AllowAllGroups {
+		targetAdmin.Perm_DeleteClients = true
+	} else {
+		// Если список пуст и не все группы — запрещает удаление полностью
+		targetAdmin.Perm_DeleteClients = false
+	}
+
+	// Проверяет, будут ли полные права после изменения
+	willHaveFullPerm := hasFullPermissions(targetAdmin)
+
+	// Если был с полными правами, а станет без — проверяет, не последний ли он
+	if wasFullPerm && !willHaveFullPerm {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя ограничить права последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения списка групп для удаления %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешений", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для лога
+	var groupsInfo string
+	if request.AllowAllGroups || len(newGroups) == 0 {
+		groupsInfo = "все группы"
+	} else {
+		groupsInfo = fmt.Sprintf("группы: %v", newGroups)
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) изменил разрешённые группы для удаления клиентов учётной записи \"%s\" (с именем: %s) на: %s",
+		authInfo.Login, authInfo.Name, decodedLogin, targetAdmin.Auth_Name, groupsInfo)
+
+	w.Write([]byte("Разрешённые группы для удаления обновлены"))
+}
+
+// UpdateRenameClientsGroupsHandler обрабатывает запросы на изменение списка разрешённых групп для переименования клиентов
+func UpdateRenameClientsGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string   `json:"auth_login"`       // Логин изменяемого админа
+		AllowAllGroups bool     `json:"allow_all_groups"` // Разрешить все группы (true = полные права на переименование)
+		AllowedGroups  []string `json:"allowed_groups"`   // Список разрешённых групп (если не все)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	wasFullPerm := hasFullPermissions(targetAdmin)
+
+	// Определяет, какие группы будут установлены
+	var newGroups []string
+	if request.AllowAllGroups {
+		newGroups = []string{} // Пустой список = все группы
+	} else {
+		newGroups = request.AllowedGroups
+	}
+
+	// Устанавливает новые значения для проверки
+	targetAdmin.Perm_RenameClientsGroups = newGroups
+
+	// Устанавливает флаг переименования в зависимости от выбора
+	if len(newGroups) > 0 || request.AllowAllGroups {
+		targetAdmin.Perm_RenameClients = true
+	} else {
+		// Если список пуст и не все группы — запрещает переименование полностью
+		targetAdmin.Perm_RenameClients = false
+	}
+
+	// Проверяет, будут ли полные права после изменения
+	willHaveFullPerm := hasFullPermissions(targetAdmin)
+
+	// Если был с полными правами, а станет без — проверяет, не последний ли он
+	if wasFullPerm && !willHaveFullPerm {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя ограничить права последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения списка групп для переименования %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешений", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для лога
+	var groupsInfo string
+	if request.AllowAllGroups || len(newGroups) == 0 {
+		groupsInfo = "все группы"
+	} else {
+		groupsInfo = fmt.Sprintf("группы: %v", newGroups)
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) изменил разрешённые группы для переименования клиентов учётной записи \"%s\" (с именем: %s) на: %s",
+		authInfo.Login, authInfo.Name, decodedLogin, targetAdmin.Auth_Name, groupsInfo)
+
+	w.Write([]byte("Разрешённые группы для переименования обновлены"))
+}
+
+// UpdateTerminalCommandsGroupsHandler обрабатывает запросы на изменение списка разрешённых групп для cmd/PowerShell команд
+func UpdateTerminalCommandsGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string   `json:"auth_login"`       // Логин изменяемого админа
+		AllowAllGroups bool     `json:"allow_all_groups"` // Разрешить все группы (true = полные права на команды)
+		AllowedGroups  []string `json:"allowed_groups"`   // Список разрешённых групп (если не все)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	wasFullPerm := hasFullPermissions(targetAdmin)
+
+	// Определяет, какие группы будут установлены
+	var newGroups []string
+	if request.AllowAllGroups {
+		newGroups = []string{} // Пустой список = все группы
+	} else {
+		newGroups = request.AllowedGroups
+	}
+
+	// Устанавливает новые значения для проверки
+	targetAdmin.Perm_TerminalCommandsGroups = newGroups
+
+	// Устанавливает флаг команд в зависимости от выбора
+	if len(newGroups) > 0 || request.AllowAllGroups {
+		targetAdmin.Perm_TerminalCommands = true
+	} else {
+		// Если список пуст и не все группы — запрещает команды полностью
+		targetAdmin.Perm_TerminalCommands = false
+	}
+
+	// Проверяет, будут ли полные права после изменения
+	willHaveFullPerm := hasFullPermissions(targetAdmin)
+
+	// Если был с полными правами, а станет без — проверяет, не последний ли он
+	if wasFullPerm && !willHaveFullPerm {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя ограничить права последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Ак��аунты: Ошибка сохранения списка групп для cmd/PowerShell %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешений", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для лога
+	var groupsInfo string
+	if request.AllowAllGroups || len(newGroups) == 0 {
+		groupsInfo = "все группы"
+	} else {
+		groupsInfo = fmt.Sprintf("группы: %v", newGroups)
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) изменил разрешённые группы для cmd/PowerShell команд учётной записи \"%s\" (с именем: %s) на: %s",
+		authInfo.Login, authInfo.Name, decodedLogin, targetAdmin.Auth_Name, groupsInfo)
+
+	w.Write([]byte("Разрешённые группы для cmd/PowerShell обновлены"))
+}
+
+// UpdateInstallProgramsGroupsHandler обрабатывает запросы на изменение списка разрешённых групп для установки ПО
+func UpdateInstallProgramsGroupsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Разрешены только POST запросы", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об инициаторе (текущем админе)
+	authInfo, err := getAuthInfoFromRequest(r)
+	if err != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	// Получает данные текущего админа для проверки прав
+	currentAdmin, err := GetAdminByLogin(authInfo.Login)
+	if err != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяет, что текущий админ имеет полные права
+	if !hasFullPermissions(currentAdmin) {
+		http.Error(w, "Только администраторы с полными правами могут изменять разрешения", http.StatusForbidden)
+		return
+	}
+
+	var request struct {
+		Auth_Login     string   `json:"auth_login"`       // Логин изменяемого админа
+		AllowAllGroups bool     `json:"allow_all_groups"` // Разрешить все группы (true = полные права на установку)
+		AllowedGroups  []string `json:"allowed_groups"`   // Список разрешённых групп (если не все)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	// Декодирует логин
+	decodedLogin, err := url.QueryUnescape(request.Auth_Login)
+	if err != nil {
+		http.Error(w, "Ошибка декодирования логина", http.StatusBadRequest)
+		return
+	}
+
+	// Получает данные изменяемого админа
+	targetAdmin, err := GetAdminByLogin(decodedLogin)
+	if err != nil {
+		http.Error(w, "Учётная запись не найдена", http.StatusNotFound)
+		return
+	}
+
+	// Проверяет, не отбираются ли права у последнего админа с полными правами
+	wasFullPerm := hasFullPermissions(targetAdmin)
+
+	// Определяет, какие группы будут установлены
+	var newGroups []string
+	if request.AllowAllGroups {
+		newGroups = []string{} // Пустой список = все группы
+	} else {
+		newGroups = request.AllowedGroups
+	}
+
+	// Устанавливает новые значения для проверки
+	targetAdmin.Perm_InstallProgramsGroups = newGroups
+
+	// Устанавливает флаг установки ПО в зависимости от выбора
+	if len(newGroups) > 0 || request.AllowAllGroups {
+		targetAdmin.Perm_InstallPrograms = true
+	} else {
+		// Если список пуст и не все группы — запрещает установку ПО полностью
+		targetAdmin.Perm_InstallPrograms = false
+	}
+
+	// Проверяет, будут ли полные права после изменения
+	willHaveFullPerm := hasFullPermissions(targetAdmin)
+
+	// Если был с полными правами, а станет без — проверяет, не последний ли он
+	if wasFullPerm && !willHaveFullPerm {
+		fullPermCount, err := countFullPermissionAdmins()
+		if err != nil {
+			http.Error(w, "Ошибка проверки прав администраторов", http.StatusInternalServerError)
+			return
+		}
+		if fullPermCount <= 1 {
+			http.Error(w, "Нельзя ограничить права последней учётной записи с полными правами!", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Обновляет дату изменения
+	now := time.Now()
+	targetAdmin.Auth_Date_Change = fmt.Sprintf("%02d.%02d.%02d(%02d:%02d)",
+		now.Day(), now.Month(), now.Year()%100, now.Hour(), now.Minute())
+
+	// Сохраняет изменения
+	if err := saveAdmin(targetAdmin); err != nil {
+		logging.LogError("Аккаунты: Ошибка сохранения списка групп для установки ПО %s: %v", decodedLogin, err)
+		http.Error(w, "Ошибка сохранения разрешений", http.StatusInternalServerError)
+		return
+	}
+
+	// Формирует сообщение для лога
+	var groupsInfo string
+	if request.AllowAllGroups || len(newGroups) == 0 {
+		groupsInfo = "все группы"
+	} else {
+		groupsInfo = fmt.Sprintf("группы: %v", newGroups)
+	}
+
+	logging.LogAction("Аккаунты: Админ \"%s\" (с именем: %s) изменил разрешённые группы для установки ПО учётной записи \"%s\" (с именем: %s) на: %s",
+		authInfo.Login, authInfo.Name, decodedLogin, targetAdmin.Auth_Name, groupsInfo)
+
+	w.Write([]byte("Разрешённые группы для установки ПО обновлены"))
 }

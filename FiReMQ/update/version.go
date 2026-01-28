@@ -4,7 +4,7 @@
 package update
 
 // Текущая версия FiReMQ в формате: "дд.мм.гг"
-const CurrentVersion = "08.01.26"
+const CurrentVersion = "28.01.26"
 
 // Имя исполняемого файла FiReMQ
 const exeName = "FiReMQ"

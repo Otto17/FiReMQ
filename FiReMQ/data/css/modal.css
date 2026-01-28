@@ -248,7 +248,7 @@ input[type="text"]::placeholder {
 
 /* Кнопка перемещения */
 .save-buttonModal {
-  margin: 10px auto;
+  margin: 8px auto;
   font-size: 18px;
 }
 
@@ -458,6 +458,432 @@ padding-right: 26px;
 
 .login-display span.login-name {
 margin-left: 3px;
+}
+
+/* Контейнер для чекбоксов разрешений */
+.permissions-container {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	width: 94%;
+	margin: 10px 0;
+	padding: 12px;
+	background-color: #3e3e3e;
+	border-radius: 8px;
+	border: 1px solid #555;
+}
+
+/* Стилизация кастомного чекбокса */
+.permission-checkbox {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	user-select: none;
+	font-size: 13px;
+	color: #e0e0e0;
+	position: relative;
+	padding-left: 28px;
+}
+
+/* Скрывает стандартный чекбокс */
+.permission-checkbox input[type="checkbox"] {
+	position: absolute;
+	opacity: 0;
+	cursor: pointer;
+	height: 0;
+	width: 0;
+}
+
+/* Кастомный чекбокс */
+.permission-checkbox .checkmark {
+	position: absolute;
+	left: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	height: 18px;
+	width: 18px;
+	background-color: #2a2a2a;
+	border: 2px solid #666;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
+
+/* Эффект при наведении */
+.permission-checkbox:hover .checkmark {
+	border-color: #888;
+}
+
+/* Состояние отмеченного чекбокса */
+.permission-checkbox input:checked ~ .checkmark {
+	background-color: #4CAF50;
+	border-color: #4CAF50;
+}
+
+/* Галочка внутри чекбокса */
+.permission-checkbox .checkmark:after {
+	content: "";
+	position: absolute;
+	display: none;
+	left: 5px;
+	top: 2px;
+	width: 4px;
+	height: 8px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+/* Показывает галочку при отмеченном состоянии */
+.permission-checkbox input:checked ~ .checkmark:after {
+	display: block;
+}
+
+/* Текст разрешения */
+.permission-label {
+	line-height: 1.2;
+}
+
+/* Контейнер для иконок разрешений */
+.permissions-icons {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 8px;
+	margin-bottom: 6px;
+	padding: 4px 0;
+}
+
+/* Обёртка для иконки с подсказкой */
+.permission-icon-wrapper {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Стили для иконок разрешений */
+.permission-icon {
+	width: 18px;
+	height: 18px;
+	opacity: 0.9;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Эффект при наведении на иконку */
+.permission-icon-wrapper:hover .permission-icon {
+	opacity: 1;
+	transform: scale(1.15);
+}
+
+/* Всплывающая подсказка для иконок разрешений */
+.permission-icon-wrapper:hover::before {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.9);
+	color: #fff;
+	padding: 6px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+	white-space: normal;
+	max-width: 280px;
+	min-width: 150px;
+	width: max-content;
+	text-align: center;
+	line-height: 1.4;
+	z-index: 1000;
+	opacity: 0;
+	animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
+	pointer-events: none;
+}
+
+/* Стрелка подсказки */
+.permission-icon-wrapper:hover::after {
+	content: "";
+	position: absolute;
+	bottom: calc(100% + 2px);
+	left: 50%;
+	transform: translateX(-50%);
+	border: 6px solid transparent;
+	border-top-color: rgba(0, 0, 0, 0.9);
+	z-index: 1000;
+	opacity: 0;
+	animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
+	pointer-events: none;
+}
+
+/* Выравнивание подсказки по левому краю (для иконок у левой границы) */
+.permission-icon-wrapper.tooltip-align-left:hover::before {
+	left: 0;
+	transform: translateX(0);
+	animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
+}
+
+.permission-icon-wrapper.tooltip-align-left:hover::after {
+	left: 10px;
+	transform: translateX(0);
+	animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
+}
+
+/* Выравнивание подсказки по правому краю (для иконок у правой границы) */
+.permission-icon-wrapper.tooltip-align-right:hover::before {
+	left: auto;
+	right: 0;
+	transform: translateX(0);
+	animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
+}
+
+.permission-icon-wrapper.tooltip-align-right:hover::after {
+	left: auto;
+	right: 10px;
+	transform: translateX(0);
+	animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
+}
+
+/* Анимация появления подсказки по центру */
+@keyframes accountsPermTooltipFadeCenter {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
+}
+
+/* Анимация появления подсказки слева */
+@keyframes accountsPermTooltipFadeLeft {
+	from {
+		opacity: 0;
+		transform: translateX(0) translateY(5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0) translateY(0);
+	}
+}
+
+/* Анимация появления подсказки справа */
+@keyframes accountsPermTooltipFadeRight {
+	from {
+		opacity: 0;
+		transform: translateX(0) translateY(5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0) translateY(0);
+	}
+}
+
+/* Модальное окно подтверждения изменения разрешения прав доступа */
+.modal-window-content.permission-confirm-modal {
+	width: auto;
+	max-width: 360px;
+	min-width: 280px;
+	background-color: #2e2e2e;
+	color: #f0f0f0;
+	border-radius: 8px;
+	padding: 15px 20px;
+	text-align: center;
+}
+
+.modal-window-content.permission-confirm-modal h2 {
+	margin: 12px 0 18px;
+    font-size: 22px;
+    ext-align: center;
+}
+
+.permission-confirm-text {
+	font-size: 16px;
+	line-height: 1.2;
+	margin: 0 0 15px;
+	color: #e0e0e0;
+}
+
+.permission-confirm-text strong {
+	color: #fff;
+}
+
+/* Цвет для слова "Разрешить" */
+.permission-confirm-text .action-allow {
+	color: #4CAF50;
+	font-weight: bold;
+}
+
+/* Цвет для слова "Запретить" */
+.permission-confirm-text .action-deny {
+	color: #ff4d4d;
+	font-weight: bold;
+}
+
+.permission-confirm-modal .confirm-btn {
+	padding: 12px 18px;
+	font-size: 18px;
+	border-radius: 6px;
+	border: none;
+	cursor: pointer;
+	background-color: #2196F3;
+	color: white;
+	transition: background-color 0.3s ease;
+}
+
+.permission-confirm-modal .confirm-btn:hover {
+	background-color: #1e88e5;
+}
+
+/* Стиль курсора для кликабельных иконок разрешений */
+.permission-icon-wrapper {
+	cursor: pointer;
+}
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО ВЫБОРА ПРАВ С РАЗРЕШЁННЫМИ ГРУППАМИ */
+
+.modal-window-content.groups-select-modal {
+width: auto;
+max-width: 450px;
+min-width: 320px;
+max-height: 70vh;
+background-color: #2e2e2e;
+color: #f0f0f0;
+border-radius: 8px;
+padding: 15px 20px;
+text-align: center;
+overflow-y: auto;
+}
+
+.modal-window-content.groups-select-modal h2 {
+margin: 12px 0 10px;
+font-size: 20px;
+text-align: center;
+}
+
+.groups-select-description {
+font-size: 12px;
+color: #aaa;
+margin: 0 0 15px;
+}
+
+/* Чекбокс "Разрешить все группы" */
+.groups-select-all-checkbox {
+margin-bottom: 14px;
+padding: 10px 10px 10px 38px;
+background-color: #3a3a3a;
+border-radius: 6px;
+border: 1px solid #555;
+}
+
+.groups-select-all-checkbox .checkmark {
+left: 10px;
+}
+
+/* Контейнер для списка групп */
+.groups-select-list {
+max-height: 250px;
+overflow-y: auto;
+background-color: #3e3e3e;
+border-radius: 8px;
+border: 1px solid #555;
+padding: 10px;
+margin-bottom: 14px;
+text-align: left;
+}
+
+/* Элемент группы в списке с кастомным чекбоксом */
+.groups-select-item.permission-checkbox {
+position: relative;
+display: flex;
+align-items: center;
+padding: 8px 10px 8px 38px;
+margin-bottom: 4px;
+background-color: #2a2a2a;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.2s ease;
+font-size: 14px;
+}
+
+.groups-select-item.permission-checkbox:last-child {
+margin-bottom: 0;
+}
+
+.groups-select-item.permission-checkbox:hover {
+background-color: #444;
+}
+
+/* Позиционирование чекбокса внутри элемента группы */
+.groups-select-item.permission-checkbox .checkmark {
+left: 10px;
+}
+
+/* Текст названия группы */
+.groups-select-item.permission-checkbox .permission-label {
+color: #e0e0e0;
+word-break: break-all;
+line-height: 1.3;
+}
+
+/* Состояние когда выбрано "Все группы" - блокируем список */
+.groups-select-list.disabled {
+opacity: 0.5;
+pointer-events: none;
+}
+
+/* Кнопка подтверждения модального окна */
+.groups-select-buttons {
+display: flex;
+justify-content: center;
+}
+
+.groups-select-buttons .save-buttonModal {
+padding: 10px 30px;
+font-size: 16px;
+border-radius: 6px;
+border: none;
+cursor: pointer;
+transition: background-color 0.3s ease;
+}
+
+.groups-select-buttons .confirm-btn {
+background-color: #4CAF50;
+color: white;
+}
+
+.groups-select-buttons .confirm-btn:hover {
+background-color: #45a049;
+}
+
+/* Сообщение когда нет групп */
+.groups-select-empty {
+font-size: 13px;
+color: #888;
+text-align: center;
+padding: 20px;
+}
+
+/* Индикатор выбранных групп рядом с чекбоксами разрешений */
+.groups-indicator {
+font-size: 11px;
+color: #888;
+margin-left: 5px;
+}
+
+.groups-indicator.all-groups {
+color: #4CAF50;
+}
+
+.groups-indicator.limited-groups {
+color: #ff9800;
+}
+
+.groups-indicator.no-groups {
+color: #ff4d4d;
 }
 
 

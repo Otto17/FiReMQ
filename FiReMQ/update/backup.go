@@ -176,10 +176,11 @@ func CreateFullBackup() (string, error) {
 		{"Path_Setup_OWASP_CRS", pathsOS.Path_Setup_OWASP_CRS, false},
 
 		// Утилиты/прочее
-		{"Path_7zip", pathsOS.Path_7zip, false},
+		{"Path_7zip", pathsOS.Path_7zip, true},
 		{"Path_Info", pathsOS.Path_Info, true},
 
 		// WEB
+		{"Path_Web_Data", pathsOS.Path_Web_Data, true},
 		{"Path_Web_Cert", pathsOS.Path_Web_Cert, false},
 		{"Path_Web_Key", pathsOS.Path_Web_Key, false},
 

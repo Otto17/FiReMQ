@@ -16,6 +16,12 @@ import (
 	"FiReMQ/protection"  // Локальный пакет с функциями базовой защиты
 )
 
+// GetAuthInfo функция для получения информации об авторизованном админе из запроса (защита от циклического импорта)
+var GetAuthInfo func(r *http.Request) (login, name string, err error)
+
+// CheckPermSystemSettings функция для проверки права на системные настройки (защита от циклического импорта)
+var CheckPermSystemSettings func(login string) bool
+
 // MQTTConfig Структура для хранения шаблона JSON-конфигурации "mqtt_config.json"
 type MQTTConfig struct {
 	Hooks struct {
@@ -196,6 +202,17 @@ func GetAccountsHandler(w http.ResponseWriter, r *http.Request) {
 
 // UpdateAccountHandler обновляет учетные данные и меняет приоритеты между учетными записями в MQTT-конфигурации
 func UpdateAccountHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверка прав на системные настройки
+	if GetAuthInfo != nil && CheckPermSystemSettings != nil {
+		login, _, err := GetAuthInfo(r)
+		if err == nil && login != "" {
+			if !CheckPermSystemSettings(login) {
+				http.Error(w, "У вас нет прав на изменение MQTT авторизации", http.StatusForbidden)
+				return
+			}
+		}
+	}
+
 	configBytes, err := os.ReadFile(pathsOS.Path_Config_MQTT)
 	if err != nil {
 		http.Error(w, "Ошибка при чтении конфигурации", http.StatusInternalServerError)
@@ -305,6 +322,17 @@ func RestartMqttHandler() error {
 // UpdateAllowHandler обновляет значение allow для учетной записи с приоритетом 1
 func UpdateAllowHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// Проверка прав на системные настройки
+	if GetAuthInfo != nil && CheckPermSystemSettings != nil {
+		login, _, err := GetAuthInfo(r)
+		if err == nil && login != "" {
+			if !CheckPermSystemSettings(login) {
+				http.Error(w, `{"success": false, "message": "У вас нет прав на изменение MQTT авторизации"}`, http.StatusForbidden)
+				return
+			}
+		}
+	}
 
 	configBytes, err := os.ReadFile(pathsOS.Path_Config_MQTT)
 	if err != nil {
