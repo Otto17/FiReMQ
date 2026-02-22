@@ -2,54 +2,51 @@
 
 /* Обёртка для полей с валидацией */
 .input-validation-wrapper {
-    position: relative;
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
 /* Красная рамка при ошибке валидации (универсальный стиль) */
 input.validation-error {
-    border-color: #d9534f !important;
-    box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.3);
+  border-color: #d9534f !important;
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.3);
 }
 
 /* Всплывающая подсказка с ошибкой */
 .validation-tooltip {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    left: 0;
-    background: rgba(217, 83, 79, 0.95);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    white-space: nowrap;
-    z-index: 1100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-    pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  background: rgba(217, 83, 79, 0.95);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(5px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  pointer-events: none;
 }
 
 /* Видимое состояние подсказки */
 .validation-tooltip.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 /* Стрелка подсказки (указывает вниз на поле) */
 .validation-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 16px;
-    border: 6px solid transparent;
-    border-top-color: rgba(217, 83, 79, 0.95);
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 16px;
+  border: 6px solid transparent;
+  border-top-color: rgba(217, 83, 79, 0.95);
 }
-
-
-
 
 /* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ КЛИЕНТА */
 
@@ -111,18 +108,18 @@ h2 {
 
 p {
   font-size: 16px;
-  margin-bottom: 26px; /* Отступ имени от кнопки */
+  margin-bottom: 26px;
   overflow-wrap: break-word; /* Перенос длинных слов */
 }
 
 input[type="text"] {
-  width: calc(100% - 20px); /* Увеличена ширина поля ввода */
-  padding: 10px; /* Увеличен внутренний отступ */
-  border: 1px solid #555; /* Цвет рамки */
-  border-radius: 4px; /* Скругление углов поля ввода */
-  background-color: #3e3e3e; /* Цвет фона для темной темы */
-  color: white; /* Цвет текста */
-  font-size: 16px; /* Увеличен размер шрифта */
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #3e3e3e;
+  color: white;
+  font-size: 16px;
 }
 
 input[type="text"]::placeholder {
@@ -145,17 +142,18 @@ input[type="text"]::placeholder {
 
 
 
+
 /* МОДАЛЬНОЕ ОКНО МАССОВОГО УДАЛЕНИЯ КЛИЕНТОВ */
 
 /* Поле ввода подтверждения */
 #deleteConfirmationInput {
-  width: calc(100% - 20px); /* Увеличенная ширина */
-  padding: 10px; /* Внутренний отступ */
-  border: 1px solid #555; /* Цвет рамки */
-  border-radius: 4px; /* Скругленные углы */
-  background-color: #3e3e3e; /* Цвет фона */
-  color: white; /* Цвет текста */
-  font-size: 16px; /* Размер шрифта */
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #3e3e3e;
+  color: white;
+  font-size: 16px;
   margin-top: 10px;
   margin-bottom: 20px;
 }
@@ -180,16 +178,17 @@ input[type="text"]::placeholder {
 
 /* Увеличенная длина кнопки для массового удаления */
 .delete-check-button {
-  width: 100%; /* Кнопка займет всю ширину контейнера */
-  padding: 12px; /* Увеличиваем внутренние отступы */
-  font-size: 18px; /* Увеличиваем шрифт для акцента */
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
 }
 
-/* Красный текст "Удаляем!" */
+/* Красный текст "Удаляет!" */
 .delete-confirmation-text {
-  color: #ff0000; /* Красный цвет текста */
-  font-weight: bold; /* Жирный для акцента */
+  color: #ff0000;
+  font-weight: bold;
 }
+
 
 
 
@@ -255,23 +254,23 @@ input[type="text"]::placeholder {
 /* Выделение выбранной строки */
 #existingGroups option.highlight-selected,
 #existingGroupsCheck option.highlight-selected {
-  background-color: #ccff90; /* Мятный фон */
-  color: #000000; /* Чёрный текст */
-  font-weight: bold; /* Жирный шрифт */
+  background-color: #ccff90;
+  color: #000000;
+  font-weight: bold;
 }
 
 /* Стили обёртки валидации для полей перемещения */
 #moveClientForm .input-validation-wrapper,
 #moveCheckClientsForm .input-validation-wrapper {
-    position: relative;
-    width: 80%;
-    margin: 10px auto;
+  position: relative;
+  width: 80%;
+  margin: 10px auto;
 }
 
 #moveClientForm .input-validation-wrapper input[type="text"],
 #moveCheckClientsForm .input-validation-wrapper input[type="text"] {
-    width: 100%;
-    margin: 0;
+  width: 100%;
+  margin: 0;
 }
 
 
@@ -280,12 +279,12 @@ input[type="text"]::placeholder {
 /* МОДАЛЬНОЕ ОКНО УЧЁТНЫЕ ЗАПИСИ АДМИНОВ */
 
 #accountsModal .modal-window-content {
-  width: 70%; /* Ширина модального окна */
-  max-width: 910px; /* Максимальная ширина */
-  max-height: 85vh; /* высота модального окна */
-  min-width: 750px; /* Минимальная ширина */
-  overflow-y: auto; /* Включаем полосу прокрутки */
-  background-color: #2a2a2a; /* Цвет фона */
+  width: 70%;
+  max-width: 910px;
+  max-height: 85vh;
+  min-width: 750px;
+  overflow-y: auto;
+  background-color: #2a2a2a;
   padding: 20px;
   border-radius: 8px;
   text-align: center;
@@ -336,43 +335,43 @@ input[type="text"]::placeholder {
 
 #accountsModal input[type="text"],
 #accountsModal input[type="password"] {
-  width: calc(100% - 20px); /* Увеличена ширина поля ввода */
-  padding: 10px; /* Увеличен внутренний отступ */
-  border: 1px solid #555; /* Цвет рамки */
-  border-radius: 4px; /* Скругление углов поля ввода */
-  background-color: #3e3e3e; /* Цвет фона для темной темы */
-  color: white; /* Цвет текста */
-  font-size: 14px; /* Увеличен размер шрифта */
+  width: calc(100% - 20px);
+  padding: 10px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background-color: #3e3e3e;
+  color: white;
+  font-size: 14px;
 }
 
 .login-display {
-    margin-bottom: 10px;
-    padding: 8px;
-    background-color: #3e3e3e;
-    border-radius: 4px;
-    text-align: left;
-    font-size: 14px;
+  margin-bottom: 10px;
+  padding: 8px;
+  background-color: #3e3e3e;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 14px;
 }
 
 .account-form {
-  border: 1px solid #555; /* Цвет рамки */
-  border-radius: 12px; /* Скругление углов */
-  padding: 12px; /* Внутренний отступ */
-  background-color: #444; /* Цвет фона для темной темы */
+  border: 1px solid #555;
+  border-radius: 12px;
+  padding: 12px;
+  background-color: #444;
   width: calc(45% - 10px); /* Ширина контейнера */
-  box-sizing: border-box; /* Учитываем padding и border в общей ширине */
+  box-sizing: border-box;
 }
 
 .account-form input,
 .login-display {
-    margin-bottom: 9px;
+  margin-bottom: 9px;
 }
 
 .account-form button {
   width: calc(55% - 24px); /* Ширина кнопок */
   margin: 8px 4px 8px 0;
-  margin-top: 1px; /* Поднять кнопки */
-  padding: 6px 12px; /* Уменьшен внутренний отступ */
+  margin-top: 1px;
+  padding: 6px 12px;
   font-size: 14px;
 }
 
@@ -436,12 +435,12 @@ input[type="text"]::placeholder {
 }
 
 .admin-form-container {
-  border: 1px solid #555; /* Цвет рамки */
-  border-radius: 12px; /* Скругление углов */
-  padding: 20px; /* Внутренний отступ */
-  background-color: #444; /* Цвет фона для темной темы */
-  width: 100%; /* Ширина контейнера */
-  max-width: 400px; /* Максимальная ширина контейнера */
+  border: 1px solid #555;
+  border-radius: 12px;
+  padding: 20px;
+  background-color: #444;
+  width: 100%;
+  max-width: 400px;
   margin: 0 auto; /* Центрирование контейнера */
 }
 
@@ -453,291 +452,291 @@ input[type="text"]::placeholder {
 }
 
 .date-info.padding-right-26 {
-padding-right: 26px;
+  padding-right: 26px;
 }
 
 .login-display span.login-name {
-margin-left: 3px;
+  margin-left: 3px;
 }
 
 /* Контейнер для чекбоксов разрешений */
 .permissions-container {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	gap: 8px;
-	width: 94%;
-	margin: 10px 0;
-	padding: 12px;
-	background-color: #3e3e3e;
-	border-radius: 8px;
-	border: 1px solid #555;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 94%;
+  margin: 10px 0;
+  padding: 12px;
+  background-color: #3e3e3e;
+  border-radius: 8px;
+  border: 1px solid #555;
 }
 
 /* Стилизация кастомного чекбокса */
 .permission-checkbox {
-	display: flex;
-	align-items: center;
-	cursor: pointer;
-	user-select: none;
-	font-size: 13px;
-	color: #e0e0e0;
-	position: relative;
-	padding-left: 28px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: #e0e0e0;
+  position: relative;
+  padding-left: 28px;
 }
 
 /* Скрывает стандартный чекбокс */
 .permission-checkbox input[type="checkbox"] {
-	position: absolute;
-	opacity: 0;
-	cursor: pointer;
-	height: 0;
-	width: 0;
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
 }
 
 /* Кастомный чекбокс */
 .permission-checkbox .checkmark {
-	position: absolute;
-	left: 0;
-	top: 50%;
-	transform: translateY(-50%);
-	height: 18px;
-	width: 18px;
-	background-color: #2a2a2a;
-	border: 2px solid #666;
-	border-radius: 4px;
-	transition: all 0.2s ease;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 18px;
+  width: 18px;
+  background-color: #2a2a2a;
+  border: 2px solid #666;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 /* Эффект при наведении */
 .permission-checkbox:hover .checkmark {
-	border-color: #888;
+  border-color: #888;
 }
 
 /* Состояние отмеченного чекбокса */
 .permission-checkbox input:checked ~ .checkmark {
-	background-color: #4CAF50;
-	border-color: #4CAF50;
+  background-color: #4caf50;
+  border-color: #4caf50;
 }
 
 /* Галочка внутри чекбокса */
 .permission-checkbox .checkmark:after {
-	content: "";
-	position: absolute;
-	display: none;
-	left: 5px;
-	top: 2px;
-	width: 4px;
-	height: 8px;
-	border: solid white;
-	border-width: 0 2px 2px 0;
-	transform: rotate(45deg);
+  content: "";
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 /* Показывает галочку при отмеченном состоянии */
 .permission-checkbox input:checked ~ .checkmark:after {
-	display: block;
+  display: block;
 }
 
 /* Текст разрешения */
 .permission-label {
-	line-height: 1.2;
+  line-height: 1.2;
 }
 
 /* Контейнер для иконок разрешений */
 .permissions-icons {
-	display: flex;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 8px;
-	margin-bottom: 6px;
-	padding: 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 4px 0;
 }
 
 /* Обёртка для иконки с подсказкой */
 .permission-icon-wrapper {
-	position: relative;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Стили для иконок разрешений */
 .permission-icon {
-	width: 18px;
-	height: 18px;
-	opacity: 0.9;
-	transition: opacity 0.2s ease, transform 0.2s ease;
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* Эффект при наведении на иконку */
 .permission-icon-wrapper:hover .permission-icon {
-	opacity: 1;
-	transform: scale(1.15);
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 /* Всплывающая подсказка для иконок разрешений */
 .permission-icon-wrapper:hover::before {
-	content: attr(data-tooltip);
-	position: absolute;
-	bottom: calc(100% + 8px);
-	left: 50%;
-	transform: translateX(-50%);
-	background: rgba(0, 0, 0, 0.9);
-	color: #fff;
-	padding: 6px 10px;
-	border-radius: 4px;
-	font-size: 12px;
-	white-space: normal;
-	max-width: 280px;
-	min-width: 150px;
-	width: max-content;
-	text-align: center;
-	line-height: 1.4;
-	z-index: 1000;
-	opacity: 0;
-	animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
-	pointer-events: none;
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: normal;
+  max-width: 280px;
+  min-width: 150px;
+  width: max-content;
+  text-align: center;
+  line-height: 1.4;
+  z-index: 1000;
+  opacity: 0;
+  animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
+  pointer-events: none;
 }
 
 /* Стрелка подсказки */
 .permission-icon-wrapper:hover::after {
-	content: "";
-	position: absolute;
-	bottom: calc(100% + 2px);
-	left: 50%;
-	transform: translateX(-50%);
-	border: 6px solid transparent;
-	border-top-color: rgba(0, 0, 0, 0.9);
-	z-index: 1000;
-	opacity: 0;
-	animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
-	pointer-events: none;
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  opacity: 0;
+  animation: accountsPermTooltipFadeCenter 0.3s ease-in forwards;
+  pointer-events: none;
 }
 
 /* Выравнивание подсказки по левому краю (для иконок у левой границы) */
 .permission-icon-wrapper.tooltip-align-left:hover::before {
-	left: 0;
-	transform: translateX(0);
-	animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
+  left: 0;
+  transform: translateX(0);
+  animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
 }
 
 .permission-icon-wrapper.tooltip-align-left:hover::after {
-	left: 10px;
-	transform: translateX(0);
-	animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
+  left: 10px;
+  transform: translateX(0);
+  animation: accountsPermTooltipFadeLeft 0.3s ease-in forwards;
 }
 
 /* Выравнивание подсказки по правому краю (для иконок у правой границы) */
 .permission-icon-wrapper.tooltip-align-right:hover::before {
-	left: auto;
-	right: 0;
-	transform: translateX(0);
-	animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+  animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
 }
 
 .permission-icon-wrapper.tooltip-align-right:hover::after {
-	left: auto;
-	right: 10px;
-	transform: translateX(0);
-	animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
+  left: auto;
+  right: 10px;
+  transform: translateX(0);
+  animation: accountsPermTooltipFadeRight 0.3s ease-in forwards;
 }
 
 /* Анимация появления подсказки по центру */
 @keyframes accountsPermTooltipFadeCenter {
-	from {
-		opacity: 0;
-		transform: translateX(-50%) translateY(5px);
-	}
-	to {
-		opacity: 1;
-		transform: translateX(-50%) translateY(0);
-	}
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Анимация появления подсказки слева */
 @keyframes accountsPermTooltipFadeLeft {
-	from {
-		opacity: 0;
-		transform: translateX(0) translateY(5px);
-	}
-	to {
-		opacity: 1;
-		transform: translateX(0) translateY(0);
-	}
+  from {
+    opacity: 0;
+    transform: translateX(0) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
 }
 
 /* Анимация появления подсказки справа */
 @keyframes accountsPermTooltipFadeRight {
-	from {
-		opacity: 0;
-		transform: translateX(0) translateY(5px);
-	}
-	to {
-		opacity: 1;
-		transform: translateX(0) translateY(0);
-	}
+  from {
+    opacity: 0;
+    transform: translateX(0) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
 }
 
 /* Модальное окно подтверждения изменения разрешения прав доступа */
 .modal-window-content.permission-confirm-modal {
-	width: auto;
-	max-width: 360px;
-	min-width: 280px;
-	background-color: #2e2e2e;
-	color: #f0f0f0;
-	border-radius: 8px;
-	padding: 15px 20px;
-	text-align: center;
+  width: auto;
+  max-width: 360px;
+  min-width: 280px;
+  background-color: #2e2e2e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 15px 20px;
+  text-align: center;
 }
 
 .modal-window-content.permission-confirm-modal h2 {
-	margin: 12px 0 18px;
-    font-size: 22px;
-    ext-align: center;
+  margin: 12px 0 18px;
+  font-size: 22px;
+  ext-align: center;
 }
 
 .permission-confirm-text {
-	font-size: 16px;
-	line-height: 1.2;
-	margin: 0 0 15px;
-	color: #e0e0e0;
+  font-size: 16px;
+  line-height: 1.2;
+  margin: 0 0 15px;
+  color: #e0e0e0;
 }
 
 .permission-confirm-text strong {
-	color: #fff;
+  color: #fff;
 }
 
 /* Цвет для слова "Разрешить" */
 .permission-confirm-text .action-allow {
-	color: #4CAF50;
-	font-weight: bold;
+  color: #4caf50;
+  font-weight: bold;
 }
 
 /* Цвет для слова "Запретить" */
 .permission-confirm-text .action-deny {
-	color: #ff4d4d;
-	font-weight: bold;
+  color: #ff4d4d;
+  font-weight: bold;
 }
 
 .permission-confirm-modal .confirm-btn {
-	padding: 12px 18px;
-	font-size: 18px;
-	border-radius: 6px;
-	border: none;
-	cursor: pointer;
-	background-color: #2196F3;
-	color: white;
-	transition: background-color 0.3s ease;
+  padding: 12px 18px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background-color: #2196f3;
+  color: white;
+  transition: background-color 0.3s ease;
 }
 
 .permission-confirm-modal .confirm-btn:hover {
-	background-color: #1e88e5;
+  background-color: #1e88e5;
 }
 
 /* Стиль курсора для кликабельных иконок разрешений */
 .permission-icon-wrapper {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 
@@ -746,144 +745,144 @@ margin-left: 3px;
 /* МОДАЛЬНОЕ ОКНО ВЫБОРА ПРАВ С РАЗРЕШЁННЫМИ ГРУППАМИ */
 
 .modal-window-content.groups-select-modal {
-width: auto;
-max-width: 450px;
-min-width: 320px;
-max-height: 70vh;
-background-color: #2e2e2e;
-color: #f0f0f0;
-border-radius: 8px;
-padding: 15px 20px;
-text-align: center;
-overflow-y: auto;
+  width: auto;
+  max-width: 450px;
+  min-width: 320px;
+  max-height: 70vh;
+  background-color: #2e2e2e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  padding: 15px 20px;
+  text-align: center;
+  overflow-y: auto;
 }
 
 .modal-window-content.groups-select-modal h2 {
-margin: 12px 0 10px;
-font-size: 20px;
-text-align: center;
+  margin: 12px 0 10px;
+  font-size: 20px;
+  text-align: center;
 }
 
 .groups-select-description {
-font-size: 12px;
-color: #aaa;
-margin: 0 0 15px;
+  font-size: 12px;
+  color: #aaa;
+  margin: 0 0 15px;
 }
 
 /* Чекбокс "Разрешить все группы" */
 .groups-select-all-checkbox {
-margin-bottom: 14px;
-padding: 10px 10px 10px 38px;
-background-color: #3a3a3a;
-border-radius: 6px;
-border: 1px solid #555;
+  margin-bottom: 14px;
+  padding: 10px 10px 10px 38px;
+  background-color: #3a3a3a;
+  border-radius: 6px;
+  border: 1px solid #555;
 }
 
 .groups-select-all-checkbox .checkmark {
-left: 10px;
+  left: 10px;
 }
 
 /* Контейнер для списка групп */
 .groups-select-list {
-max-height: 250px;
-overflow-y: auto;
-background-color: #3e3e3e;
-border-radius: 8px;
-border: 1px solid #555;
-padding: 10px;
-margin-bottom: 14px;
-text-align: left;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: #3e3e3e;
+  border-radius: 8px;
+  border: 1px solid #555;
+  padding: 10px;
+  margin-bottom: 14px;
+  text-align: left;
 }
 
 /* Элемент группы в списке с кастомным чекбоксом */
 .groups-select-item.permission-checkbox {
-position: relative;
-display: flex;
-align-items: center;
-padding: 8px 10px 8px 38px;
-margin-bottom: 4px;
-background-color: #2a2a2a;
-border-radius: 4px;
-cursor: pointer;
-transition: background-color 0.2s ease;
-font-size: 14px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px 8px 38px;
+  margin-bottom: 4px;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 14px;
 }
 
 .groups-select-item.permission-checkbox:last-child {
-margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .groups-select-item.permission-checkbox:hover {
-background-color: #444;
+  background-color: #444;
 }
 
 /* Позиционирование чекбокса внутри элемента группы */
 .groups-select-item.permission-checkbox .checkmark {
-left: 10px;
+  left: 10px;
 }
 
 /* Текст названия группы */
 .groups-select-item.permission-checkbox .permission-label {
-color: #e0e0e0;
-word-break: break-all;
-line-height: 1.3;
+  color: #e0e0e0;
+  word-break: break-all;
+  line-height: 1.3;
 }
 
-/* Состояние когда выбрано "Все группы" - блокируем список */
+/* Состояние когда выбрано "Все группы" - блокирует список */
 .groups-select-list.disabled {
-opacity: 0.5;
-pointer-events: none;
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Кнопка подтверждения модального окна */
 .groups-select-buttons {
-display: flex;
-justify-content: center;
+  display: flex;
+  justify-content: center;
 }
 
 .groups-select-buttons .save-buttonModal {
-padding: 10px 30px;
-font-size: 16px;
-border-radius: 6px;
-border: none;
-cursor: pointer;
-transition: background-color 0.3s ease;
+  padding: 10px 30px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .groups-select-buttons .confirm-btn {
-background-color: #4CAF50;
-color: white;
+  background-color: #4caf50;
+  color: white;
 }
 
 .groups-select-buttons .confirm-btn:hover {
-background-color: #45a049;
+  background-color: #45a049;
 }
 
 /* Сообщение когда нет групп */
 .groups-select-empty {
-font-size: 13px;
-color: #888;
-text-align: center;
-padding: 20px;
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  padding: 20px;
 }
 
 /* Индикатор выбранных групп рядом с чекбоксами разрешений */
 .groups-indicator {
-font-size: 11px;
-color: #888;
-margin-left: 5px;
+  font-size: 11px;
+  color: #888;
+  margin-left: 5px;
 }
 
 .groups-indicator.all-groups {
-color: #4CAF50;
+  color: #4caf50;
 }
 
 .groups-indicator.limited-groups {
-color: #ff9800;
+  color: #ff9800;
 }
 
 .groups-indicator.no-groups {
-color: #ff4d4d;
+  color: #ff4d4d;
 }
 
 
@@ -892,7 +891,7 @@ color: #ff4d4d;
 /* МОДАЛЬНОЕ ОКНО MQTT АВТОРИЗАЦИЯ */
 
 #mqttAuthModal .modal-window-content.mqtt-auth-content {
-  width: 450px; /* Увеличиваем ширину модального окна */
+  width: 450px; /* Увеличивает ширину модального окна */
   background-color: #2a2a2a; /* Цвет фона */
   padding: 20px;
   border-radius: 8px;
@@ -938,7 +937,7 @@ color: #ff4d4d;
 }
 
 #mqttAuthForm input[type="text"]:read-only {
-  background-color: #2a2a2a; /* Темный фон для поля только для чтения */
+  background-color: #2a2a2a; /* Тёмный фон для поля только для чтения */
   color: #888; /* Серый цвет текста */
 }
 
@@ -1029,7 +1028,7 @@ color: #ff4d4d;
 }
 
 #toggleReserveAccount {
-  padding: 10px 40px; /* Увеличиваем ширину кнопки */
+  padding: 10px 40px; /* Увеличивает ширину кнопки */
   border: none;
   border-radius: 6px;
   font-size: 16px;
@@ -1053,17 +1052,17 @@ color: #ff4d4d;
 
 /* Стили обёртки валидации для полей MQTT */
 #mqttAuthForm .input-validation-wrapper {
-    position: relative;
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
 #mqttAuthForm .input-validation-wrapper input[type="text"],
 #mqttAuthForm .input-validation-wrapper .mqtt-password-input-container {
-    width: 100%;
+  width: 100%;
 }
 
 #mqttAuthForm .input-validation-wrapper input[type="text"] {
-    width: calc(100% - 20px);
+  width: calc(100% - 20px);
 }
 
 
@@ -1180,15 +1179,15 @@ color: #ff4d4d;
 #executeCommandModal .command-modal-field input[type="text"]:focus,
 #executeCommandModal .command-modal-field input[type="password"]:focus,
 #executeCommandModal .command-modal-field textarea:focus {
-  outline: none; /* Убираем стандартный контур */
+  outline: none; /* Убирает стандартный контур */
   border-color: #d9534f; /* Красная рамка при фокусе */
-  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2); /* Легкая тень для акцента */
+  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2);
 }
 
 #executeCommandModal .command-modal-field textarea {
   resize: vertical;
-  min-height: 80px; /* Минимальная высота */
-  max-height: 300px; /* Максимальная высота */
+  min-height: 80px;
+  max-height: 300px;
 }
 
 #executeCommandModal .command-modal-checkbox {
@@ -1238,7 +1237,7 @@ color: #ff4d4d;
 }
 
 #executeCommandModal .command-modal-field fieldset {
-  border: none; /* Убираем стандартную рамку fieldset */
+  border: none; /* Убирает стандартную рамку fieldset */
   padding: 0;
   margin-bottom: 15px;
 }
@@ -1250,7 +1249,7 @@ color: #ff4d4d;
 
 /* Стили для radio-блока "Выполнение для пользователей" */
 #userExecutionFieldset .command-modal-radio label {
-  font-size: 14px; /* Размер шрифта 14px */
+  font-size: 14px;
   white-space: normal; /* Перенос текста */
   position: relative;
   cursor: help;
@@ -1345,7 +1344,7 @@ color: #ff4d4d;
 }
 
 #executeCommandModal .command-help-button:hover {
-  background-color: #403f41;   /* чуть темнее */
+  background-color: #403f41; /* чуть темнее */
 }
 
 /* fieldset для кнопки "Список полезных команд" */
@@ -1371,15 +1370,15 @@ color: #ff4d4d;
 
 #commandCheatsheetModal .command-modal-content {
   max-width: 900px;
-  max-height: 90vh;       /* не выше 90% высоты окна */
-  overflow-y: auto;       /* вертикальная прокрутка при необходимости */
-  overflow-x: hidden;     /* убираем горизонтальную */
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #commandCheatsheetModal .command-modal-content h2 {
-  margin: 0 0 15px;   /* чуть меньше отступ снизу */
-  font-size: 20px;    /* немного меньше размера */
-  text-align: center; /* по центру */
+  margin: 0 0 15px;
+  font-size: 20px;
+  text-align: center;
 }
 
 #commandCheatsheetModal .command-modal-close {
@@ -1406,7 +1405,7 @@ color: #ff4d4d;
 /* Вкладки в модалке "Список полезных команд" */
 #commandCheatsheetModal .cheatsheet-tabs {
   display: flex;
-  gap: 0;                       /* без зазоров — единый блок */
+  gap: 0; /* без зазоров — единый блок */
   background-color: #2e2e2e;
   border: 1px solid #444;
   border-radius: 8px;
@@ -1415,7 +1414,7 @@ color: #ff4d4d;
 }
 
 #commandCheatsheetModal .cheatsheet-tab {
-  flex: 1;                      /* 50/50 ширины */
+  flex: 1; /* 50/50 ширины */
   text-align: center;
   background: transparent;
   color: #dddddd;
@@ -1426,7 +1425,7 @@ color: #ff4d4d;
   font-weight: 600;
   letter-spacing: 0.2px;
   transition: background-color 0.2s, color 0.2s;
-  border-right: 1px solid #444; /* разделитель между вкладками */
+  border-right: 1px solid #444; /* Разделитель между вкладками */
 }
 
 #commandCheatsheetModal .cheatsheet-tab:last-child {
@@ -1434,12 +1433,12 @@ color: #ff4d4d;
 }
 
 #commandCheatsheetModal .cheatsheet-tab:hover {
-  background-color: rgba(76, 175, 80, 0.10);
+  background-color: rgba(76, 175, 80, 0.1);
   color: #c8e6c9;
 }
 
 #commandCheatsheetModal .cheatsheet-tab.active {
-  background: linear-gradient(180deg, rgba(76,175,80,0.22), rgba(76,175,80,0.12));
+  background: linear-gradient(180deg, rgba(76, 175, 80, 0.22), rgba(76, 175, 80, 0.12));
   color: #e8f5e9;
 }
 
@@ -1469,13 +1468,13 @@ color: #ff4d4d;
 #commandCheatsheetModal .cheat-row {
   display: grid;
   grid-template-columns: 34px minmax(260px, 38%) 1fr; /* кнопка / команда / описание */
-  align-items: center; /* текст остаётся сверху для читабельности */
+  align-items: center;
   gap: 12px;
   padding: 8px 6px;
   border-bottom: 1px dashed #3a3a3a;
 }
 
-/* Разрешаем контенту сжиматься внутри grid-колонок и не вылезать */
+/* Разрешает контенту сжиматься внутри grid-колонок и не вылезать */
 #commandCheatsheetModal .cheat-cmd,
 #commandCheatsheetModal .cheat-desc {
   min-width: 0;
@@ -1491,7 +1490,8 @@ color: #ff4d4d;
 }
 
 #commandCheetsheetModal .cheat-row:hover,
-#commandCheatsheetModal .cheat-row:hover { /* защита от опечаток селектора */
+#commandCheatsheetModal .cheat-row:hover {
+  /* защита от опечаток селектора */
   background-color: rgba(255, 255, 255, 0.02);
 }
 
@@ -1499,7 +1499,7 @@ color: #ff4d4d;
 #commandCheatsheetModal .cheat-cmd code {
   display: block;
   width: 100%;
-  box-sizing: border-box;	/* чтобы padding и border не вылезали */
+  box-sizing: border-box; /* чтобы padding и border не вылезали */
   background: #222;
   border: 1px solid #3f3f3f;
   border-radius: 6px;
@@ -1517,7 +1517,7 @@ color: #ff4d4d;
   line-height: 1.45;
 }
 
-/* Адаптив: на узких экранах стекаем в колонку */
+/* Адаптив: на узких экранах стекает в колонку */
 @media (max-width: 700px) {
   #commandCheatsheetModal .cheat-row {
     grid-template-columns: 1fr;
@@ -1529,8 +1529,8 @@ color: #ff4d4d;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1px solid #4CAF50;
-  background: #2e7d32; /* зелёная под тёмную тему */
+  border: 1px solid #4caf50;
+  background: #2e7d32;
   color: #fff;
   font-size: 16px;
   line-height: 1;
@@ -1538,7 +1538,7 @@ color: #ff4d4d;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color .2s, transform .08s, box-shadow .2s, border-color .2s;
+  transition: background-color 0.2s, transform 0.08s, box-shadow 0.2s, border-color 0.2s;
 
   /* Центровка кнопки по вертикали строки (относительно высоты .cheat-cmd) */
   align-self: center;
@@ -1569,7 +1569,7 @@ color: #ff4d4d;
 
 /* Подсказка для всех кнопок вставки команды */
 #commandCheatsheetModal .cheat-insert-btn {
-  position: relative; /* для привязки подсказки */
+  position: relative;
 }
 
 /* Подсказки для кнопок вставки команды */
@@ -1593,42 +1593,44 @@ color: #ff4d4d;
 
 /* Стили для меток с подсказками (поле ввода и чекбокс) */
 .command-tooltip-label {
-    position: relative;
-    cursor: help;
-    display: inline-block;
+  position: relative;
+  cursor: help;
+  display: inline-block;
 }
 
 .command-modal-checkbox .command-tooltip-label {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .command-tooltip-label::after {
-    content: "?";
-    display: inline-block;
-    font-size: 12px;
-    color: #1e88e5;
-    margin-left: 5px;
-    vertical-align: middle;
+  content: "?";
+  display: inline-block;
+  font-size: 12px;
+  color: #1e88e5;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
 .command-tooltip-label:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 5px);
-    left: 0;
-    background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    white-space: normal;
-    width: 360px;
-    z-index: 1000;
-    opacity: 0;
-    animation: tooltipFade 0.3s ease-in forwards;
-    pointer-events: none;
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 360px;
+  z-index: 1000;
+  opacity: 0;
+  animation: tooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
 }
+
+
 
 
 /* МОДАЛЬНОЕ ОКНО УСТАНОВКА ПО */
@@ -1752,19 +1754,16 @@ color: #ff4d4d;
   cursor: pointer;
   margin-bottom: 15px;
   height: 90px;
-  /* Фиксированная высота */
   min-height: 90px;
-  /* Предотвращает сжатие панели */
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* Убирает влияние текста на высоту */
 }
 
 /* Размер шрифта для Drag-and-drop панели */
 #dropText {
-  pointer-events: none; /* «пропускаем» все события через <p> прямо в .drop-area */
+  pointer-events: none; /* «пропускает» все события через <p> прямо в .drop-area */
   font-size: 14px;
   margin-top: 30px;
 }
@@ -1846,7 +1845,6 @@ color: #ff4d4d;
   position: relative;
   cursor: help;
   display: inline-block;
-  /* Для корректного позиционирования псевдоэлемента в полях ввода */
 }
 
 /* Для чекбоксов, чтобы сохранить выравнивание */
@@ -1863,9 +1861,7 @@ color: #ff4d4d;
   font-size: 12px;
   color: #1e88e5;
   margin-left: 5px;
-  /* Отступ слева от текста метки */
   vertical-align: middle;
-  /* Выравнивание по вертикали */
 }
 
 /* Всплывающая подсказка для меток с классом .tooltip-label */
@@ -1952,7 +1948,7 @@ color: #ff4d4d;
 /* Стили для текста прогресса и отмены */
 #dropArea #uploadProgress,
 #dropArea #cancelUploadText,
-#dropArea #postUploadCancelText{
+#dropArea #postUploadCancelText {
   margin: 15px 0;
   font-size: 14px;
   color: #b0b0b0;
@@ -1960,189 +1956,190 @@ color: #ff4d4d;
 
 /* Дополнительные стили для панели */
 .drop-area {
-  position: relative; /* Необходимо для позиционирования */
-  min-height: 90px; /* Сохраняем минимальную высоту */
-  height: auto; /* Разрешаем растягивание по содержимому */
+  position: relative;
+  min-height: 90px;
+  height: auto;
 }
 
-/* Показываем "запрещающий" курсор, только во время dragover при блокировке */
+/* Показывает "запрещающий" курсор, только во время dragover при блокировке */
 .drop-area.blocked.drag-over {
   cursor: not-allowed !important;
 }
 
 /* Выбор файла */
 .hidden-file-input {
-display: none !important;
+  display: none !important;
 }
+
 
 
 
 /* МОДАЛЬНОЕ ОКНО "Отчёт" */
 
 .report-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
 }
 
 .report-modal-content {
-    background-color: #2a2a2a;
-    padding: 20px;
-    border-radius: 8px;
-    width: 80%;
-    max-height: 680px;
-    max-width: 1270px;
-    color: #e0e0e0;
-    position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-height: 680px;
+  max-width: 1270px;
+  color: #e0e0e0;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .report-modal-close {
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 24px;
-    color: #aaaaaa;
-    cursor: pointer;
-    transition: color 0.2s;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaaaaa;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
 .report-modal-close:hover {
-    color: #ffffff;
+  color: #ffffff;
 }
 
 /* Заголовок */
 .report-modal-content h2 {
-    margin: 8px 0 18px;
-    font-size: 22px;
-    text-align: center;
+  margin: 8px 0 18px;
+  font-size: 22px;
+  text-align: center;
 }
 
 .report-tabs {
-    display: flex;
-    margin-bottom: 20px;
+  display: flex;
+  margin-bottom: 20px;
 }
 
 .report-tab-button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-    cursor: pointer;
-    transition: background-color 0.2s;
-	border-radius: 0;
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 0;
 }
 
 .report-tab-button:hover {
-    background-color: #4a4a4a;
+  background-color: #4a4a4a;
 }
 
 .report-tab-button.active {
-    background-color: #1e88e5;
-    font-size: 15px;
+  background-color: #1e88e5;
+  font-size: 15px;
 }
 
 /* Скругления по краям */
 .report-tab-button:first-child {
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
 }
 
 .report-tab-button:last-child {
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 
 .report-tab-content {
-    display: none;
+  display: none;
 }
 
 .report-tab-content.active {
-    display: block;
+  display: block;
 }
 
 /* Общие стили для выбора даты и кнопки удаления */
 .report-select {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-    position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  position: relative;
 }
 
 .report-select label {
-    font-size: 16px;
-    margin-right: 10px;
+  font-size: 16px;
+  margin-right: 10px;
 }
 
 .report-select select {
-    padding: 5px;
-    border: 1px solid #555555;
-    border-radius: 4px;
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-    font-size: 16px;
+  padding: 5px;
+  border: 1px solid #555555;
+  border-radius: 4px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  font-size: 16px;
 }
 
 #deleteCommandBtn,
 #deleteInstallBtn {
-    margin-left: auto;
-    padding: 8px 12px;
-    font-size: 14px;
-    background-color: #d32f2f;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  margin-left: auto;
+  padding: 8px 12px;
+  font-size: 14px;
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 #deleteCommandBtn:hover,
 #deleteInstallBtn:hover {
-    background-color: #b71c1c;
+  background-color: #b71c1c;
 }
 
 /* Общие стили для деталей */
 .report-details {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 60px);
-    min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 60px);
+  min-width: 300px;
 }
 
 .cmd-fieldset-fixed,
 .install-fieldset-fixed {
-    flex: 0 0 auto;
-    border: 3px solid #cb0000;
-    margin-bottom: 20px;
-    transition: none;
+  flex: 0 0 auto;
+  border: 3px solid #cb0000;
+  margin-bottom: 20px;
+  transition: none;
 }
 
 .report-cmd-details fieldset,
 .report-install-details fieldset {
-    border: 3px solid #cb0000;
-    margin-bottom: 20px;
-    max-height: 180px; /* Фиксированная высота для блока деталей */
-    overflow-y: auto; /* Включаем вертикальную прокрутку */
-    flex: 0 0 auto;
+  border: 3px solid #cb0000;
+  margin-bottom: 20px;
+  max-height: 180px;
+  overflow-y: auto;
+  flex: 0 0 auto;
 }
 
 .report-cmd-details legend,
 .report-install-details legend {
-    font-size: 16px;
-    color: #e0e0e0;
-    padding: 0 5px;
+  font-size: 16px;
+  color: #e0e0e0;
+  padding: 0 5px;
 }
 
-/* При разворачивании "Запрос:" на вкладке cmd — ограничиваем высоту и включаем прокрутку */
+/* При разворачивании "Запрос:" на вкладке cmd — ограничивает высоту и включает прокрутку */
 #cmdDetails {
   font-size: 16px;
   line-height: 0;
@@ -2154,7 +2151,7 @@ display: none !important;
 
 .cmd-fieldset-fixed.expanded #cmdDetails {
   max-height: 185px;
-  overflow-y: auto;  /* вертикальный скролл при переполнении */
+  overflow-y: auto; /* вертикальный скролл при переполнении */
 }
 
 .install-fieldset-fixed.expanded #installDetails {
@@ -2164,221 +2161,246 @@ display: none !important;
 
 #cmdDetails,
 #installDetails {
-    font-size: 16px;
-    line-height: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    padding: 0 15px;
-	will-change: max-height; /* сглаживает анимацию */
+  font-size: 16px;
+  line-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  padding: 0 15px;
+  will-change: max-height; /* сглаживает анимацию */
 }
 
 #installDetails p,
 #cmdDetails p {
-    font-size: 14px;
-    margin: 0;
-    padding: 2px 0;
-    line-height: 1.4;
-    overflow-wrap: break-word; /* Перенос длинных слов на новую строку */
-    word-break: break-word; /* Альтернатива для лучшей совместимости */
-    max-width: 100%; /* Ограничиваем ширину контейнера */
+  font-size: 14px;
+  margin: 0;
+  padding: 2px 0;
+  line-height: 1.4;
+  overflow-wrap: break-word; /* Перенос длинных слов на новую строку */
+  word-break: break-word; /* Альтернатива для лучшей совместимости */
+  max-width: 100%;
 }
 
 .cmd-fieldset-fixed.collapsed,
 .install-fieldset-fixed.collapsed {
-    max-height: 24px;
-    overflow: hidden;
+  max-height: 24px;
+  overflow: hidden;
 }
 
 .report-cmd-details p,
 .report-install-details p {
-    font-size: 14px;
-    margin: 0;
-    padding: 2px 0;
-    line-height: 1.4;
+  font-size: 14px;
+  margin: 0;
+  padding: 2px 0;
+  line-height: 1.4;
 }
 
 /* Контейнер таблицы */
 .cmd-clients-table-container,
 .install-clients-table-container {
-    flex: 1;
-    transition: max-height 0.3s ease-out;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  transition: max-height 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
 .clients-table-header {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .clients-table-header,
 .clients-table-body {
-    width: calc(100% - 3px);
+  width: calc(100% - 3px);
 }
 
 .clients-table-body-container {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 3px;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 3px;
 }
 
 .clients-table-body {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
 /* Общие стили таблицы */
 .clients-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .clients-table-header thead th {
-    background-color: #3a3a3a;
-    padding: 8px;
-    text-align: center;
-    border-bottom: 2px solid #555555;
+  background-color: #3a3a3a;
+  padding: 8px;
+  text-align: center;
+  border-bottom: 2px solid #555555;
 }
 
 .clients-table td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #555555;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #555555;
 }
 
 .clients-table td:nth-child(2) {
-    text-align: center;
+  text-align: center;
 }
 
 .clients-table td:nth-child(3) {
-    text-align: center;
+  text-align: center;
 }
 
 .clients-table tr:hover {
-    background-color: #4a4a4a;
+  background-color: #4a4a4a;
 }
 
 .col-client {
-    width: auto;
+  width: auto;
 }
 
 .col-done {
-    width: 160px;
+  width: 160px;
 }
 
 .col-action {
-    width: 100px;
+  width: 100px;
 }
 
 .action-button {
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    cursor: pointer;
-    font-size: 16px;
-    margin: 0 5px;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 0 5px;
 }
 
 .action-button.delete {
-    color: red;
+  color: red;
 }
 
 .action-button.restart {
-    color: #00e5ff;
+  color: #00e5ff;
 }
 
 /* Стили для "Запрос:" */
 .label-bold {
-    color: #ffffff;
-    font-weight: bold;
+  color: #ffffff;
+  font-weight: bold;
 }
 
 /* Стили для кнопок сворачивания/разворачивания */
 .toggle-details-btn {
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    cursor: pointer;
-	font-size: 16px;
-	padding: 0;
-	margin: 0;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  margin: 0;
 }
 
 /* Стили для элементов с display: none */
 .initially-hidden {
-    display: none;
+  display: none;
 }
 
 .file-name-text {
-    margin-bottom: 10px;
-    font-weight: bold;
+  margin-bottom: 10px;
+  font-weight: bold;
 }
 
 .upload-info-text {
-    margin: 15px 0;
-    font-size: 14px;
-    color: #b0b0b0;
+  margin: 15px 0;
+  font-size: 14px;
+  color: #b0b0b0;
 }
 
 /* Всплывающие подсказки */
 #tooltipBox.tooltip-box {
-    position: absolute;
-    z-index: 9999;
-    background-color: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    max-width: 180px;
-    white-space: normal;
-    pointer-events: none;
-    display: none;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-    transition: opacity 0.3s ease;
-    opacity: 0;
+  position: absolute;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  max-width: 180px;
+  white-space: normal;
+  pointer-events: none;
+  display: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s ease;
+  opacity: 0;
 }
 
 /* Широкие подсказки для колонки "Выполнено" */
 #tooltipBox.tooltip-box.wide {
   max-width: 360px;
-  overflow-wrap: anywhere; /* перенос даже слитного текста */
-  word-break: break-word; /* резерв для старых движков */
+  overflow-wrap: anywhere; /* перенос слитного текста */
+  word-break: break-word;
 }
 
 /* Для кнопки подтверждения */
 #confirmDeleteRequestButton:focus {
-    outline: 2px solid #ffffff;
-    outline-offset: 2px;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 /* Запрет выделения легенды */
 #ProhibitHighlightingLegend,
 #ProhibitHighlightingLegendInstall {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Для выполненных задач */
 .done {
-    color: #00ff00; /* Зелёный цвет */
+  color: #00ff00; /* Зелёный цвет */
 }
 
 /* Для незавершённых задач */
 .pending {
-    color: #ffa500; /* Оранжевый цвет */
-    font-weight: bold;
+  color: #ffa500; /* Оранжевый цвет */
+  font-weight: bold;
 }
 
 /* Для ошибок во вкладке "По установкам ПО" */
 .error {
   color: #ff2d2d; /* Красный */
 }
+
+/* Стили стрелок сортировки в модальном окне "Отчёт" */
+.report-sort-indicator {
+  margin-left: 3px;
+  font-size: 10px;
+  visibility: hidden;
+}
+
+.report-sort-indicator.active {
+  visibility: visible;
+}
+
+/* Запрет выделения текста в заголовках таблицы отчётов */
+.clients-table-header thead th {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Курсор для сортируемых заголовков таблицы отчётов */
+.clients-table-header thead th[id^="reportSortTh_"] {
+  cursor: pointer;
+}
+
 
 
 
@@ -2460,16 +2482,16 @@ display: none !important;
 
 /* Отступ в половину абзаца */
 .about-modal-content .first-Progect-paragraph {
-margin-bottom: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 /* Только для блока версий в строке FiReMQ */
-#firemqCurrentVersion, 
+#firemqCurrentVersion,
 #firemqNewVersion {
 }
 
 .owasp-crs-row .owasp-crs-versions.firemq {
-  margin-left: 6px; /* чуть вправо, чтобы совпало с верхней строкой */
+  margin-left: 6px;
 }
 
 /* Блок OWASP CRS в модалке "О проекте" */
@@ -2574,7 +2596,7 @@ margin-bottom: 0.5em;
   max-width: 420px;
   z-index: 1100;
   opacity: 0;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   pointer-events: none;
   animation: tooltipFade 0.3s ease-in forwards;
 }
@@ -2587,6 +2609,7 @@ margin-bottom: 0.5em;
   left: auto;
   right: 0;
 }
+
 
 
 
@@ -2647,7 +2670,7 @@ margin-bottom: 0.5em;
 #deleteConfirmationInput:focus,
 #uninstallConfirmationInput:focus {
   outline: none;
-  border-color: #d9534f; /* Красная рамка при фокусе */
+  border-color: #d9534f;
 }
 
 /* Заголовки для списков (оффлайн и онлайн) */
@@ -2672,7 +2695,7 @@ margin-bottom: 0.5em;
   padding: 4px;
 }
 
-/* Чипы — теперь делаем их инлайн-флекс, чтобы добавить крестик */
+/* Чипы — теперь делает их инлайн-флекс, чтобы добавить крестик */
 .client-id-list .client-id-chip {
   display: inline-flex;
   align-items: center;
@@ -2715,7 +2738,7 @@ margin-bottom: 0.5em;
   background-color: rgba(255, 255, 255, 0.08);
 }
 
-/* Пока отправляется отмена — делаем крестик полупрозрачным */
+/* Пока отправляется отмена — делает крестик полупрозрачным */
 .client-id-chip .chip-remove[disabled] {
   opacity: 0.5;
   cursor: default;
@@ -2723,48 +2746,48 @@ margin-bottom: 0.5em;
 
 /* Стили для меток с подсказками в модальном окне удаления FiReAgent */
 .uninstall-tooltip-label {
-    position: relative;
-    cursor: help;
-    display: inline-block;
+  position: relative;
+  cursor: help;
+  display: inline-block;
 }
 
 /* Знак вопроса */
 .uninstall-tooltip-label::after {
-    content: "?";
-    display: inline-block;
-    font-size: 12px;
-    color: #1e88e5;
-    margin-left: 5px;
-    vertical-align: middle;
+  content: "?";
+  display: inline-block;
+  font-size: 12px;
+  color: #1e88e5;
+  margin-left: 5px;
+  vertical-align: middle;
 }
 
 /* Всплывающая подсказка */
 .uninstall-tooltip-label:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 5px);
-    left: 0;
-    background: rgba(0, 0, 0, 0.9);
-    color: #fff;
-    padding: 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    white-space: normal;
-    width: 360px;
-    z-index: 1000;
-    opacity: 0;
-    animation: uninstallTooltipFade 0.3s ease-in forwards;
-    pointer-events: none;
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: normal;
+  width: 360px;
+  z-index: 1000;
+  opacity: 0;
+  animation: uninstallTooltipFade 0.3s ease-in forwards;
+  pointer-events: none;
 }
 
 /* Анимация для подсказки */
 @keyframes uninstallTooltipFade {
-    from {
-        opacity: 0;
-        transform: translateY(5px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

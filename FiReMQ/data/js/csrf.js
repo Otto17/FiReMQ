@@ -7,7 +7,7 @@ window.CSRF_TOKEN = null;
 // Промис начальной инициализации, чтобы не плодить параллельные GET /csrf-token
 let csrfInitPromise = null;
 
-// Обновляем токен из заголовка ответа (если сервер его прислал)
+// Обновляет токен из заголовка ответа (если сервер его прислал)
 function updateCsrfFromResponse(resp) {
   try {
     const tok = resp.headers?.get?.(CSRF_HEADER);
@@ -41,7 +41,7 @@ async function fetchCsrfToken() {
   return tok;
 }
 
-// Гарант наличия токена: если нет — один раз тянем с сервера
+// Гарант наличия токена: если нет — один раз тянет с сервера
 async function ensureCsrfToken() {
   if (window.CSRF_TOKEN) return window.CSRF_TOKEN;
   if (!csrfInitPromise) {
@@ -70,12 +70,14 @@ function getCsrfSyncOrThrow() {
   return window.CSRF_TOKEN;
 }
 
-// Универсальный POST JSON с автоподхватом нового токена и ретраем на 403
+// Универсальный POST JSON с автоподхватом нового токена и ретрает на 403
 async function apiPostJson(url, data, options = {}) {
   await ensureCsrfToken();
 
-  const headers = Object.assign(
-    { "Content-Type": "application/json", [CSRF_HEADER]: window.CSRF_TOKEN },
+  const headers = Object.assign({
+      "Content-Type": "application/json",
+      [CSRF_HEADER]: window.CSRF_TOKEN
+    },
     options.headers || {}
   );
 
@@ -93,21 +95,25 @@ async function apiPostJson(url, data, options = {}) {
   if (resp.status === 403) {
     // Один автоматический рефреш токена и повтор
     await fetchCsrfToken();
-    const headersRetry = Object.assign({}, headers, { [CSRF_HEADER]: window.CSRF_TOKEN });
+    const headersRetry = Object.assign({}, headers, {
+      [CSRF_HEADER]: window.CSRF_TOKEN
+    });
     resp = await doFetch(headersRetry);
     updateCsrfFromResponse(resp);
   }
   return resp;
 }
 
-// Универсальный POST FormData с автоподхватом нового токена и ретраем на 403
+// Универсальный POST FormData с автоподхватом нового токена и ретрает на 403
 async function apiPostForm(url, formData, options = {}) {
   await ensureCsrfToken();
 
-  const headers = Object.assign({ [CSRF_HEADER]: window.CSRF_TOKEN }, options.headers || {});
+  const headers = Object.assign({
+    [CSRF_HEADER]: window.CSRF_TOKEN
+  }, options.headers || {});
   const doFetch = (headersToUse) => fetch(url, {
     method: "POST",
-    headers: headersToUse,       // Content-Type для FormData выставит браузер
+    headers: headersToUse, // Content-Type для FormData выставит браузер
     body: formData,
     credentials: "same-origin",
     ...options,
@@ -118,7 +124,9 @@ async function apiPostForm(url, formData, options = {}) {
 
   if (resp.status === 403) {
     await fetchCsrfToken();
-    const headersRetry = Object.assign({}, headers, { [CSRF_HEADER]: window.CSRF_TOKEN });
+    const headersRetry = Object.assign({}, headers, {
+      [CSRF_HEADER]: window.CSRF_TOKEN
+    });
     resp = await doFetch(headersRetry);
     updateCsrfFromResponse(resp);
   }

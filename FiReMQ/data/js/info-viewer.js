@@ -7,7 +7,7 @@ async function downloadFile() {
     const prefix = body.dataset.prefix;
 
     if (!clientID || !prefix) {
-	  showPush("Ошибка: отсутствуют параметры отчёта.", "#ff4d4d"); // Красный
+      showPush("Ошибка: отсутствуют параметры отчёта.", "#ff4d4d"); // Красный
       return;
     }
 
@@ -32,7 +32,7 @@ async function downloadFile() {
     a.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-	showPush("Ошибка при скачивании файла: " + error.message, "#ff4d4d"); // Красный
+    showPush("Ошибка при скачивании файла: " + error.message, "#ff4d4d"); // Красный
   }
 }
 

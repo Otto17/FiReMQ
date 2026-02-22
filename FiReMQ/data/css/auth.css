@@ -135,8 +135,8 @@ button:hover {
 
 /* Подвал */
 footer {
-  margin-top: 25px; /* Сдвигаем чуть ниже */
+  margin-top: 25px; /* Сдвигает чуть ниже */
   font-size: 14px;
-  color: #999; /* Темно-серый для гармонии с темной темой */
+  color: #999;
   text-align: center;
 }

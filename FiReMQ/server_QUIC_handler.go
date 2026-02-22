@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -379,16 +380,57 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Обновление SentFor
+	// Обновление SentFor (read-modify-write для безопасного слияния с возможными параллельными изменениями)
 	if len(sentTo) > 0 {
-		entry["SentFor"] = sentTo
-		updatedEntryBytes, err := json.Marshal(entry)
-		if err == nil {
-			if err := db.DBInstance.Update(func(txn *badger.Txn) error {
-				return txn.Set([]byte(dbKey), updatedEntryBytes)
-			}); err != nil {
-				logging.LogError("QUIC: Ошибка обновления SentFor в БД: %v", err)
+		const maxRetries = 3
+		for attempt := range maxRetries {
+			err := db.DBInstance.Update(func(txn *badger.Txn) error {
+				item, err := txn.Get([]byte(dbKey))
+				if err != nil {
+					return nil
+				}
+				var record map[string]any
+				if err := item.Value(func(val []byte) error {
+					return json.Unmarshal(val, &record)
+				}); err != nil {
+					return nil
+				}
+
+				// Читает текущий SentFor из актуальной записи
+				var sentFor []string
+				if s, exists := record["SentFor"]; exists {
+					if arr, ok := s.([]any); ok {
+						for _, v := range arr {
+							if ss, ok := v.(string); ok {
+								sentFor = append(sentFor, ss)
+							}
+						}
+					}
+				}
+
+				// Объединяет с sentTo (без дублей)
+				for _, id := range sentTo {
+					if !slices.Contains(sentFor, id) {
+						sentFor = append(sentFor, id)
+					}
+				}
+				record["SentFor"] = sentFor
+
+				newBytes, err := json.Marshal(record)
+				if err != nil {
+					return err
+				}
+				return txn.Set([]byte(dbKey), newBytes)
+			})
+			if err == nil {
+				break
 			}
+			if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+				time.Sleep(time.Duration(attempt+1) * 20 * time.Millisecond)
+				continue
+			}
+			logging.LogError("QUIC: Ошибка обновления SentFor в БД: %v", err)
+			break
 		}
 	}
 
@@ -404,7 +446,26 @@ func InstallProgramHandler(w http.ResponseWriter, r *http.Request) {
 		sendErrorResponse(w, http.StatusInternalServerError, "Ошибка формирования ответа")
 	}
 
-	logging.LogAction("QUIC: Админ \"%s\" (с именем: %s) создал новый запрос '%s' для '%d' клиентов", authInfo.Login, authInfo.Name, dateOfCreation, len(data.ClientIDs))
+	// Один лог для всех клиентов
+	var offlineIDs []string
+	for _, cid := range data.ClientIDs {
+		if !slices.Contains(sentTo, cid) {
+			offlineIDs = append(offlineIDs, cid)
+		}
+	}
+
+	summaryMsg := fmt.Sprintf("QUIC: Админ \"%s\" (с именем: %s) создал запрос '%s' на скачивание файла '%s' для %d клиентов.",
+		authInfo.Login, authInfo.Name, dateOfCreation, fileName, len(data.ClientIDs))
+
+	if len(sentTo) > 0 {
+		summaryMsg += fmt.Sprintf(" Отправлено онлайн (%d): [%s].", len(sentTo), strings.Join(sentTo, ", "))
+	}
+
+	if len(offlineIDs) > 0 {
+		summaryMsg += fmt.Sprintf(" Ожидают онлайн (%d): [%s].", len(offlineIDs), strings.Join(offlineIDs, ", "))
+	}
+
+	logging.LogAction("%s", summaryMsg)
 	hashMap.Delete(fileName)
 }
 
@@ -518,7 +579,6 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 		defer it.Close()
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
-			key := item.KeyCopy(nil)
 			var record map[string]any
 			err := item.Value(func(val []byte) error {
 				return json.Unmarshal(val, &record)
@@ -527,19 +587,10 @@ func GetQUICReportHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Проверяет обновление имени админа
+			// Подставляет актуальное имя админа в ответ (без записи в БД)
 			if login, ok := record["Created_By_Login"].(string); ok && usersMap != nil {
 				if user, exists := usersMap[login]; exists {
-					currentName := user.Auth_Name
-					savedName, nameExists := record["Created_By"].(string)
-					// Если имя изменилось - обновляет запись
-					if nameExists && savedName != currentName {
-						record["Created_By"] = currentName
-						newData, err := json.Marshal(record)
-						if err == nil {
-							txn.Set(key, newData)
-						}
-					}
+					record["Created_By"] = user.Auth_Name
 				}
 			}
 

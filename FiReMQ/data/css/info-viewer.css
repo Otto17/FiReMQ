@@ -1,4 +1,8 @@
-body { font-family: Arial, sans-serif; margin: 20px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
 .download-btn {
   font-size: 14px;
   padding: 10px 20px;
@@ -11,4 +15,7 @@ body { font-family: Arial, sans-serif; margin: 20px; }
   top: 10px;
   right: 10px;
 }
-.download-btn:hover { background-color: #D32F2F; }
+
+.download-btn:hover {
+  background-color: #d32f2f;
+}

@@ -892,7 +892,25 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) создал новый запрос '%s' для %d клиентов", authInfo.Login, authInfo.Name, dateOfCreation, len(cmdReq.ClientIDs))
+	// Один лог для всех клиентов
+	var offlineIDs []string
+	for _, cid := range cmdReq.ClientIDs {
+		if !slices.Contains(sentTo, cid) {
+			offlineIDs = append(offlineIDs, cid)
+		}
+	}
+
+	summaryMsg := fmt.Sprintf("CMD/PowerShell: Админ \"%s\" (с именем: %s) создал запрос '%s' (%s) для %d клиентов.",
+		authInfo.Login, authInfo.Name, dateOfCreation, cmdReq.TerminalCommand, len(cmdReq.ClientIDs))
+	if len(sentTo) > 0 {
+		summaryMsg += fmt.Sprintf(" Отправлено онлайн (%d): [%s].", len(sentTo), strings.Join(sentTo, ", "))
+	}
+
+	if len(offlineIDs) > 0 {
+		summaryMsg += fmt.Sprintf(" Ожидают онлайн (%d): [%s].", len(offlineIDs), strings.Join(offlineIDs, ", "))
+	}
+
+	logging.LogAction("%s", summaryMsg)
 
 	// Отправляет ответ, что команда сохранена и отправлена онлайн клиентам
 	w.Header().Set("Content-Type", "application/json")

@@ -16,7 +16,7 @@ function toggleDropdown() {
 }
 
 // Закрытие выпадающего меню при нажатии вне его
-window.onclick = function (event) {
+window.onclick = function(event) {
   if (!event.target.matches(".dropbtn")) {
     const dropdowns = document.getElementsByClassName("dropdown-content");
     for (let i = 0; i < dropdowns.length; i++) {
@@ -30,10 +30,10 @@ window.onclick = function (event) {
 
 // Привязка обработчика к кнопке меню
 document.addEventListener("DOMContentLoaded", function() {
-    const menuButton = document.getElementById("menuButton");
-    if (menuButton) {
-        menuButton.addEventListener("click", toggleDropdown);
-    }
+  const menuButton = document.getElementById("menuButton");
+  if (menuButton) {
+    menuButton.addEventListener("click", toggleDropdown);
+  }
 });
 
 // Обработчик для кнопки выхода
@@ -52,10 +52,10 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Кнопка 'Удаление "FiReAgent"'
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
   const removeFiReAgentItem = document.getElementById("removeFiReAgent");
   if (removeFiReAgentItem) {
-    removeFiReAgentItem.addEventListener("click", function (e) {
+    removeFiReAgentItem.addEventListener("click", function(e) {
       e.preventDefault();
       // На всякий случай проверим, что есть выделенные
       if (!hasCheckedClients()) return;
@@ -81,28 +81,28 @@ function updateClientActionButtons() {
   installButton.disabled = !hasChecked;
   executeButton.disabled = !hasChecked;
 
-if (removeFiReAgent) {
+  if (removeFiReAgent) {
     removeFiReAgent.classList.toggle("removeFiReAgent-disabled", !hasChecked);
   }
 }
 
 // Привязка обработчика "Выполнить cmd / PowerShell" к кнопкам для вызова модальных окон
-document.getElementById("executeCommandButton").addEventListener("click", function () {
+document.getElementById("executeCommandButton").addEventListener("click", function() {
   if (!this.disabled) {
     runCommand(); // Функция из "modal.js"
   }
 });
 
 // Привязка обработчика "Установка ПО" к кнопкам для вызова модальных окон
-document.getElementById("installProgramButton").addEventListener("click", function () {
+document.getElementById("installProgramButton").addEventListener("click", function() {
   if (!this.disabled) {
     installProgram(); // Функция из "modal.js"
   }
 });
 
 // Инициализация состояния кнопки при загрузке страницы
-document.addEventListener("DOMContentLoaded", function () {
-  updateClientActionButtons(); // Устанавливаем начальное состояние
+document.addEventListener("DOMContentLoaded", function() {
+  updateClientActionButtons(); // Устанавливает начальное состояние
 });
 
 // КНОПКА ПРОКРУТКИ ВВЕРХ
@@ -113,7 +113,7 @@ scrollToTopButton.className = "scroll-to-top";
 scrollToTopButton.innerHTML = "↑";
 document.body.appendChild(scrollToTopButton);
 
-// Проверяем, нужно ли показать кнопку
+// Проверяет, нужно ли показать кнопку
 function toggleScrollToTopButton() {
   if (window.scrollY > 100) {
     // Если прокрутка больше 100px
@@ -127,7 +127,7 @@ function toggleScrollToTopButton() {
   }
 }
 
-// Добавляем обработчик прокрутки
+// Добавляет обработчик прокрутки
 window.addEventListener("scroll", toggleScrollToTopButton);
 
 // Прокрутка страницы вверх при клике на кнопку
@@ -143,15 +143,15 @@ scrollToTopButton.addEventListener("click", () => {
 // Функция для проверки статуса авторизации
 function checkAuthStatus() {
   fetch("/check-auth", {
-    method: "GET",
-    credentials: "include", // Отправка куки
-  })
+      method: "GET",
+      credentials: "include", // Отправка куки
+    })
     .then((response) => {
       if (response.status === 401) {
-        // Если сервер вернул 401, перенаправляем на страницу авторизации
+        // Если сервер вернул 401, перенаправляет на страницу авторизации
         window.location.href = "/auth.html";
       } else if (response.ok) {
-        // Затем обновляем токен, если авторизация действительна
+        // Затем обновляет токен, если авторизация действительна
         refreshToken();
       }
     })
@@ -170,7 +170,7 @@ function refreshToken() {
   });
 }
 
-// Периодически проверяем статус авторизации каждые 10 секунд
+// Периодически проверяет статус авторизации каждые 10 секунд
 setInterval(checkAuthStatus, 10000);
 
 
@@ -178,47 +178,51 @@ setInterval(checkAuthStatus, 10000);
 
 // Обработчик кнопки "Логи" (открывает в новой вкладке)
 document.addEventListener("DOMContentLoaded", function() {
-    const logsLink = document.getElementById("logsLink");
-    if (logsLink) {
-        logsLink.addEventListener("click", async function(e) {
-            e.preventDefault();
-            try {
-                // Получение CSRF токена
-                const csrfResp = await fetch('/csrf-token');
-                if (!csrfResp.ok) throw new Error('Ошибка получения CSRF токена'); // Попадет в catch -> showPush
-                const { csrf_token } = await csrfResp.json();
+  const logsLink = document.getElementById("logsLink");
+  if (logsLink) {
+    logsLink.addEventListener("click", async function(e) {
+      e.preventDefault();
+      try {
+        // Получение CSRF токена
+        const csrfResp = await fetch('/csrf-token');
+        if (!csrfResp.ok) throw new Error('Ошибка получения CSRF токена'); // Попадет в catch -> showPush
+        const {
+          csrf_token
+        } = await csrfResp.json();
 
-                // Запрос ссылки с использованием токена
-                const response = await fetch('/getServer-log', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrf_token
-                    },
-                    body: JSON.stringify({ action: 'view' })
-                });
-
-				// Открытие лога
-                if (!response.ok) {
-                    if (typeof showPush === 'function') {
-                        showPush("Ошибка при открытии лога (код " + response.status + ")", "#ff4d4d"); // Красный
-                    }
-                    return;
-                }
-
-                const data = await response.json();
-                if (data.url) {
-                    window.open(data.url, '_blank');
-                    if (typeof showPush === 'function') {
-                        showPush('Лог открыт в новой вкладке', '#2196F3'); // Голубой
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                if (typeof showPush === 'function') {
-                    showPush("Ошибка соединения: " + err.message, "#ff4d4d"); // Красный
-                }
-            }
+        // Запрос ссылки с использованием токена
+        const response = await fetch('/getServer-log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf_token
+          },
+          body: JSON.stringify({
+            action: 'view'
+          })
         });
-    }
+
+        // Открытие лога
+        if (!response.ok) {
+          if (typeof showPush === 'function') {
+            showPush("Ошибка при открытии лога (код " + response.status + ")", "#ff4d4d"); // Красный
+          }
+          return;
+        }
+
+        const data = await response.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+          if (typeof showPush === 'function') {
+            showPush('Лог открыт в новой вкладке', '#2196F3'); // Голубой
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (typeof showPush === 'function') {
+          showPush("Ошибка соединения: " + err.message, "#ff4d4d"); // Красный
+        }
+      }
+    });
+  }
 });

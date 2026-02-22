@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,6 +26,15 @@ type cmdClientQueue struct {
 }
 
 var cmdSendQueues sync.Map // key: clientID -> *cmdClientQueue
+
+// cmdAnswerMutexes Мьютексы для сериализации обновлений одной записи при массовых ответах клиентов
+var cmdAnswerMutexes sync.Map // key: Date_Of_Creation -> *sync.Mutex
+
+// getCmdAnswerMutex Возвращает мьютекс для конкретной записи по дате создания
+func getCmdAnswerMutex(dateOfCreation string) *sync.Mutex {
+	val, _ := cmdAnswerMutexes.LoadOrStore(dateOfCreation, &sync.Mutex{})
+	return val.(*sync.Mutex)
+}
 
 // cmdQueueInterval Интервал между отправками запросов одному клиенту
 const cmdQueueInterval = 10 * time.Second
@@ -50,6 +60,25 @@ func parseCmdDate(s string) time.Time {
 
 // prepareNextTerminalMessage Подготавливает следующие к отправке записи (начиная с самой старой)
 func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, ok bool) {
+	const maxRetries = 3
+	for attempt := range maxRetries {
+		t, p, o, err := prepareNextTerminalMessageOnce(clientID)
+		if err == nil {
+			return t, p, o
+		}
+		// Повтор при конфликте транзакций BadgerDB
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 30 * time.Millisecond)
+			continue
+		}
+		logging.LogError("CMD/PowerShell: Ошибка подготовки сообщения для %s: %v", clientID, err)
+		return "", nil, false
+	}
+	return "", nil, false
+}
+
+// prepareNextTerminalMessageOnce выполняет одну попытку подготовки сообщения
+func prepareNextTerminalMessageOnce(clientID string) (topic string, payload []byte, ok bool, retErr error) {
 	var (
 		chosenKey    []byte
 		chosenRecord map[string]any
@@ -128,7 +157,7 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 			return nil
 		}
 
-		// Готовим payload
+		// Готовит payload
 		cmdStr, ok := chosenRecord["Team_Command"].(string)
 		if !ok || cmdStr == "" {
 			return nil
@@ -136,7 +165,7 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 		outPayload = []byte(cmdStr)
 		outTopic = "Client/" + clientID + "/ModuleCommand"
 
-		// Обновим SentFor
+		// Обновляет SentFor
 		var sentFor []string
 		if s, ok := chosenRecord["SentFor"]; ok {
 			if arr, ok := s.([]any); ok {
@@ -175,10 +204,13 @@ func prepareNextTerminalMessage(clientID string) (topic string, payload []byte, 
 		return txn.Set(chosenKey, newBytes)
 	})
 
-	if err != nil || !choose {
-		return "", nil, false
+	if err != nil {
+		return "", nil, false, err
 	}
-	return outTopic, outPayload, true
+	if !choose {
+		return "", nil, false, nil
+	}
+	return outTopic, outPayload, true, nil
 }
 
 // startCmdQueueForClient Запускает очередь отправки для клиента
@@ -256,55 +288,70 @@ func HandleAnswerMessage(clientID string, payload []byte) {
 		return
 	}
 
+	// Сериализация обновлений одной записи через мьютекс для предотвращения конфликтов транзакций при массовых ответах
+	mu := getCmdAnswerMutex(ansMsg.Date_Of_Creation)
+	mu.Lock()
+	defer mu.Unlock()
+
 	// Формирует ключ по Date_Of_Creation (ключ: "FiReMQ_Command:<Date_Of_Creation>")
 	dbKey := "FiReMQ_Command:" + ansMsg.Date_Of_Creation
-	err := db.DBInstance.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(dbKey))
-		if err != nil {
-			return err
+	const maxRetries = 5
+	for attempt := range maxRetries {
+		err := db.DBInstance.Update(func(txn *badger.Txn) error {
+			item, err := txn.Get([]byte(dbKey))
+			if err != nil {
+				return err
+			}
+
+			var record map[string]any
+			if err := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &record)
+			}); err != nil {
+				return err
+			}
+
+			mapping, ok := record["ClientID_Command"].(map[string]any)
+			if !ok {
+				return nil
+			}
+
+			clientEntryRaw, exists := mapping[clientID]
+			if !exists {
+				return nil
+			}
+
+			clientEntry, ok := clientEntryRaw.(map[string]any)
+			if !ok {
+				return nil
+			}
+
+			// Если для этого клиента уже установлен ответ, ничего не меняет
+			if ans, _ := clientEntry["Answer"].(string); ans != "" {
+				return nil
+			}
+
+			clientEntry["Answer"] = ansMsg.Answer
+			mapping[clientID] = clientEntry
+			record["ClientID_Command"] = mapping
+			newBytes, err := json.Marshal(record)
+			if err != nil {
+				return err
+			}
+			return txn.Set([]byte(dbKey), newBytes)
+		})
+
+		if err == nil {
+			break
 		}
 
-		var record map[string]any
-		if err := item.Value(func(val []byte) error {
-			return json.Unmarshal(val, &record)
-		}); err != nil {
-			return err
+		// Повтор при конфликте транзакций BadgerDB (страховка от конфликтов с другими частями кода)
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 30 * time.Millisecond)
+			continue
 		}
 
-		mapping, ok := record["ClientID_Command"].(map[string]any)
-		if !ok {
-			return nil
-		}
-
-		clientEntryRaw, exists := mapping[clientID]
-		if !exists {
-			return nil
-		}
-
-		clientEntry, ok := clientEntryRaw.(map[string]any)
-		if !ok {
-			return nil
-		}
-
-		// Если для этого клиента уже установлен ответ, ничего не меняет
-		if ans, _ := clientEntry["Answer"].(string); ans != "" {
-			return nil
-		}
-
-		clientEntry["Answer"] = ansMsg.Answer
-		mapping[clientID] = clientEntry
-		record["ClientID_Command"] = mapping
-		newBytes, err := json.Marshal(record)
-		if err != nil {
-			return err
-		}
-		return txn.Set([]byte(dbKey), newBytes)
-	})
-
-	if err != nil {
 		logging.LogError("CMD/PowerShell: Ошибка обновления записи для ответа от клиента %s: %v", clientID, err)
-	} else {
-		logging.LogSystem("CMD/PowerShell: Обновлена запись команды %s для клиента %s", ansMsg.Date_Of_Creation, clientID)
+		break
 	}
 }
 

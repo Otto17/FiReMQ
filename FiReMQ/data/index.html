@@ -54,18 +54,18 @@
             <option value="" disabled selected>Выберите группу и подгруппу</option>
           </select>
         </div>
-		<!-- Ввод вручную -->
+        <!-- Ввод вручную -->
         <div>
-			<label><input type="radio" name="moveOption" value="new">Создать вручную </label>
-			<div class="input-validation-wrapper">
-				<input type="text" id="newGroupName" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
-				<span class="validation-tooltip"></span>
-			</div>
-			<div class="input-validation-wrapper">
-				<input type="text" id="newSubgroupName" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
-				<span class="validation-tooltip"></span>
-			</div>
-		</div>
+          <label><input type="radio" name="moveOption" value="new">Создать вручную </label>
+          <div class="input-validation-wrapper">
+            <input type="text" id="newGroupName" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+            <span class="validation-tooltip"></span>
+          </div>
+          <div class="input-validation-wrapper">
+            <input type="text" id="newSubgroupName" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+            <span class="validation-tooltip"></span>
+          </div>
+        </div>
         <button type="button" id="confirmMoveClientButton" class="save-buttonModal">Переместить</button>
       </form>
     </div>
@@ -86,17 +86,17 @@
           </select>
         </div>
         <!-- Ввод вручную -->
-		<div>
-		<label><input type="radio" name="moveOption" value="new">Создать вручную </label>
-		<div class="input-validation-wrapper">
-			<input type="text" id="newGroupNameCheck" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
-			<span class="validation-tooltip"></span>
-		</div>
-		<div class="input-validation-wrapper">
-			<input type="text" id="newSubgroupNameCheck" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
-			<span class="validation-tooltip"></span>
-		</div>
-		</div>
+        <div>
+          <label><input type="radio" name="moveOption" value="new">Создать вручную </label>
+          <div class="input-validation-wrapper">
+            <input type="text" id="newGroupNameCheck" placeholder="Название новой группы (до 20)" maxlength="20" disabled>
+            <span class="validation-tooltip"></span>
+          </div>
+          <div class="input-validation-wrapper">
+            <input type="text" id="newSubgroupNameCheck" placeholder="Название новой подгруппы (до 20)" maxlength="20" disabled>
+            <span class="validation-tooltip"></span>
+          </div>
+        </div>
         <button type="button" id="confirmMoveCheckClientsButton" class="save-buttonModal">Переместить</button>
       </form>
     </div>
@@ -108,120 +108,121 @@
       <span class="close" id="closeAccountsModal">&times;</span>
       <h2>Учётные записи Админов</h2>
       <div id="accountsList"></div>
-        <br><hr><br>
-        <h2>Добавить нового Админа</h2>
-        <div class="admin-form-container">
-            <form id="addUserForm">
-				<div class="input-validation-wrapper">
-					<input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
-					<span class="validation-tooltip"></span>
-				</div>
-				<div class="input-validation-wrapper">
-					<input type="text" id="newLogin" placeholder="Новый логин (до 30)" maxlength="30" autocomplete="off">
-					<span class="validation-tooltip"></span>
-				</div>
-				<div class="input-validation-wrapper">
-					<div class="password-input-container">
-						<input type="password" id="newPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
-						<button type="button" class="toggle-password" data-target="newPassword">
-							<img id="newPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-						</button>
-					</div>
-					<span class="validation-tooltip"></span>
-				</div>
-				<!-- Блок разрешений для новой учётной записи -->
-				<div class="permissions-container">
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permCreate">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить создание новых учётных записей</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permUpdate">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить обновление действующих учётных записей</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permDelete">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить удаление действующих учётных записей</span>
-					</label>
-					<label class="permission-checkbox">
-					<input type="checkbox" id="permRenameClients">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить переименование клиентов</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permDeleteClients">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить удаление клиентов</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permMoveClients">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить перемещение клиентов</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permUninstallAgents">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить полное удаление FiReAgent</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permTerminalCommands">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить отправку cmd/PowerShell команд</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permInstallPrograms">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить установку ПО</span>
-					</label>
-					<label class="permission-checkbox">
-						<input type="checkbox" id="permSystemSettings">
-						<span class="checkmark"></span>
-						<span class="permission-label">Разрешить системные настройки</span>
-					</label>
-				</div>
-				<button type="submit" class="save-buttonModal">Добавить</button>
-			</form>
-        </div>
+      <br>
+      <hr><br>
+      <h2>Добавить нового Админа</h2>
+      <div class="admin-form-container">
+        <form id="addUserForm">
+          <div class="input-validation-wrapper">
+            <input type="text" id="newName" placeholder="Новое имя (до 40)" maxlength="40" autocomplete="off">
+            <span class="validation-tooltip"></span>
+          </div>
+          <div class="input-validation-wrapper">
+            <input type="text" id="newLogin" placeholder="Новый логин (до 30)" maxlength="30" autocomplete="off">
+            <span class="validation-tooltip"></span>
+          </div>
+          <div class="input-validation-wrapper">
+            <div class="password-input-container">
+              <input type="password" id="newPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+              <button type="button" class="toggle-password" data-target="newPassword">
+                <img id="newPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+              </button>
+            </div>
+            <span class="validation-tooltip"></span>
+          </div>
+          <!-- Блок разрешений для новой учётной записи -->
+          <div class="permissions-container">
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permCreate">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить создание новых учётных записей</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permUpdate">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить обновление действующих учётных записей</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permDelete">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить удаление действующих учётных записей</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permRenameClients">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить переименование клиентов</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permDeleteClients">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить удаление клиентов</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permMoveClients">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить перемещение клиентов</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permUninstallAgents">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить полное удаление FiReAgent</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permTerminalCommands">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить отправку cmd/PowerShell команд</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permInstallPrograms">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить установку ПО</span>
+            </label>
+            <label class="permission-checkbox">
+              <input type="checkbox" id="permSystemSettings">
+              <span class="checkmark"></span>
+              <span class="permission-label">Разрешить системные настройки</span>
+            </label>
+          </div>
+          <button type="submit" class="save-buttonModal">Добавить</button>
+        </form>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Модальное окно выбора прав с разрешёнными группами -->
-<div id="groupsSelectModal" class="modal-window">
+  <!-- Модальное окно выбора прав с разрешёнными группами -->
+  <div id="groupsSelectModal" class="modal-window">
     <div class="modal-window-content groups-select-modal">
-        <span class="close" id="closeGroupsSelectModal">&times;</span>
-        <h2 id="groupsSelectModalTitle">Разрешённые группы</h2>
-        <p id="groupsSelectModalDescription" class="groups-select-description">Выберите группы, без выбора — действие запрещено.</p>
+      <span class="close" id="closeGroupsSelectModal">&times;</span>
+      <h2 id="groupsSelectModalTitle">Разрешённые группы</h2>
+      <p id="groupsSelectModalDescription" class="groups-select-description">Выберите группы, без выбора — действие запрещено.</p>
 
-        <!-- Чекбокс "Разрешить все группы" -->
-        <label class="permission-checkbox groups-select-all-checkbox">
-            <input type="checkbox" id="allowAllGroupsCheckbox">
-            <span class="checkmark"></span>
-            <span class="permission-label">Разрешить все группы (полные права)</span>
-        </label>
+      <!-- Чекбокс "Разрешить все группы" -->
+      <label class="permission-checkbox groups-select-all-checkbox">
+        <input type="checkbox" id="allowAllGroupsCheckbox">
+        <span class="checkmark"></span>
+        <span class="permission-label">Разрешить все группы (полные права)</span>
+      </label>
 
-        <!-- Контейнер для списка групп -->
-        <div id="groupsSelectList" class="groups-select-list">
-            <!-- Группы будут добавлены динамически -->
-        </div>
+      <!-- Контейнер для списка групп -->
+      <div id="groupsSelectList" class="groups-select-list">
+        <!-- Группы будут добавлены динамически -->
+      </div>
 
-        <div class="groups-select-buttons">
-            <button type="button" id="confirmGroupsSelectBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
-        </div>
+      <div class="groups-select-buttons">
+        <button type="button" id="confirmGroupsSelectBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Модальное окно подтверждения изменения разрешения из учётных записей Админов -->
-<div id="permissionConfirmModal" class="modal-window">
-	<div class="modal-window-content permission-confirm-modal">
-		<span class="close" id="closePermissionConfirmModal">&times;</span>
-		<h2>Изменение разрешения</h2>
-		<p id="permissionConfirmText" class="permission-confirm-text"></p>
-		<button id="confirmPermissionBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
-	</div>
-</div>
+  <!-- Модальное окно подтверждения изменения разрешения из учётных записей Админов -->
+  <div id="permissionConfirmModal" class="modal-window">
+    <div class="modal-window-content permission-confirm-modal">
+      <span class="close" id="closePermissionConfirmModal">&times;</span>
+      <h2>Изменение разрешения</h2>
+      <p id="permissionConfirmText" class="permission-confirm-text"></p>
+      <button id="confirmPermissionBtn" class="save-buttonModal confirm-btn">Подтвердить</button>
+    </div>
+  </div>
 
   <!-- Модальное окно MQTT авторизация -->
   <div id="mqttAuthModal" class="modal-window">
@@ -233,25 +234,25 @@
         <span>Текущий логин:</span>
         <input type="text" id="currentMqttUsername" name="currentMqttUsername" readonly>
         <span>Новые данные:</span>
-		<div class="input-validation-wrapper">
-			<input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
-			<span class="validation-tooltip"></span>
-		</div>
-		<!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
-		<div class="input-validation-wrapper">
-			<div class="mqtt-password-input-container">
-				<input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
-				<button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
-				<img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-				</button>
-			</div>
-			<span class="validation-tooltip"></span>
-		</div>
-		<button type="button" id="saveMqttAuth" class="mqtt-save-buttonModal">Сохранить</button>
+        <div class="input-validation-wrapper">
+          <input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
+          <span class="validation-tooltip"></span>
+        </div>
+        <!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
+        <div class="input-validation-wrapper">
+          <div class="mqtt-password-input-container">
+            <input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+            <button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
+              <img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+            </button>
+          </div>
+          <span class="validation-tooltip"></span>
+        </div>
+        <button type="button" id="saveMqttAuth" class="mqtt-save-buttonModal">Сохранить</button>
         <!-- Новый блок для управления резервным аккаунтом -->
         <div class="reserve-account-container">
           <span id="reserveAccountStatus">Резервный аккаунт: <span id="reserveAccountState">Выключен</span></span>
-		  <button type="button" id="toggleReserveAccount" class="reserve-button">Включить</button>
+          <button type="button" id="toggleReserveAccount" class="reserve-button">Включить</button>
         </div>
       </form>
     </div>
@@ -274,9 +275,9 @@
           </div>
         </fieldset>
         <!-- Кнопка "Список полезных команд" -->
-		  <fieldset id="cheatsheetFieldset" class="command-modal-field">
-			  <button type="button" id="openCommandCheatsheet" class="command-help-button">Список команд</button>
-			</fieldset>
+        <fieldset id="cheatsheetFieldset" class="command-modal-field">
+          <button type="button" id="openCommandCheatsheet" class="command-help-button">Список команд</button>
+        </fieldset>
         <!-- Команда -->
         <div class="command-modal-field">
           <label for="commandText">Команда:</label>
@@ -309,269 +310,269 @@
           <div class="command-password-input-container">
             <input type="password" id="commandPassword" name="commandPassword" placeholder="Пароль" autocomplete="off">
             <button type="button" class="command-toggle-password">
-				<img id="commandPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-			</button>
+              <img id="commandPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+            </button>
           </div>
         </div>
         <!-- Флаг задачи -->
         <div class="command-modal-checkbox">
-			<label class="command-tooltip-label" data-tooltip="Использовать только для пользователей с административными правами. При указании пользователя с ограниченными правами запрос с командой не сможет выполниться!">
-				<input type="checkbox" id="highestPrivileges" name="highestPrivileges">Запуск с наивысшими привилегиями
-			</label>
-		</div>
+          <label class="command-tooltip-label" data-tooltip="Использовать только для пользователей с административными правами. При указании пользователя с ограниченными правами запрос с командой не сможет выполниться!">
+            <input type="checkbox" id="highestPrivileges" name="highestPrivileges">Запуск с наивысшими привилегиями
+          </label>
+        </div>
         <button type="submit" class="command-modal-submit">Отправить</button>
       </form>
     </div>
   </div>
 
-	<!-- Модальное окно "Список полезных команд" -->
-	<div id="commandCheatsheetModal" class="command-modal">
-	  <div class="command-modal-content">
-		<span class="command-modal-close" id="closeCommandCheatsheetModal">&times;</span>
-		<h2>Список полезных команд</h2>
-		<div class="cheatsheet-tabs">
-		  <button type="button" class="cheatsheet-tab active" data-tab="cmd">CMD команды</button>
-		  <button type="button" class="cheatsheet-tab" data-tab="powershell">PowerShell команды</button>
-		</div>
+  <!-- Модальное окно "Список полезных команд" -->
+  <div id="commandCheatsheetModal" class="command-modal">
+    <div class="command-modal-content">
+      <span class="command-modal-close" id="closeCommandCheatsheetModal">&times;</span>
+      <h2>Список полезных команд</h2>
+      <div class="cheatsheet-tabs">
+        <button type="button" class="cheatsheet-tab active" data-tab="cmd">CMD команды</button>
+        <button type="button" class="cheatsheet-tab" data-tab="powershell">PowerShell команды</button>
+      </div>
 
-		<div class="cheatsheet-panels">
-		<!-- CMD команды -->
-		  <div class="cheatsheet-panel active" id="cheat-tab-cmd">
-		  <div class="cheatsheet-list">
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>Dism /Online /Cleanup-Image /RestoreHealth</code></div>
-			  <div class="cheat-desc">Восстанавливает повреждённые системные файлы Windows, скачивая исправленные версии с серверов Microsoft  (требуются права администратора).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>sfc /scannow</code></div>
-			  <div class="cheat-desc">Проверяет и восстанавливает целостность системных файлов  (требуются права администратора).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>echo Y | chkdsk C: /f</code></div>
-			  <div class="cheat-desc">Проверяет и исправляет ошибки на диске C: (требует перезагрузки, если диск системный или занят и права администратора), "echo Y" - автоматически отправляет "Y" (да) на запрос подтверждения.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>wmic product get name</code></div>
-			  <div class="cheat-desc">Выводит список установленных программ, через WMIC (требуются права администратора).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall" /s | findstr /I "DisplayName"</code></div>
-			  <div class="cheat-desc">Выводит список установленных программ через реестр, быстрее и полнее для большинства случаев, чем WMIC.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>netstat -ano</code></div>
-			  <div class="cheat-desc">Показывает активные сетевые подключения, порты и PID процессов.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>tasklist</code></div>
-			  <div class="cheat-desc">Отображает список запущенных процессов.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>taskkill /PID [ID] /F</code></div>
-			  <div class="cheat-desc">Принудительно завершает процесс по его PID (ID).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>ipconfig /all</code></div>
-			  <div class="cheat-desc">Показывает полную информацию о сетевых адаптерах и IP-адресах.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>ipconfig /flushdns</code></div>
-			  <div class="cheat-desc">Очищает локальный кэш DNS-резолвера.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>systeminfo</code></div>
-			  <div class="cheat-desc">Подробная информация о системе, включая версию Windows, процессор, память и т. д.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>shutdown /r /t [время_в_секундах]</code></div>
-			  <div class="cheat-desc">Перезагружает компьютер через N-секунд (0 - перезагрузка выполнится сразу), принудительная перезагрузка "shutdown /r /f", для отмены - "shutdown /a".</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>shutdown /s /t 0</code></div>
-			  <div class="cheat-desc">Выключить компьютер через N-секунд.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>schtasks /query /fo LIST /v</code></div>
-			  <div class="cheat-desc">Показывает список всех запланированных задач (включая скрытые).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>driverquery /v</code></div>
-			  <div class="cheat-desc">Список всех установленных драйверов и их состояние.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>net start w32time & w32tm /resync /force</code></div>
-			  <div class="cheat-desc">Запускает службу времени (если не запущена) и синхронизирует системное время с сервером времени (требуются права администратора).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>assoc</code></div>
-			  <div class="cheat-desc">Список ассоциаций файлов (какие программы открывают какие расширения).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>wevtutil qe System "/rd:true" /f:text /c:[кол-во_записей]</code></div>
-			  <div class="cheat-desc">Последние N-записей системного журнала.</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>bcdedit /enum all</code></div>
-			  <div class="cheat-desc">Конфигурация загрузки Windows (требуются права администратора).</div>
-			</div>
-			<div class="cheat-row">
-			  <button type="button" class="cheat-insert-btn">⮕</button>
-			  <div class="cheat-cmd"><code>tracert [домен_или_ip]</code></div>
-			  <div class="cheat-desc">Трассирует маршрут до указанного хоста, показывая задержки на каждом шаге.</div>
-			</div>
-		  </div>
-		</div>
-		  <!-- PowerShell команды -->
-			<div class="cheatsheet-panel" id="cheat-tab-powershell">
-			  <div class="cheatsheet-list">
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>$UserName = "User"
-$Passwd = "12345"
+      <div class="cheatsheet-panels">
+        <!-- CMD команды -->
+        <div class="cheatsheet-panel active" id="cheat-tab-cmd">
+          <div class="cheatsheet-list">
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Dism /Online /Cleanup-Image /RestoreHealth</code></div>
+              <div class="cheat-desc">Восстанавливает повреждённые системные файлы Windows, скачивая исправленные версии с серверов Microsoft (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>sfc /scannow</code></div>
+              <div class="cheat-desc">Проверяет и восстанавливает целостность системных файлов (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>echo Y | chkdsk C: /f</code></div>
+              <div class="cheat-desc">Проверяет и исправляет ошибки на диске C: (требует перезагрузки, если диск системный или занят и права администратора), "echo Y" - автоматически отправляет "Y" (да) на запрос подтверждения.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>wmic product get name</code></div>
+              <div class="cheat-desc">Выводит список установленных программ, через WMIC (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>reg query "HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall" /s | findstr /I "DisplayName"</code></div>
+              <div class="cheat-desc">Выводит список установленных программ через реестр, быстрее и полнее для большинства случаев, чем WMIC.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>netstat -ano</code></div>
+              <div class="cheat-desc">Показывает активные сетевые подключения, порты и PID процессов.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>tasklist</code></div>
+              <div class="cheat-desc">Отображает список запущенных процессов.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>taskkill /PID [ID] /F</code></div>
+              <div class="cheat-desc">Принудительно завершает процесс по его PID (ID).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>ipconfig /all</code></div>
+              <div class="cheat-desc">Показывает полную информацию о сетевых адаптерах и IP-адресах.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>ipconfig /flushdns</code></div>
+              <div class="cheat-desc">Очищает локальный кэш DNS-резолвера.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>systeminfo</code></div>
+              <div class="cheat-desc">Подробная информация о системе, включая версию Windows, процессор, память и т. д.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>shutdown /r /t [время_в_секундах]</code></div>
+              <div class="cheat-desc">Перезагружает компьютер через N-секунд (0 - перезагрузка выполнится сразу), принудительная перезагрузка "shutdown /r /f", для отмены - "shutdown /a".</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>shutdown /s /t 0</code></div>
+              <div class="cheat-desc">Выключить компьютер через N-секунд.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>schtasks /query /fo LIST /v</code></div>
+              <div class="cheat-desc">Показывает список всех запланированных задач (включая скрытые).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>driverquery /v</code></div>
+              <div class="cheat-desc">Список всех установленных драйверов и их состояние.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>net start w32time & w32tm /resync /force</code></div>
+              <div class="cheat-desc">Запускает службу времени (если не запущена) и синхронизирует системное время с сервером времени (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>assoc</code></div>
+              <div class="cheat-desc">Список ассоциаций файлов (какие программы открывают какие расширения).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>wevtutil qe System "/rd:true" /f:text /c:[кол-во_записей]</code></div>
+              <div class="cheat-desc">Последние N-записей системного журнала.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>bcdedit /enum all</code></div>
+              <div class="cheat-desc">Конфигурация загрузки Windows (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>tracert [домен_или_ip]</code></div>
+              <div class="cheat-desc">Трассирует маршрут до указанного хоста, показывая задержки на каждом шаге.</div>
+            </div>
+          </div>
+        </div>
+        <!-- PowerShell команды -->
+        <div class="cheatsheet-panel" id="cheat-tab-powershell">
+          <div class="cheatsheet-list">
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>$UserName = "User"
+                  $Passwd = "12345"
 
-$SecurePassword = ConvertTo-SecureString $Passwd -AsPlainText -Force
-Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
-				  <div class="cheat-desc">Смена пароля локальной учётной записи. Указать действующую учётную запись и новый пароль (требуются права администратора).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-ComputerInfo</code></div>
-				  <div class="cheat-desc">Подробная информация о системе (аналог systeminfo в CMD).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First [кол-во_процессов]</code></div>
-				  <div class="cheat-desc">Топ‑N процессов по потреблению CPU.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-NetAdapter</code></div>
-				  <div class="cheat-desc">Список сетевых адаптеров в деталях.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-ExecutionPolicy -List</code></div>
-				  <div class="cheat-desc">Просмотр уровня безопасности для запуска скриптов PowerShell.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Set-ExecutionPolicy [ключ] -Scope [область] -Force</code></div>
-				  <div class="cheat-desc">Устанавливает политику выполнения скриптов PowerShell для локального компьютера. Ключи: "Restricted" - запрещены все скрипты (по умолчанию), "AllSigned" - разрешены только скрипты с цифровой подписью, "RemoteSigned" - локальные скрипты - любые, из интернета - только с подписью, "Unrestricted" - разрешены все скрипты, "Bypass" - никакие проверки не выполняются, "Undefined" - сбрасывает политику на уровень по умолчанию. Область: "LocalMachine" для локального компьютера (требуются права администратора), "CurrentUser" - для текущего пользователя, "Process" - только для текущего сеанса PowerShell.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-WmiObject Win32_Product | Select-Object Name, Version</code></div>
-				  <div class="cheat-desc">Список установленных программ (аналог wmic product get name), показывает название программы и версию.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Test-NetConnection [адрес] -Port [порт]</code></div>
-				  <div class="cheat-desc">Проверка доступности (пинга) удалённого хоста и порта.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-NetIPConfiguration</code></div>
-				  <div class="cheat-desc">Подробная информация о сетевых интерфейсах (аналог ipconfig /all).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Clear-DnsClientCache</code></div>
-				  <div class="cheat-desc">Очищает локальный кэш DNS-резолвера (аналог ipconfig /flushdns).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-Service | Where-Object {$_.Status -eq "Running"}</code></div>
-				  <div class="cheat-desc">Список запущенных служб.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Stop-Service -Name [имя_службы] -Force</code></div>
-				  <div class="cheat-desc">Останавливает службу (требуются права администратора).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-EventLog -LogName System -Newest [кол-во_записей]</code></div>
-				  <div class="cheat-desc">Последние N-записей системного журнала событий, альтернативно "Get-WinEvent -MaxEvents [кол-во_записей] -LogName System".</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-HotFix</code></div>
-				  <div class="cheat-desc">Список установленных обновлений Windows.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-Disk | Get-Partition | Get-Volume</code></div>
-				  <div class="cheat-desc">Информация о дисках, разделах и томах системы (требуются права администратора).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Repair-Volume -DriveLetter C -Scan</code></div>
-				  <div class="cheat-desc">Проверка диска C: на ошибки (аналог chkdsk, без перезагрузки, требуются права администратора).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-ScheduledTask | Where-Object {$_.State -ne "Disabled"}</code></div>
-				  <div class="cheat-desc">Список активных запланированных задач.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-WindowsOptionalFeature -Online</code></div>
-				  <div class="cheat-desc">Список доступных и включённых компонентов Windows (требуются права администратора).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-AppxPackage | Select-Object Name, PackageFullName</code></div>
-				  <div class="cheat-desc">Список установленных UWP‑приложений (универсальные приложения для Windows).</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Restart-Computer -Force</code></div>
-				  <div class="cheat-desc">Принудительно перезагружает компьютер.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Stop-Computer -Force</code></div>
-				  <div class="cheat-desc">Принудительно выключает компьютер.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-LocalUser</code></div>
-				  <div class="cheat-desc">Структурированный список локальных пользователей.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-LocalGroupMember -Group [имя_локальной_группы]</code></div>
-				  <div class="cheat-desc">Показывает членов указанной группы: "Администраторы", "Пользователи", "Гости" и т.д.</div>
-				</div>
-				<div class="cheat-row">
-				  <button type="button" class="cheat-insert-btn">⮕</button>
-				  <div class="cheat-cmd"><code>Get-CimInstance -ClassName Win32_BIOS</code></div>
-				  <div class="cheat-desc">Современная альтернатива WMI (CIM). Показывает информацию о BIOS, включая серийный номер.</div>
-				</div>
-			  </div>
-			</div>
-		</div>
-	  </div>
-	</div>
+                  $SecurePassword = ConvertTo-SecureString $Passwd -AsPlainText -Force
+                  Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
+              <div class="cheat-desc">Смена пароля локальной учётной записи. Указать действующую учётную запись и новый пароль (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-ComputerInfo</code></div>
+              <div class="cheat-desc">Подробная информация о системе (аналог systeminfo в CMD).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-Process | Sort-Object -Property CPU -Descending | Select-Object -First [кол-во_процессов]</code></div>
+              <div class="cheat-desc">Топ‑N процессов по потреблению CPU.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-NetAdapter</code></div>
+              <div class="cheat-desc">Список сетевых адаптеров в деталях.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-ExecutionPolicy -List</code></div>
+              <div class="cheat-desc">Просмотр уровня безопасности для запуска скриптов PowerShell.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Set-ExecutionPolicy [ключ] -Scope [область] -Force</code></div>
+              <div class="cheat-desc">Устанавливает политику выполнения скриптов PowerShell для локального компьютера. Ключи: "Restricted" - запрещены все скрипты (по умолчанию), "AllSigned" - разрешены только скрипты с цифровой подписью, "RemoteSigned" - локальные скрипты - любые, из интернета - только с подписью, "Unrestricted" - разрешены все скрипты, "Bypass" - никакие проверки не выполняются, "Undefined" - сбрасывает политику на уровень по умолчанию. Область: "LocalMachine" для локального компьютера (требуются права администратора), "CurrentUser" - для текущего пользователя, "Process" - только для текущего сеанса PowerShell.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-WmiObject Win32_Product | Select-Object Name, Version</code></div>
+              <div class="cheat-desc">Список установленных программ (аналог wmic product get name), показывает название программы и версию.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Test-NetConnection [адрес] -Port [порт]</code></div>
+              <div class="cheat-desc">Проверка доступности (пинга) удалённого хоста и порта.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-NetIPConfiguration</code></div>
+              <div class="cheat-desc">Подробная информация о сетевых интерфейсах (аналог ipconfig /all).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Clear-DnsClientCache</code></div>
+              <div class="cheat-desc">Очищает локальный кэш DNS-резолвера (аналог ipconfig /flushdns).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-Service | Where-Object {$_.Status -eq "Running"}</code></div>
+              <div class="cheat-desc">Список запущенных служб.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Stop-Service -Name [имя_службы] -Force</code></div>
+              <div class="cheat-desc">Останавливает службу (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-EventLog -LogName System -Newest [кол-во_записей]</code></div>
+              <div class="cheat-desc">Последние N-записей системного журнала событий, альтернативно "Get-WinEvent -MaxEvents [кол-во_записей] -LogName System".</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-HotFix</code></div>
+              <div class="cheat-desc">Список установленных обновлений Windows.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-Disk | Get-Partition | Get-Volume</code></div>
+              <div class="cheat-desc">Информация о дисках, разделах и томах системы (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Repair-Volume -DriveLetter C -Scan</code></div>
+              <div class="cheat-desc">Проверка диска C: на ошибки (аналог chkdsk, без перезагрузки, требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-ScheduledTask | Where-Object {$_.State -ne "Disabled"}</code></div>
+              <div class="cheat-desc">Список активных запланированных задач.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-WindowsOptionalFeature -Online</code></div>
+              <div class="cheat-desc">Список доступных и включённых компонентов Windows (требуются права администратора).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-AppxPackage | Select-Object Name, PackageFullName</code></div>
+              <div class="cheat-desc">Список установленных UWP‑приложений (универсальные приложения для Windows).</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Restart-Computer -Force</code></div>
+              <div class="cheat-desc">Принудительно перезагружает компьютер.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Stop-Computer -Force</code></div>
+              <div class="cheat-desc">Принудительно выключает компьютер.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-LocalUser</code></div>
+              <div class="cheat-desc">Структурированный список локальных пользователей.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-LocalGroupMember -Group [имя_локальной_группы]</code></div>
+              <div class="cheat-desc">Показывает членов указанной группы: "Администраторы", "Пользователи", "Гости" и т.д.</div>
+            </div>
+            <div class="cheat-row">
+              <button type="button" class="cheat-insert-btn">⮕</button>
+              <div class="cheat-cmd"><code>Get-CimInstance -ClassName Win32_BIOS</code></div>
+              <div class="cheat-desc">Современная альтернатива WMI (CIM). Показывает информацию о BIOS, включая серийный номер.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Модальное окно для установки ПО -->
   <div id="installProgramModal" class="install-modal">
@@ -584,11 +585,11 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
           <p id="dropText">Перетащите исполняемый файл на панель или кликнете сюда</p>
           <input type="file" id="fileInput" class="hidden-file-input" accept=".exe,.msi,.bat,.cmd,.ps1,.vbs,*/*">
           <!-- Добавленный элемент для названия файла -->
-		  <div id="fileNameText" class="initially-hidden file-name-text"></div>
+          <div id="fileNameText" class="initially-hidden file-name-text"></div>
           <div id="uploadInfoContainer">
-			<p id="uploadProgress" class="initially-hidden upload-info-text">Загружено 0%</p>
-			<p id="cancelUploadText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
-			<p id="postUploadCancelText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
+            <p id="uploadProgress" class="initially-hidden upload-info-text">Загружено 0%</p>
+            <p id="cancelUploadText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
+            <p id="postUploadCancelText" class="initially-hidden upload-info-text">Для отмены загрузки, кликнете правой кнопкой мыши на панели</p>
           </div>
         </div>
         <!-- Поле ввода "Путь скачивания" -->
@@ -671,10 +672,10 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
       <h2>Отчёт</h2>
       <div class="report-tabs">
         <button class="report-tab-button active" id="installReportTab">По установкам ПО</button>
-		<button class="report-tab-button" id="cmdReportTab">По cmd / PowerShell</button>
+        <button class="report-tab-button" id="cmdReportTab">По cmd / PowerShell</button>
       </div>
-	  
-	  <!-- Для вкладки "По установкам ПО" -->
+
+      <!-- Для вкладки "По установкам ПО" -->
       <div id="installReport" class="report-tab-content active">
         <div class="report-select">
           <label for="installDateSelect">Запрос создан:</label>
@@ -687,8 +688,7 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
           <fieldset class="install-fieldset-fixed">
             <legend id="ProhibitHighlightingLegendInstall">
               <span id="toggleLegendInstall">Запрос:</span>
-              <!-- <button id="toggleInstallDetails" style="background: none; border: none; color: #e0e0e0; cursor: pointer;">+</button> -->
-			  <button id="toggleInstallDetails" class="toggle-details-btn">+</button>
+              <button id="toggleInstallDetails" class="toggle-details-btn">+</button>
             </legend>
             <div id="installDetails">
               <!-- Содержимое добавляется динамически -->
@@ -704,8 +704,8 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Клиенты</th>
-                    <th>Выполнено</th>
+                    <th id="reportSortTh_install_client">Клиенты<span id="reportSortIndicator_install_client" class="report-sort-indicator"></span></th>
+					<th id="reportSortTh_install_done">Выполнено<span id="reportSortIndicator_install_done" class="report-sort-indicator"></span></th>
                     <th>Действие</th>
                   </tr>
                 </thead>
@@ -726,8 +726,8 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
           </div>
         </div>
       </div>
-	  
-	  <!-- Для вкладки "По cmd / PowerShell" -->
+
+      <!-- Для вкладки "По cmd / PowerShell" -->
       <div id="cmdReport" class="report-tab-content">
         <div class="report-select">
           <label for="cmdDateSelect">Запрос создан:</label>
@@ -756,8 +756,8 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Клиенты</th>
-                    <th>Выполнено</th>
+                    <th id="reportSortTh_cmd_client">Клиенты<span id="reportSortIndicator_cmd_client" class="report-sort-indicator"></span></th>
+					<th id="reportSortTh_cmd_done">Выполнено<span id="reportSortIndicator_cmd_done" class="report-sort-indicator"></span></th>
                     <th>Действие</th>
                   </tr>
                 </thead>
@@ -793,89 +793,83 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
 
 
   <!-- Модальное окно "О проекте" -->
-	<div id="aboutProjectModal" class="about-modal-window">
-	  <div class="about-modal-content">
-		<h2>О проекте</h2>
-		<p class="first-Progect-paragraph"><a href="https://gitflic.ru/project/otto/firemq" target="_blank">FiReMQ</a> (Файловая ретрансляция по MQTT) — это серверная система для гибкой, автоматической развёртки программ, самораспаковывающихся архивов и выполнения удалённых команд (в cmd или PowerShell от любого пользователя) на большом количестве компьютеров, не связанных одной сетью.</p>
-		<p>FiReMQ способна эффективно обрабатывать до тысячи агентов одновременно, обеспечивая постоянную обратную связь через MQTT, включая сбор характеристик агентов и контроль выполнения запросов.</p>
-		<p><a href="https://gitflic.ru/project/otto/fireagent" target="_blank">FiReAgent</a> (Агент файловой ретрансляции) —  это программное обеспечение, которое устанавливается на клиентские компьютеры для обработки запросов от FiReMQ.</p>
-		<!-- обновление и откат OWASP CRS правил -->
-		<div class="owasp-crs-section">
-		  <div class="owasp-crs-row">
-			<div class="owasp-crs-left">
-			  <a href="https://github.com/coreruleset/coreruleset/releases/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="OWASP CRS (Core Rule Set) — это набор универсальных правил обнаружения атак, предназначенных для защиты веб-приложений через веб-брандмауэр Coraza WAF. Не забывайте своевременно обновлять правила для поддержания эффективной защиты!">Правила OWASP CRS</a>
-			  <span class="owasp-crs-versions">
-				Текущая: <span id="owaspCRSCurrentVersion">—</span>
-				<span class="owasp-crs-sep">|</span>
-				Новая: <span id="owaspCRSNewVersion">—</span>
-			  </span>
-			</div>
-			<div class="owasp-crs-actions">
-			  <button id="owaspCRSUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
-			  <button
-				id="owaspCRSRollbackBtn"
-				class="owasp-crs-btn rollback has-tooltip"
-				data-tooltip="Откатывает правила к предыдущей (ранее установленной) версии. Это может понадобиться в случае серьёзных изменений новых правил, которые могут привести к некорректной работе FiReMQ.">
-				Откатить
-			  </button>
-			</div>
-		  </div>
-		</div>
-		<!-- Проверка/обновление/откат FiReMQ -->
-		<div class="owasp-crs-section">
-		  <div class="owasp-crs-row">
-			<div class="owasp-crs-left">
-			  <a href="https://gitflic.ru/project/otto/firemq/release/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="Обновление серверной части 'FiReMQ' из репозитория GitFlic/GitHub. При обновлении сервер корректно завершится, будет заменён новым релизом и автоматически запущен.">Обновление FiReMQ</a>
-			  <span class="owasp-crs-versions firemq">
-				Текущая: <span id="firemqCurrentVersion">—</span>
-				<span class="owasp-crs-sep">|</span>
-				Новая: <span id="firemqNewVersion">—</span>
-			  </span>
-			</div>
-			<div class="owasp-crs-actions">
-			  <button id="firemqUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
-			  <button
-				id="firemqRollbackBtn"
-				class="owasp-crs-btn rollback has-tooltip"
-				data-tooltip="Откатывает сервер FiReMQ к предыдущей (ранее установленной) версии. Это может понадобиться в случае, если после обновления FiReMQ возникли проблемы.">
-				Откатить
-			  </button>
-			</div>
-		  </div>
-		</div>
-		<!-- Информация об авторе и лицензия-->
-		<div class="about-version">
-		  Автор: © 2025-<span id="currentYear"></span> Otto
-		  <br>
-		  Лицензия: <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a>
-		</div>
-		<button id="aboutCloseButton" class="about-close-button">Закрыть</button>
-	  </div>
-	</div>
+  <div id="aboutProjectModal" class="about-modal-window">
+    <div class="about-modal-content">
+      <h2>О проекте</h2>
+      <p class="first-Progect-paragraph"><a href="https://gitflic.ru/project/otto/firemq" target="_blank">FiReMQ</a> (Файловая ретрансляция по MQTT) — это серверная система для гибкой, автоматической развёртки программ, самораспаковывающихся архивов и выполнения удалённых команд (в cmd или PowerShell от любого пользователя) на большом количестве компьютеров, не связанных одной сетью.</p>
+      <p>FiReMQ способна эффективно обрабатывать до тысячи агентов одновременно, обеспечивая постоянную обратную связь через MQTT, включая сбор характеристик агентов и контроль выполнения запросов.</p>
+      <p><a href="https://gitflic.ru/project/otto/fireagent" target="_blank">FiReAgent</a> (Агент файловой ретрансляции) — это программное обеспечение, которое устанавливается на клиентские компьютеры для обработки запросов от FiReMQ.</p>
+      <!-- обновление и откат OWASP CRS правил -->
+      <div class="owasp-crs-section">
+        <div class="owasp-crs-row">
+          <div class="owasp-crs-left">
+            <a href="https://github.com/coreruleset/coreruleset/releases/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="OWASP CRS (Core Rule Set) — это набор универсальных правил обнаружения атак, предназначенных для защиты веб-приложений через веб-брандмауэр Coraza WAF. Не забывайте своевременно обновлять правила для поддержания эффективной защиты!">Правила OWASP CRS</a>
+            <span class="owasp-crs-versions">
+              Текущая: <span id="owaspCRSCurrentVersion">—</span>
+              <span class="owasp-crs-sep">|</span>
+              Новая: <span id="owaspCRSNewVersion">—</span>
+            </span>
+          </div>
+          <div class="owasp-crs-actions">
+            <button id="owaspCRSUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
+            <button id="owaspCRSRollbackBtn" class="owasp-crs-btn rollback has-tooltip" data-tooltip="Откатывает правила к предыдущей (ранее установленной) версии. Это может понадобиться в случае серьёзных изменений новых правил, которые могут привести к некорректной работе FiReMQ.">
+              Откатить
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Проверка/обновление/откат FiReMQ -->
+      <div class="owasp-crs-section">
+        <div class="owasp-crs-row">
+          <div class="owasp-crs-left">
+            <a href="https://gitflic.ru/project/otto/firemq/release/latest" class="owasp-crs-title has-tooltip" target="_blank" rel="noopener noreferrer" data-tooltip="Обновление серверной части 'FiReMQ' из репозитория GitFlic/GitHub. При обновлении сервер корректно завершится, будет заменён новым релизом и автоматически запущен.">Обновление FiReMQ</a>
+            <span class="owasp-crs-versions firemq">
+              Текущая: <span id="firemqCurrentVersion">—</span>
+              <span class="owasp-crs-sep">|</span>
+              Новая: <span id="firemqNewVersion">—</span>
+            </span>
+          </div>
+          <div class="owasp-crs-actions">
+            <button id="firemqUpdateBtn" class="owasp-crs-btn update" disabled>Обновить</button>
+            <button id="firemqRollbackBtn" class="owasp-crs-btn rollback has-tooltip" data-tooltip="Откатывает сервер FiReMQ к предыдущей (ранее установленной) версии. Это может понадобиться в случае, если после обновления FiReMQ возникли проблемы.">
+              Откатить
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Информация об авторе и лицензия-->
+      <div class="about-version">
+        Автор: © 2025-<span id="currentYear"></span> Otto
+        <br>
+        Лицензия: <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a>
+      </div>
+      <button id="aboutCloseButton" class="about-close-button">Закрыть</button>
+    </div>
+  </div>
 
-	<!-- Модальное окно полное удаление FiReAgent -->
-	<div id="uninstallFiReAgentModal" class="modal-window" role="dialog" aria-modal="true" aria-labelledby="uninstallTitle">
-	  <div class="modal-window-content uninstall-fireagent">
-		<span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>
-		<h2 id="uninstallTitle">Полное удаление FiReAgent</h2>
+  <!-- Модальное окно полное удаление FiReAgent -->
+  <div id="uninstallFiReAgentModal" class="modal-window" role="dialog" aria-modal="true" aria-labelledby="uninstallTitle">
+    <div class="modal-window-content uninstall-fireagent">
+      <span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>
+      <h2 id="uninstallTitle">Полное удаление FiReAgent</h2>
 
-		<!-- Офлайн-очередь на удаление -->
-		<p class="pending-caption uninstall-tooltip-label" data-tooltip="Список ID клиентов, ожидающих самоудаления при переходе в онлайн. Пока клиент офлайн, его можно исключить из этого списка.">Ожидают удаления (офлайн):</p>
-		<div id="pendingUninstallList" class="client-id-list" aria-live="polite">
-		  <div class="list-empty">Загрузка...</div>
-		</div>
+      <!-- Офлайн-очередь на удаление -->
+      <p class="pending-caption uninstall-tooltip-label" data-tooltip="Список ID клиентов, ожидающих самоудаления при переходе в онлайн. Пока клиент офлайн, его можно исключить из этого списка.">Ожидают удаления (офлайн):</p>
+      <div id="pendingUninstallList" class="client-id-list" aria-live="polite">
+        <div class="list-empty">Загрузка...</div>
+      </div>
 
-		<p class="pending-caption uninstall-tooltip-label" data-tooltip="Этим клиентам будет отправлен запрос на самоудаление. Онлайн-клиенты удалятся немедленно, офлайн — после подключения к серверу.">Запрос на удаление будет отправлен:</p>
-		<div id="uninstallClientsList" class="client-id-list"></div>
+      <p class="pending-caption uninstall-tooltip-label" data-tooltip="Этим клиентам будет отправлен запрос на самоудаление. Онлайн-клиенты удалятся немедленно, офлайн — после подключения к серверу.">Запрос на удаление будет отправлен:</p>
+      <div id="uninstallClientsList" class="client-id-list"></div>
 
-		<p class="delete-confirm-caption">Напишите <strong class="delete-confirmation-text">"Удаляем!"</strong> для подтверждения.</p>
-		<input type="text" id="uninstallConfirmationInput" placeholder="Введите 'Удаляем!'" autocomplete="off">
+      <p class="delete-confirm-caption">Напишите <strong class="delete-confirmation-text">"Удаляем!"</strong> для подтверждения.</p>
+      <input type="text" id="uninstallConfirmationInput" placeholder="Введите 'Удаляем!'" autocomplete="off">
 
-		<button id="confirmUninstallButton" class="save-buttonModal delete-check-button" disabled>
-		  Удалить
-		</button>
-	  </div>
-	</div>
+      <button id="confirmUninstallButton" class="save-buttonModal delete-check-button" disabled>
+        Удалить
+      </button>
+    </div>
+  </div>
 
   <!-- Панель меню -->
   <div class="top-bar">
@@ -884,10 +878,10 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
       <div class="dropdown-content" id="myDropdown">
         <a id="logsLink" href="#" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a>
         <a id="accountsMQTT" class="menu-item-with-icon removeFiReAgent-button"><img src="../icon/Mqtt.svg" alt="MQTT авторизация" class="menu-icon"><span>MQTT авторизация</span></a>
-       <a id="removeFiReAgent" href="#" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
+        <a id="removeFiReAgent" href="#" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
         <a id="accountsLink" class="menu-item-with-icon"><img src="../icon/AccountsAdmin.svg" alt="Учётные записи Админов" class="menu-icon"><span>Учётные записи Админов</span></a>
-		<hr>
-		<a id="aboutProject" class="menu-item-with-icon"><img src="../icon/O_Project.svg" alt="О проекте" class="menu-icon"><span>О проекте</span></a>
+        <hr>
+        <a id="aboutProject" class="menu-item-with-icon"><img src="../icon/O_Project.svg" alt="О проекте" class="menu-icon"><span>О проекте</span></a>
       </div>
       <button id="installProgramButton" class="installProgram-button" disabled>Установка ПО</button>
       <button id="executeCommandButton" class="executeCommand-button" disabled>Выполнить cmd / PowerShell</button>
@@ -945,7 +939,7 @@ Set-LocalUser -Name $UserName -Password $SecurePassword</code></div>
 
   <!-- Элемент для всплывающих подсказок поверх модального окна отчётов -->
   <div id="tooltipBox" class="tooltip-box"></div>
-  
+
   <script src="js/csrf.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/menu.js"></script>

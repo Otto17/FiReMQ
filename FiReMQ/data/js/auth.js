@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       try {
         const errorData = await response.json();
         let errorMsg = errorData.error || "Ошибка авторизации";
-		
+
         // Если требуется капча
         if (errorData.captcha_required) {
           // Показывает капчу

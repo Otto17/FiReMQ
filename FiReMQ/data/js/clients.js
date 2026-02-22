@@ -3,7 +3,7 @@
 let currentClientID = null;
 let selectedContextRow = null;
 
-// Проверяем, есть ли хотя бы один чекбокс со значением true в "sessionStorage"
+// Проверяет, есть ли хотя бы один чекбокс со значением true в "sessionStorage"
 function hasCheckedClients() {
   return Object.values(checkboxStates).some((state) => state === true);
 }
@@ -13,7 +13,7 @@ function hideContextMenu() {
   const cm = document.getElementById("contextMenu");
   if (cm.style.display === "block") {
     cm.style.display = "none";
-    // Убираем выделение строки
+    // Убирает выделение строки
     if (selectedContextRow) {
       selectedContextRow.classList.remove("selected-context");
       selectedContextRow = null;
@@ -26,19 +26,19 @@ function showContextMenu(event, clientID) {
   event.preventDefault();
   currentClientID = clientID;
 
-// Снимаем предыдущее выделение, если было
+  // Снимает предыдущее выделение, если было
   if (selectedContextRow) {
     selectedContextRow.classList.remove("selected-context");
   }
 
-  // Находим строку для выделения и добавляем класс
+  // Находим строку для выделения и добавляет класс
   const row = event.target.closest(`tr[data-id="${clientID}"]`);
   if (row) {
     row.classList.add("selected-context");
     selectedContextRow = row;
   }
 
-  // Получаем ссылки на элементы меню
+  // Получает ссылки на элементы меню
   const takeOffAllItem = document.getElementById("takeOffAll");
   const moveClientItem = document.getElementById("moveClient");
   const moveClientCheckedItem = document.getElementById("moveClientCheckedItem");
@@ -50,51 +50,51 @@ function showContextMenu(event, clientID) {
   const informLiteClientItem = document.getElementById("informLiteClient");
   const informAidaClientItem = document.getElementById("informAidaClient");
 
-  // Отображаем только один из пунктов "Удалить" или "Удалить выделенных"
+  // Отображает только один из пунктов "Удалить" или "Удалить выделенных"
   if (deleteItem && deleteCheckedItem) {
     deleteItem.classList.toggle("hidden", hasCheckedClients());
-	deleteCheckedItem.classList.toggle("hidden", !hasCheckedClients());
+    deleteCheckedItem.classList.toggle("hidden", !hasCheckedClients());
   }
 
-  // Отображаем только один из пунктов "Переместить в..." или "Переместить выделенных"
+  // Отображает только один из пунктов "Переместить в..." или "Переместить выделенных"
   if (moveClientItem && moveClientCheckedItem) {
-	moveClientItem.classList.toggle("hidden", hasCheckedClients());
-	moveClientCheckedItem.classList.toggle("hidden", !hasCheckedClients());
+    moveClientItem.classList.toggle("hidden", hasCheckedClients());
+    moveClientCheckedItem.classList.toggle("hidden", !hasCheckedClients());
   }
 
-  // Отображаем или скрываем пункты "Информация Lite (F1)" и "Информация Aida64 (F4)"
+  // Отображает или скрывает пункты "Информация Lite (F1)" и "Информация Aida64 (F4)"
   if (informLiteClientItem) {
     informLiteClientItem.classList.toggle("hidden", hasCheckedClients());
-	informAidaClientItem.classList.toggle("hidden", hasCheckedClients());
+    informAidaClientItem.classList.toggle("hidden", hasCheckedClients());
   }
 
-  // Отображаем или скрываем "Переименовать (F2)"
+  // Отображает или скрывает "Переименовать (F2)"
   if (renameItem) {
     renameItem.classList.toggle("hidden", hasCheckedClients());
   }
 
-  // Отображаем или скрываем "Снять все '✓'"
+  // Отображает или скрывает "Снять все '✓'"
   if (takeOffAllItem) {
     takeOffAllItem.classList.toggle("hidden", !hasCheckedClients());
   }
 
-  // Отображаем или скрываем "Выполнить cmd / PowerShell"
+  // Отображает или скрывает "Выполнить cmd / PowerShell"
   if (runCommandItem) {
     runCommandItem.classList.toggle("hidden", !hasCheckedClients());
   }
 
-  // Отображаем или скрываем "Установка ПО"
+  // Отображает или скрывает "Установка ПО"
   if (installProgramItem) {
     installProgramItem.classList.toggle("hidden", !hasCheckedClients());
   }
 
-  // Позиционируем и отображаем контекстное меню
+  // Позиционирует и отображает контекстное меню
   const contextMenu = document.getElementById("contextMenu");
   contextMenu.style.display = "block";
   const menuWidth = contextMenu.offsetWidth;
   const menuHeight = contextMenu.offsetHeight;
 
-  // Получаем размеры видимой области и текущую прокрутку
+  // Получает размеры видимой области и текущую прокрутку
   const windowWidth = document.documentElement.clientWidth;
   const windowHeight = document.documentElement.clientHeight;
   const scrollX = window.scrollX;
@@ -120,13 +120,13 @@ function showContextMenu(event, clientID) {
   left = Math.max(scrollX, left);
   top = Math.max(scrollY, top);
 
-  // Устанавливаем позицию
+  // Устанавливает позицию
   contextMenu.style.left = `${left}px`;
   contextMenu.style.top = `${top}px`;
 }
 
 // Закрытие контекстного меню при клике вне его
-document.addEventListener("click", function (e) {
+document.addEventListener("click", function(e) {
   const cm = document.getElementById("contextMenu");
   if (cm.style.display === "block" && !cm.contains(e.target)) {
     hideContextMenu();
@@ -134,14 +134,14 @@ document.addEventListener("click", function (e) {
 });
 
 // Закрытие контекстного меню при нажатии клавиши Esc
-document.addEventListener("keydown", function (event) {
+document.addEventListener("keydown", function(event) {
   if (event.key === "Escape") {
     hideContextMenu();
   }
 });
 
-// Закрываем меню и сбрасываем подсветку сразу после клика по любому пункту
-document.getElementById("contextMenu").addEventListener("click", function (e) {
+// Закрывает меню и сбрасывает подсветку сразу после клика по любому пункту
+document.getElementById("contextMenu").addEventListener("click", function(e) {
   // если клик по <li class="context-menu-item">
   if (e.target.closest(".context-menu-item")) {
     hideContextMenu();
@@ -218,61 +218,61 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ПЕРЕНАЗНАЧЕНИЕ ГОРЯЧИХ КЛАВИШ
 
-(function () {
+(function() {
   // Изоляция "hoveredClientID" для защиты от возможных изменений в других частях кода
 
   // Переменная для хранения текущего выделенного (под курсором) клиента
   let hoveredClientID = null;
 
   // Отслеживание клиента, над которым находится курсор
-  document.addEventListener("mousemove", function (event) {
-    // Определяем строку таблицы под курсором
+  document.addEventListener("mousemove", function(event) {
+    // Определяет строку таблицы под курсором
     const clientRow = event.target.closest("tr[data-id]");
     if (clientRow) {
-      hoveredClientID = clientRow.getAttribute("data-id"); // Сохраняем ID клиента
+      hoveredClientID = clientRow.getAttribute("data-id"); // Сохраняет ID клиента
     } else {
-      hoveredClientID = null; // Если не над клиентом, сбрасываем
+      hoveredClientID = null; // Если не над клиентом, сбрасывает
     }
   });
 
   // Обработчик нажатия горячих клавиш
-  document.addEventListener("keydown", function (event) {
+  document.addEventListener("keydown", function(event) {
     // Обработчик для горячей клавиши F1
     if (event.key === "F1") {
-      event.preventDefault(); // Предотвращаем стандартное поведение F1
+      event.preventDefault(); // Предотвращает стандартное поведение F1
       if (hoveredClientID) {
-        openClientInfoInNewTab(hoveredClientID, "Lite_"); // Открываем в новой вкладке файл для клиента под курсором
+        openClientInfoInNewTab(hoveredClientID, "Lite_"); // Открывает в новой вкладке файл для клиента под курсором
       }
       // Обработчик для горячей клавиши F2
     } else if (event.key === "F2") {
-      event.preventDefault(); // Предотвращаем стандартное поведение F2
+      event.preventDefault(); // Предотвращает стандартное поведение F2
       if (hoveredClientID) {
-        enableEdit(hoveredClientID); // Включаем режим редактирования для клиента
+        enableEdit(hoveredClientID); // Включает режим редактирования для клиента
       }
       // Обработчик для горячей клавиши F4
     } else if (event.key === "F4") {
-      event.preventDefault(); // Предотвращаем стандартное поведение F4
+      event.preventDefault(); // Предотвращает стандартное поведение F4
       if (hoveredClientID) {
-        openClientInfoInNewTab(hoveredClientID, "Aida_"); // Включаем режим редактирования для клиента
+        openClientInfoInNewTab(hoveredClientID, "Aida_"); // Включает режим редактирования для клиента
       }
       // Обработчик для горячей клавиши Esc
     } else if (event.key === "Escape") {
-      event.preventDefault(); // Предотвращаем стандартное поведение Esc
+      event.preventDefault(); // Предотвращает стандартное поведение Esc
       if (hoveredClientID) {
-        cancelEdit(hoveredClientID); // Отменяем редактирование клиента под курсором
+        cancelEdit(hoveredClientID); // Отменяет редактирование клиента под курсором
       }
 
       // Обработчик для горячей клавиши Enter
-	} else if (event.key === "Enter") {
-		const activeElement = document.activeElement;
-		
-		// Проверяет, является ли активный элемент полем ввода имени клиента
-		if (activeElement && activeElement.id && activeElement.id.startsWith("nameInput_")) {
-			event.preventDefault();
-			const clientID = activeElement.id.replace("nameInput_", "");
-			saveName(clientID);
-		}
-	}
+    } else if (event.key === "Enter") {
+      const activeElement = document.activeElement;
+
+      // Проверяет, является ли активный элемент полем ввода имени клиента
+      if (activeElement && activeElement.id && activeElement.id.startsWith("nameInput_")) {
+        event.preventDefault();
+        const clientID = activeElement.id.replace("nameInput_", "");
+        saveName(clientID);
+      }
+    }
   });
 })();
 
@@ -296,7 +296,7 @@ function sortTable(field, forceDirectionChange = true) {
   const table = document.querySelector(".clients table");
   if (!table) return;
 
-  // Переключаем направление ТОЛЬКО по клику пользователя
+  // Переключает направление ТОЛЬКО по клику пользователя
   if (forceDirectionChange) {
     sortDirections[field] = !sortDirections[field];
   }
@@ -320,7 +320,7 @@ function sortTable(field, forceDirectionChange = true) {
     } else if (field === "timestamp") {
       const tA = parseDate(a.querySelector(`[data-field="${field}"]`)?.textContent || "");
       const tB = parseDate(b.querySelector(`[data-field="${field}"]`)?.textContent || "");
-      // null (если не распарсилось) отправляем вниз при возрастании
+      // null (если не распарсилось) отправляет вниз при возрастании
       if (!tA && !tB) return 0;
       if (!tA) return dir * 1;
       if (!tB) return dir * -1;
@@ -335,27 +335,27 @@ function sortTable(field, forceDirectionChange = true) {
 
   rows.forEach((row) => tbody.appendChild(row));
 
-  // Сохраняем текущее (уже применённое) состояние
+  // Сохраняет текущее (уже применённое) состояние
   localStorage.setItem("sortField", field);
   localStorage.setItem("sortDirection", String(isAsc));
 
-  // Обновляем индикатор именно по текущему направлению
+  // Обновляет индикатор именно по текущему направлению
   updateSortIndicator(field, isAsc);
 }
 
 // Обновление индикатора сортировки
 function updateSortIndicator(field, direction) {
-  // Сбрасываем все стрелки
+  // Сбрасывает все стрелки
   document.querySelectorAll(".sort-indicator").forEach((indicator) => {
     indicator.classList.remove("active");
     indicator.innerText = "";
   });
 
-  // Устанавливаем стрелку для текущего поля
+  // Устанавливает стрелку для текущего поля
   let indicator = document.getElementById("sortIndicator_" + field);
   if (indicator) {
     indicator.classList.add("active");
-    indicator.innerText = direction ? "▲" : "▼"; // Определяем направление
+    indicator.innerText = direction ? "▲" : "▼"; // Определяет направление
   }
 }
 
@@ -366,7 +366,7 @@ function ipToNumber(ip) {
 
 // Конвертация даты из формата "дд.мм.гг(чч:мм)" в объект Date
 function parseDate(dateStr) {
-  // Проверяем корректность строки с помощью регулярного выражения
+  // Проверяет корректность строки с помощью регулярного выражения
   const match = /^(\d{2})\.(\d{2})\.(\d{2})\((\d{2}):(\d{2})\)$/.exec(dateStr);
   if (!match) return null; // Если формат не соответствует, возвращаем null
 
@@ -407,41 +407,41 @@ function restoreCheckboxStates() {
 function toggleAllCheckboxes() {
   const checkboxes = document.querySelectorAll("input[type='checkbox'][id^='checkbox_']");
 
-  // Проверяем, есть ли хотя бы один невыбранный чекбокс
+  // Проверяет, есть ли хотя бы один невыбранный чекбокс
   const anyUnchecked = Array.from(checkboxes).some((checkbox) => !checkbox.checked);
 
-  // Устанавливаем новое состояние в зависимости от текущего
-  allChecked = anyUnchecked; // Если есть невыбранные — включаем все, иначе — выключаем
+  // Устанавливает новое состояние в зависимости от текущего
+  allChecked = anyUnchecked; // Если есть невыбранные — включает все, иначе — выключает
 
   checkboxes.forEach((checkbox) => {
     checkbox.checked = allChecked;
-    checkboxStates[checkbox.id] = allChecked; // Обновляем состояния в глобальном объекте
+    checkboxStates[checkbox.id] = allChecked; // Обновляет состояния в глобальном объекте
   });
-  sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняем в sessionStorage
+  sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет в sessionStorage
 }
 
 // Снять все '✓'
 function takeOffAll() {
-  // Пробегаемся по всем сохранённым состояниям чекбоксов
+  // Проходит по всем сохранённым состояниям чекбоксов
   for (const clientId in checkboxStates) {
     if (checkboxStates.hasOwnProperty(clientId)) {
-      checkboxStates[clientId] = false; // Устанавливаем состояние в false
+      checkboxStates[clientId] = false; // Устанавливает состояние в false
     }
   }
 
-  // Сохраняем изменения в "sessionStorage"
+  // Сохраняет изменения в "sessionStorage"
   sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
 
-  // Снимаем галочки только для видимых чекбоксов на странице
+  // Снимает галочки только для видимых чекбоксов на странице
   const checkboxes = document.querySelectorAll("input[type='checkbox'][id^='checkbox_']");
   checkboxes.forEach((checkbox) => {
     checkbox.checked = false;
   });
 
-  // Сбрасываем флаг allChecked, так как все галочки сняты
+  // Сбрасывает флаг allChecked, так как все галочки сняты
   allChecked = false;
 
-  // Обновляем состояние кнопок "Установка ПО" и "Выполнить cmd / PowerShell"
+  // Обновляет состояние кнопок "Установка ПО" и "Выполнить cmd / PowerShell"
   if (typeof updateClientActionButtons === "function") {
     updateClientActionButtons();
   }
@@ -452,19 +452,19 @@ function setupCheckboxCells() {
   const checkboxCells = document.querySelectorAll("td input[type='checkbox'][id^='checkbox_']");
 
   checkboxCells.forEach((checkbox) => {
-    // Получаем родительскую ячейку <td>
+    // Получает родительскую ячейку <td>
     const cell = checkbox.parentElement;
 
     cell.addEventListener("click", (event) => {
-      // Проверяем, что клик был не на самом чекбоксе
+      // Проверяет, что клик был не на самом чекбоксе
       if (event.target !== checkbox) {
-        checkbox.checked = !checkbox.checked; // Переключаем состояние чекбокса
-        checkboxStates[checkbox.id] = checkbox.checked; // Обновляем состояния
-        sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняем в sessionStorage
+        checkbox.checked = !checkbox.checked; // Переключает состояние чекбокса
+        checkboxStates[checkbox.id] = checkbox.checked; // Обновляет состояния
+        sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет в sessionStorage
 
         if (typeof updateClientActionButtons === "function") {
-          // Проверяем наличие функции
-          updateClientActionButtons(); // Обновляем кнопку
+          // Проверяет наличие функции
+          updateClientActionButtons(); // Обновляет кнопку
         }
       }
     });
@@ -472,11 +472,11 @@ function setupCheckboxCells() {
     // Обработчик для изменения состояния чекбокса
     checkbox.addEventListener("change", () => {
       checkboxStates[checkbox.id] = checkbox.checked;
-      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняем изменения
+      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет изменения
 
       if (typeof updateClientActionButtons === "function") {
-        // Проверяем наличие функции
-        updateClientActionButtons(); // Обновляем кнопку
+        // Проверяет наличие функции
+        updateClientActionButtons(); // Обновляет кнопку
       }
     });
   });
@@ -487,8 +487,8 @@ function setupCheckboxCells() {
     allCheckboxCell.addEventListener("click", () => {
       toggleAllCheckboxes();
       if (typeof updateClientActionButtons === "function") {
-        // Проверяем наличие функции
-        updateClientActionButtons(); // Обновляем кнопку
+        // Проверяет наличие функции
+        updateClientActionButtons(); // Обновляет кнопку
       }
     });
   }
@@ -505,46 +505,46 @@ function renameClient() {
 
 // Функция для включения режима редактирования
 function enableEdit(clientID) {
-    const input = document.getElementById("nameInput_" + clientID);
-    const display = document.getElementById("nameDisplay_" + clientID);
+  const input = document.getElementById("nameInput_" + clientID);
+  const display = document.getElementById("nameDisplay_" + clientID);
 
-    if (input && display) {
-        display.classList.add("hidden");
-        input.classList.remove("hidden");
-        input.style.display = "inline"; // Явно показывает input
-        input.focus();
+  if (input && display) {
+    display.classList.add("hidden");
+    input.classList.remove("hidden");
+    input.style.display = "inline"; // Явно показывает input
+    input.focus();
 
-        // Ограничение длины ввода
-        input.setAttribute("maxlength", "80");
+    // Ограничение длины ввода
+    input.setAttribute("maxlength", "80");
 
-        // Добавляет placeholder
-        input.setAttribute("placeholder", "Новое имя (до 80)");
-        
-        // Добавляет обработчик валидации если ещё не добавлен
-        if (!input.dataset.validationInit) {
-            input.addEventListener('input', () => updateFieldValidation(input, true));
-            input.dataset.validationInit = 'true';
-        }
-        
-        // Сбрасывает состояние валидации при открытии
-        resetFieldValidation(input);
-    } else {
-        console.error("Элементы для редактирования клиента не найдены: " + clientID);
+    // Добавляет placeholder
+    input.setAttribute("placeholder", "Новое имя (до 80)");
+
+    // Добавляет обработчик валидации если ещё не добавлен
+    if (!input.dataset.validationInit) {
+      input.addEventListener('input', () => updateFieldValidation(input, true));
+      input.dataset.validationInit = 'true';
     }
+
+    // Сбрасывает состояние валидации при открытии
+    resetFieldValidation(input);
+  } else {
+    console.error("Элементы для редактирования клиента не найдены: " + clientID);
+  }
 }
 
 // Функция отмены редактирования
 function cancelEdit(clientID) {
-    const input = document.getElementById("nameInput_" + clientID);
-    const display = document.getElementById("nameDisplay_" + clientID);
+  const input = document.getElementById("nameInput_" + clientID);
+  const display = document.getElementById("nameDisplay_" + clientID);
 
-    if (input && display && display.classList.contains("hidden")) {
-        display.classList.remove("hidden");
-        input.style.display = "";
-        
-        // Сбрасывает состояние валидации
-        resetFieldValidation(input);
-    }
+  if (input && display && display.classList.contains("hidden")) {
+    display.classList.remove("hidden");
+    input.style.display = "";
+
+    // Сбрасывает состояние валидации
+    resetFieldValidation(input);
+  }
 }
 
 // Сохранение нового имени
@@ -561,8 +561,11 @@ function saveName(clientID) {
     return;
   }
 
-  // Отправляем на сервер, только если имя изменено
-  apiPostJson("/set-name-client", { clientID: clientID, name: newName })
+  // Отправляет на сервер, только если имя изменено
+  apiPostJson("/set-name-client", {
+      clientID: clientID,
+      name: newName
+    })
     .then((response) => {
       if (!response.ok) {
         return response.text().then((errorText) => {
@@ -648,7 +651,7 @@ function isFirefoxBrowser() {
 
 // Функция загрузки клиентов после выбора группы или подгруппы
 function loadClients(group, subgroup) {
-  // Сохраняем текущие состояния чекбоксов
+  // Сохраняет текущие состояния чекбоксов
   saveCheckboxStates();
 
   let url = "/get-clients-by-group";
@@ -662,25 +665,24 @@ function loadClients(group, subgroup) {
     .then((response) => response.json())
     .then((data) => {
       const clientsContainer = document.getElementById("clientsContainer");
-      clientsContainer.innerHTML = ""; // Очищаем текущее содержимое контейнера клиентов
+      clientsContainer.innerHTML = ""; // Очищает текущее содержимое контейнера клиентов
 
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const tbody = document.createElement("tbody");
 
-      // Применяем стили таблицы в зависимости от браузера
+      // Применяет стили таблицы в зависимости от браузера
       if (isFirefoxBrowser()) {
         table.style.borderSpacing = "0";
-        table.style.borderCollapse = ""; // Убираем, чтобы не конфликтовало
+        table.style.borderCollapse = ""; // Убирает, чтобы не конфликтовало
       } else {
         table.style.borderCollapse = "collapse";
-        table.style.borderSpacing = ""; // Убираем, чтобы не конфликтовало
+        table.style.borderSpacing = ""; // Убирает, чтобы не конфликтовало
       }
 
-      // Создаем заголовок таблицы
+      // Создаёт заголовок таблицы
       const headerRow = document.createElement("tr");
-      const headers = [
-        {
+      const headers = [{
           field: "status",
           text: "Статус",
           sortable: true,
@@ -733,12 +735,12 @@ function loadClients(group, subgroup) {
       thead.appendChild(headerRow);
       table.appendChild(thead);
 
-      // Создаем строки таблицы для каждого клиента
+      // Создаёт строки таблицы для каждого клиента
       data.forEach((client) => {
         const checkboxId = `checkbox_${client.ClientID}`;
         const newRow = document.createElement("tr");
 
-        // Добавляем data-id в строку для каждого клиента
+        // Добавляет data-id в строку для каждого клиента
         newRow.setAttribute("data-id", client.ClientID);
         newRow.innerHTML = `
 			<td data-field="status">
@@ -771,27 +773,27 @@ function loadClients(group, subgroup) {
       // Настройка ячеек с чекбоксами после загрузки клиентов
       setupCheckboxCells();
 
-      // Восстанавливаем состояния чекбоксов
+      // Восстанавливает состояния чекбоксов
       restoreCheckboxStates();
 
-      // Добавляем обработчик для сохранения состояния при изменении чекбокса
+      // Добавляет обработчик для сохранения состояния при изменении чекбокса
       const checkboxes = document.querySelectorAll("input[type='checkbox'][id^='checkbox_']");
       checkboxes.forEach((checkbox) => {
         checkbox.addEventListener("change", saveCheckboxStates);
       });
 
-      // Восстанавливаем состояние сортировки из localStorage (без переключения)
-		const savedField = localStorage.getItem("sortField");
-		const savedDirectionStr = localStorage.getItem("sortDirection");
+      // Восстанавливает состояние сортировки из localStorage (без переключения)
+      const savedField = localStorage.getItem("sortField");
+      const savedDirectionStr = localStorage.getItem("sortDirection");
 
-		if (savedField !== null && savedDirectionStr !== null) {
-		  sortDirections[savedField] = (savedDirectionStr === "true"); // true = ▲
-		  sortTable(savedField, false); // применяем без инверсии
-		} else {
-		  // Дефолт: сортировка по имени по возрастанию (▲), без инверсии
-		  sortDirections["name"] = true;
-		  sortTable("name", false);
-		}
+      if (savedField !== null && savedDirectionStr !== null) {
+        sortDirections[savedField] = (savedDirectionStr === "true"); // true = ▲
+        sortTable(savedField, false); // Применяет без инверсии
+      } else {
+        // По умолчанию: сортировка по имени по возрастанию (▲), без инверсии
+        sortDirections["name"] = true;
+        sortTable("name", false);
+      }
     })
     .catch((error) => {
       console.error("Ошибка при загрузке данных:", error);

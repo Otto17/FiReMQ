@@ -3,34 +3,34 @@
 // Глобальный обработчик нажатия клавиш (для закрытия окна кнопкой "Esc")
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-	// Проверка окна "Список полезных команд"
-	const cheatsheetModal = document.getElementById("commandCheatsheetModal");
-	if (cheatsheetModal && cheatsheetModal.style.display === "flex") {
-	  cheatsheetModal.style.display = "none";
-	  event.stopPropagation();
-	  event.preventDefault();
-	  return; // Закрыли только "Список полезных команд"
-	}
-	
-	// Проверка окна подтверждения изменения разрешений прав доступа
-	const permissionConfirmModal = document.getElementById("permissionConfirmModal");
-	if (permissionConfirmModal && permissionConfirmModal.style.display === "flex") {
-		closePermissionConfirmModal();
-		event.stopPropagation();
-		event.preventDefault();
-		return;
-	}
-	
-	
-	// Проверка окна выбора прав с разрешёнными группами
-	const groupsSelectModal = document.getElementById("groupsSelectModal");
-	if (groupsSelectModal && groupsSelectModal.style.display === "flex") {
-		closeGroupsSelectModal();
-		event.stopPropagation();
-		event.preventDefault();
-		return;
-	}
-	
+    // Проверка окна "Список полезных команд"
+    const cheatsheetModal = document.getElementById("commandCheatsheetModal");
+    if (cheatsheetModal && cheatsheetModal.style.display === "flex") {
+      cheatsheetModal.style.display = "none";
+      event.stopPropagation();
+      event.preventDefault();
+      return; // Закрыли только "Список полезных команд"
+    }
+
+    // Проверка окна подтверждения изменения разрешений прав доступа
+    const permissionConfirmModal = document.getElementById("permissionConfirmModal");
+    if (permissionConfirmModal && permissionConfirmModal.style.display === "flex") {
+      closePermissionConfirmModal();
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
+
+    // Проверка окна выбора прав с разрешёнными группами
+    const groupsSelectModal = document.getElementById("groupsSelectModal");
+    if (groupsSelectModal && groupsSelectModal.style.display === "flex") {
+      closeGroupsSelectModal();
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+
     // Проверка окна подтверждения отмены загрузки
     const confirmCancelUploadModal = document.getElementById("confirmCancelUploadModal");
     if (confirmCancelUploadModal && confirmCancelUploadModal.style.display === "flex") {
@@ -43,23 +43,23 @@ document.addEventListener("keydown", (event) => {
     // Проверка других окна подтверждения
     const confirmModal = document.getElementById("confirmDeleteRequestModal");
     if (confirmModal && confirmModal.style.display === "flex") {
-      // Если окно подтверждения на переднем плане, закрываем его и не закрываем окно отчётов
+      // Если окно подтверждения на переднем плане, закрывает его и не закрывает окно отчётов
       confirmModal.style.display = "none";
       event.stopPropagation();
       event.preventDefault();
     } else {
-      // Если окно подтверждения не активно, закрываем другие окна
-      closeDeleteModal(); 				// Для одиночного удаления
-      closeDeleteCheckModal(); 			// Для массового удаления
-      closeMoveModal(); 				// Для перемещения клиента в группу
-      closeMoveCheckModal(); 			// Для массового перемещения клиентов в группу
-      closeAccountsModal(); 			// Для учётных записей Админов
-      closeMqttAuthModal(); 			// Для MQTT авторизации
-      closeExecuteCommandModal();		// Для выполнения CMD или PowerShell команды
-      closeInstallProgramModal();		// Для установки ПО
-      closeReportModal(); 				// Для отчётов По установкам и cmd / PowerShell
-	  closeAboutModal(); 				// Для окна "О программе"
-	  closeUninstallFiReAgentModal();	// Для удаления FiReAgent
+      // Если окно подтверждения не активно, закрывает другие окна
+      closeDeleteModal(); // Для одиночного удаления
+      closeDeleteCheckModal(); // Для массового удаления
+      closeMoveModal(); // Для перемещения клиента в группу
+      closeMoveCheckModal(); // Для массового перемещения клиентов в группу
+      closeAccountsModal(); // Для учётных записей Админов
+      closeMqttAuthModal(); // Для MQTT авторизации
+      closeExecuteCommandModal(); // Для выполнения CMD или PowerShell команды
+      closeInstallProgramModal(); // Для установки ПО
+      closeReportModal(); // Для отчётов По установкам и cmd / PowerShell
+      closeAboutModal(); // Для окна "О программе"
+      closeUninstallFiReAgentModal(); // Для удаления FiReAgent
     }
   }
 });
@@ -70,8 +70,8 @@ window.addEventListener("load", function() {
   const color = sessionStorage.getItem("pushColor");
   if (message && color) {
     showPush(message, color);
-	
-    // Очищаем "sessionStorage" после показа уведомления
+
+    // Очищает "sessionStorage" после показа уведомления
     sessionStorage.removeItem("pushMessage");
     sessionStorage.removeItem("pushColor");
   }
@@ -79,105 +79,105 @@ window.addEventListener("load", function() {
 
 
 // Константы с разрешёнными символами
-const REGEX_NO_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\[\]{}~^№€₽]+$/; 					// Без пробелов
-const REGEX_WITH_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%&.\-\/?\*\+=,:|()"'–—\[\]{}~^№€₽]+$/;	// С доп. символами и буквальным пробелом
+const REGEX_NO_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ_!@#$%&.\-\/?\[\]{}~^№€₽]+$/; // Без пробелов
+const REGEX_WITH_SPACE = /^[a-zA-Z0-9а-яА-ЯёЁ _!@#$%&.\-\/?\*\+=,:|()"'–—\[\]{}~^№€₽]+$/; // С доп. символами и буквальным пробелом
 
 // Функция для валидации ввода (без знака пробела, либо с ним и доп. символами)
 function validateInput(input, allowSpace = false) {
-    return (allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE).test(input);
+  return (allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE).test(input);
 }
 
 
 // Получение запрещённых символов из строки (для компактной всплывающей подсказки в полях ввода)
 function getForbiddenChars(input, allowSpace = false) {
-    const baseRegex = allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE;
+  const baseRegex = allowSpace ? REGEX_WITH_SPACE : REGEX_NO_SPACE;
 
-    // Извлекает содержимое character class: [...]
-    const match = baseRegex.source.match(/^\^\[(.*)\]\+\$$/);
-    if (!match) {
-        console.error('Неверный формат REGEX');
-        return [];
-    }
+  // Извлекает содержимое character class: [...]
+  const match = baseRegex.source.match(/^\^\[(.*)\]\+\$$/);
+  if (!match) {
+    console.error('Неверный формат REGEX');
+    return [];
+  }
 
-    const allowedChars = match[1];
+  const allowedChars = match[1];
 
-    // Инвертированный regex: всё, что НЕ разрешено
-    const forbiddenRegex = new RegExp(`[^${allowedChars}]`, 'g');
+  // Инвертированный regex: всё, что НЕ разрешено
+  const forbiddenRegex = new RegExp(`[^${allowedChars}]`, 'g');
 
-    // Находит запрещённые символы
-    const forbidden = input.match(forbiddenRegex) || [];
+  // Находит запрещённые символы
+  const forbidden = input.match(forbiddenRegex) || [];
 
-    // Убирает дубликаты
-    return [...new Set(forbidden)];
+  // Убирает дубликаты
+  return [...new Set(forbidden)];
 }
 
 // Функция для обновления состояния валидации поля (для компактной всплывающей подсказки в полях ввода)
 function updateFieldValidation(inputElement, allowSpace = false) {
-    let tooltip;
-    
-    // Ищет tooltip в обёртке или как соседний элемент
-    const wrapper = inputElement.closest('.input-validation-wrapper');
-    if (wrapper) {
-        tooltip = wrapper.querySelector('.validation-tooltip');
+  let tooltip;
+
+  // Ищет tooltip в обёртке или как соседний элемент
+  const wrapper = inputElement.closest('.input-validation-wrapper');
+  if (wrapper) {
+    tooltip = wrapper.querySelector('.validation-tooltip');
+  } else {
+    // Ищет tooltip как следующий соседний элемент
+    tooltip = inputElement.nextElementSibling;
+    if (!tooltip || !tooltip.classList.contains('validation-tooltip')) {
+      // Создаёт tooltip динамически если его нет
+      tooltip = document.createElement('span');
+      tooltip.className = 'validation-tooltip';
+      inputElement.parentNode.insertBefore(tooltip, inputElement.nextSibling);
+    }
+  }
+
+  if (!tooltip) return;
+
+  const value = inputElement.value;
+
+  if (value === '') {
+    // Поле пустое — сбрасывает состояние
+    inputElement.classList.remove('validation-error');
+    tooltip.textContent = '';
+    tooltip.classList.remove('visible');
+    return;
+  }
+
+  const forbiddenChars = getForbiddenChars(value, allowSpace);
+
+  if (forbiddenChars.length > 0) {
+    inputElement.classList.add('validation-error');
+
+    if (forbiddenChars.length === 1) {
+      tooltip.textContent = `Символ '${forbiddenChars[0]}' запрещён!`;
     } else {
-        // Ищет tooltip как следующий соседний элемент
-        tooltip = inputElement.nextElementSibling;
-        if (!tooltip || !tooltip.classList.contains('validation-tooltip')) {
-            // Создаёт tooltip динамически если его нет
-            tooltip = document.createElement('span');
-            tooltip.className = 'validation-tooltip';
-            inputElement.parentNode.insertBefore(tooltip, inputElement.nextSibling);
-        }
+      const charsFormatted = forbiddenChars.map(c => `'${c}'`).join(', ');
+      tooltip.textContent = `Символы ${charsFormatted} запрещены!`;
     }
-    
-    if (!tooltip) return;
-    
-    const value = inputElement.value;
-    
-    if (value === '') {
-        // Поле пустое — сбрасывает состояние
-        inputElement.classList.remove('validation-error');
-        tooltip.textContent = '';
-        tooltip.classList.remove('visible');
-        return;
-    }
-    
-    const forbiddenChars = getForbiddenChars(value, allowSpace);
-    
-    if (forbiddenChars.length > 0) {
-        inputElement.classList.add('validation-error');
-        
-        if (forbiddenChars.length === 1) {
-            tooltip.textContent = `Символ '${forbiddenChars[0]}' запрещён!`;
-        } else {
-            const charsFormatted = forbiddenChars.map(c => `'${c}'`).join(', ');
-            tooltip.textContent = `Символы ${charsFormatted} запрещены!`;
-        }
-        tooltip.classList.add('visible');
-    } else {
-        inputElement.classList.remove('validation-error');
-        tooltip.textContent = '';
-        tooltip.classList.remove('visible');
-    }
+    tooltip.classList.add('visible');
+  } else {
+    inputElement.classList.remove('validation-error');
+    tooltip.textContent = '';
+    tooltip.classList.remove('visible');
+  }
 }
 
 // Функция для сброса состояния валидации поля (для компактной всплывающей подсказки в полях ввода)
 function resetFieldValidation(inputElement) {
-    inputElement.classList.remove('validation-error');
-    
-    // Ищет tooltip
-    const wrapper = inputElement.closest('.input-validation-wrapper');
-    let tooltip;
-    if (wrapper) {
-        tooltip = wrapper.querySelector('.validation-tooltip');
-    } else {
-        tooltip = inputElement.nextElementSibling;
-    }
-    
-    if (tooltip && tooltip.classList.contains('validation-tooltip')) {
-        tooltip.textContent = '';
-        tooltip.classList.remove('visible');
-    }
+  inputElement.classList.remove('validation-error');
+
+  // Ищет tooltip
+  const wrapper = inputElement.closest('.input-validation-wrapper');
+  let tooltip;
+  if (wrapper) {
+    tooltip = wrapper.querySelector('.validation-tooltip');
+  } else {
+    tooltip = inputElement.nextElementSibling;
+  }
+
+  if (tooltip && tooltip.classList.contains('validation-tooltip')) {
+    tooltip.textContent = '';
+    tooltip.classList.remove('visible');
+  }
 }
 
 
@@ -192,7 +192,7 @@ function deleteClient() {
   const clientRow = document.querySelector(`tr[data-id="${currentClientID}"]`);
   const clientName = clientRow ? clientRow.querySelector('[data-field="name"]').textContent : "неизвестный";
 
-  showDeleteModal(clientName); // Отображаем модальное окно с именем клиента
+  showDeleteModal(clientName); // Отображает модальное окно с именем клиента
 }
 
 // Показ модального окна удаления клиента
@@ -201,41 +201,43 @@ function showDeleteModal(clientName) {
   const clientNameToDelete = document.getElementById("clientNameToDelete");
   const confirmDeleteButton = document.getElementById("confirmDeleteButton");
 
-  currentClientName = clientName; // Сохраняем имя текущего клиента
-  clientNameToDelete.textContent = clientName; // Устанавливаем имя клиента в модальное окно
+  currentClientName = clientName; // Сохраняет имя текущего клиента
+  clientNameToDelete.textContent = clientName; // Устанавливает имя клиента в модальное окно
 
-  modal.style.display = "flex"; // Показываем модальное окно
+  modal.style.display = "flex"; // Показывает модальное окно
 
-  // Устанавливаем фокус на кнопку "Удалить"
+  // Устанавливает фокус на кнопку "Удалить"
   confirmDeleteButton.focus();
 }
 
 // Закрытие модального окна "Удалить"
 function closeDeleteModal() {
   const modal = document.getElementById("deleteClientModal");
-  modal.style.display = "none"; // Скрываем модальное окно
+  modal.style.display = "none"; // Скрывает модальное окно
 }
 
 // Подтверждение удаления клиента
 function confirmDeleteClient() {
-	const requestData = { clientID: currentClientID }; // Сборка данных для POST
-	apiPostJson("/delete-client", requestData)
+  const requestData = {
+    clientID: currentClientID
+  }; // Сборка данных для POST
+  apiPostJson("/delete-client", requestData)
 
     .then((response) => {
-        if (!response.ok) {
-            return response.text().then((errorText) => {
-                throw new Error(errorText);
-            });
-        }
-        return response.text();
+      if (!response.ok) {
+        return response.text().then((errorText) => {
+          throw new Error(errorText);
+        });
+      }
+      return response.text();
     })
     .then((data) => {
-        sessionStorage.setItem("pushMessage", data);
-        sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
-        location.reload(); // Перезагружаем страницу
+      sessionStorage.setItem("pushMessage", data);
+      sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
+      location.reload(); // Перезагружает страницу
     })
     .catch((error) => {
-        showPush(error.message, "#ff4d4d"); // Красный
+      showPush(error.message, "#ff4d4d"); // Красный
     });
 }
 
@@ -252,7 +254,7 @@ function deleteCheckClient() {
   const checkedClients = Object.keys(checkboxStates).filter((clientId) => checkboxStates[clientId] === true);
 
   if (checkedClients.length === 0) {
-	showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
+    showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
     return;
   }
 
@@ -270,13 +272,13 @@ function showDeleteCheckClientsModal() {
   deleteConfirmationInput.value = "";
   confirmDeleteCheckButton.disabled = true;
 
-  modal.style.display = "flex"; // Показываем модальное окно
+  modal.style.display = "flex"; // Показывает модальное окно
 }
 
 // Закрытие модального окна "Удалить выделенных"
 function closeDeleteCheckModal() {
   const modal = document.getElementById("deleteCheckClientsModal");
-  modal.style.display = "none"; // Скрываем модальное окно
+  modal.style.display = "none"; // Скрывает модальное окно
 }
 
 // Обработчик ввода текста для активации кнопки удаления (регистронезависимый ввод)
@@ -288,48 +290,48 @@ document.getElementById("deleteConfirmationInput").addEventListener("input", fun
 
 // Подтверждение удаления выделенных клиентов
 function confirmDeleteCheckClients() {
-	const checkedClients = Object.keys(checkboxStates)
-		.filter((clientId) => checkboxStates[clientId] === true)
-		.map((clientId) => clientId.replace("checkbox_", "")); // Убираем префикс "checkbox_"
+  const checkedClients = Object.keys(checkboxStates)
+    .filter((clientId) => checkboxStates[clientId] === true)
+    .map((clientId) => clientId.replace("checkbox_", "")); // Убирает префикс "checkbox_"
 
-	if (checkedClients.length === 0) {
-		showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
-		return;
-	}
+  if (checkedClients.length === 0) {
+    showPush("Нет выбранных клиентов для удаления.", "#ff4d4d"); // Красный
+    return;
+  }
 
-	apiPostJson("/delete-selected-clients", checkedClients)
+  apiPostJson("/delete-selected-clients", checkedClients)
 
-		.then((response) => {
-			if (!response.ok) {
-				// Получает текст ошибки от сервера для отображения в PUSH
-				return response.text().then((errorText) => {
-					throw new Error(errorText);
-				});
-			}
-			return response.text();
-		})
-		.then((data) => {
-			// Удаляем удалённых клиентов из sessionStorage
-			checkedClients.forEach((clientId) => {
-				const checkboxKey = `checkbox_${clientId}`; // Восстанавливаем ключ с префиксом
-				delete checkboxStates[checkboxKey];
-				sessionStorage.removeItem(checkboxKey);
-			});
+    .then((response) => {
+      if (!response.ok) {
+        // Получает текст ошибки от сервера для отображения в PUSH
+        return response.text().then((errorText) => {
+          throw new Error(errorText);
+        });
+      }
+      return response.text();
+    })
+    .then((data) => {
+      // Удаляет удалённых клиентов из sessionStorage
+      checkedClients.forEach((clientId) => {
+        const checkboxKey = `checkbox_${clientId}`; // Восстанавливает ключ с префиксом
+        delete checkboxStates[checkboxKey];
+        sessionStorage.removeItem(checkboxKey);
+      });
 
-			// Обновляем sessionStorage с изменённым состоянием
-			sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+      // Обновляет sessionStorage с изменённым состоянием
+      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
 
-			// Сохраняем сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
-			sessionStorage.setItem("pushMessage", data);
-			sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
+      // Сохраняет сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
+      sessionStorage.setItem("pushMessage", data);
+      sessionStorage.setItem("pushColor", "#2196F3"); // Голубой
 
-			closeDeleteCheckModal(); // Закрыть модальное окно только при успехе
-			location.reload(); // Перезагрузка страницы
-		})
-		.catch((error) => {
-			// Показывает PUSH с сообщением об ошибке, модальное окно остаётся открытым
-			showPush(error.message, "#ff4d4d"); // Красный
-		});
+      closeDeleteCheckModal(); // Закрыть модальное окно только при успехе
+      location.reload(); // Перезагрузка страницы
+    })
+    .catch((error) => {
+      // Показывает PUSH с сообщением об ошибке, модальное окно остаётся открытым
+      showPush(error.message, "#ff4d4d"); // Красный
+    });
 }
 
 // Привязка событий к новому модальному окну
@@ -361,101 +363,101 @@ document.addEventListener("DOMContentLoaded", function() {
   // Открытие модального окна перемещения клиента
   const moveClientBtn = document.getElementById("moveClient");
   if (moveClientBtn) {
-	moveClientBtn.addEventListener("click", () => {
-		loadExistingGroups(); // Автоматическая загрузка групп и подгрупп
-		document.getElementById("moveClientModal").style.display = "flex";
-	});
+    moveClientBtn.addEventListener("click", () => {
+      loadExistingGroups(); // Автоматическая загрузка групп и подгрупп
+      document.getElementById("moveClientModal").style.display = "flex";
+    });
   }
 
-	// Обработка выбора радиокнопок
-	document.querySelectorAll('input[name="moveOption"]').forEach((radio) =>
-		radio.addEventListener("change", (e) => {
-			const isExisting = e.target.value === "existing";
-			document.getElementById("existingGroups").disabled = !isExisting;
-			document.getElementById("newGroupName").disabled = isExisting;
-			document.getElementById("newSubgroupName").disabled = isExisting;
-			
-			// Сбрасывает валидацию при переключении
-			if (isExisting) {
-				resetFieldValidation(document.getElementById("newGroupName"));
-				resetFieldValidation(document.getElementById("newSubgroupName"));
-			}
-		})
-	);
+  // Обработка выбора радиокнопок
+  document.querySelectorAll('input[name="moveOption"]').forEach((radio) =>
+    radio.addEventListener("change", (e) => {
+      const isExisting = e.target.value === "existing";
+      document.getElementById("existingGroups").disabled = !isExisting;
+      document.getElementById("newGroupName").disabled = isExisting;
+      document.getElementById("newSubgroupName").disabled = isExisting;
 
-	// Инициализация валидации для полей ввода групп
-	const newGroupNameInput = document.getElementById("newGroupName");
-	const newSubgroupNameInput = document.getElementById("newSubgroupName");
+      // Сбрасывает валидацию при переключении
+      if (isExisting) {
+        resetFieldValidation(document.getElementById("newGroupName"));
+        resetFieldValidation(document.getElementById("newSubgroupName"));
+      }
+    })
+  );
 
-	if (newGroupNameInput) {
-		newGroupNameInput.addEventListener('input', () => updateFieldValidation(newGroupNameInput, true));
-	}
-	if (newSubgroupNameInput) {
-		newSubgroupNameInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameInput, true));
-	}
+  // Инициализация валидации для полей ввода групп
+  const newGroupNameInput = document.getElementById("newGroupName");
+  const newSubgroupNameInput = document.getElementById("newSubgroupName");
+
+  if (newGroupNameInput) {
+    newGroupNameInput.addEventListener('input', () => updateFieldValidation(newGroupNameInput, true));
+  }
+  if (newSubgroupNameInput) {
+    newSubgroupNameInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameInput, true));
+  }
 
   // Перемещение клиента
-	confirmMoveClientButton.onclick = () => {
-		const clientID = currentClientID;
-		const moveOption = document.querySelector('input[name="moveOption"]:checked').value;
+  confirmMoveClientButton.onclick = () => {
+    const clientID = currentClientID;
+    const moveOption = document.querySelector('input[name="moveOption"]:checked').value;
 
-		let newGroupID, newSubgroupID;
-		if (moveOption === "existing") {
-			const selectedOption = document.getElementById("existingGroups").value;
-			if (!selectedOption) {
-				showPush("Выберите существующую группу и подгруппу.", "#ff4d4d"); // Красный
-				return;
-			}
-			[newGroupID, newSubgroupID] = selectedOption.split("|");
-		} else {
-			newGroupID = document.getElementById("newGroupName").value.trim();
-			newSubgroupID = document.getElementById("newSubgroupName").value.trim();
+    let newGroupID, newSubgroupID;
+    if (moveOption === "existing") {
+      const selectedOption = document.getElementById("existingGroups").value;
+      if (!selectedOption) {
+        showPush("Выберите существующую группу и подгруппу.", "#ff4d4d"); // Красный
+        return;
+      }
+      [newGroupID, newSubgroupID] = selectedOption.split("|");
+    } else {
+      newGroupID = document.getElementById("newGroupName").value.trim();
+      newSubgroupID = document.getElementById("newSubgroupName").value.trim();
 
-			if (!newGroupID || !newSubgroupID) {
-				showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
-				return;
-			}
+      if (!newGroupID || !newSubgroupID) {
+        showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
+        return;
+      }
 
-			// Проверка на разрешённые символы (true = разрешить пробелы)
-			if (!validateInput(newGroupID, true)) {
-				showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
-				return;
-			}
-			if (!validateInput(newSubgroupID, true)) {
-				showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
-				return;
-			}
-		}
+      // Проверка на разрешённые символы (true = разрешить пробелы)
+      if (!validateInput(newGroupID, true)) {
+        showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+        return;
+      }
+      if (!validateInput(newSubgroupID, true)) {
+        showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
+        return;
+      }
+    }
 
-			// Формирование данных для POST
-			const requestData = {
-				clientID: clientID,
-				newGroupID: newGroupID,
-				newSubgroupID: newSubgroupID,
-			};
+    // Формирование данных для POST
+    const requestData = {
+      clientID: clientID,
+      newGroupID: newGroupID,
+      newSubgroupID: newSubgroupID,
+    };
 
-			apiPostJson("/move-client", requestData)
-			
-			.then((response) => {
-				if (!response.ok) {
-					return response.text().then((errorText) => {
-						throw new Error(errorText);
-					});
-				}
-				return response.text();
-			})
-			.then((data) => {
-				moveClientModal.style.display = "none";
+    apiPostJson("/move-client", requestData)
 
-				// Сохраняем сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
-				sessionStorage.setItem("pushMessage", data);
-				sessionStorage.setItem("pushColor", "#4CAF50"); // Зелёный
-				location.reload(); // Перезагружаем страницу после успешного перемещения
-			})
-			.catch((error) => {
-				showPush(error.message, "#ff4d4d"); // Красный
-			});
-	};
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((errorText) => {
+            throw new Error(errorText);
+          });
+        }
+        return response.text();
+      })
+      .then((data) => {
+        moveClientModal.style.display = "none";
+
+        // Сохраняет сообщение и цвет push-уведомления в "sessionStorage" (Хранение сеансов)
+        sessionStorage.setItem("pushMessage", data);
+        sessionStorage.setItem("pushColor", "#4CAF50"); // Зелёный
+        location.reload(); // Перезагружает страницу после успешного перемещения
+      })
+      .catch((error) => {
+        showPush(error.message, "#ff4d4d"); // Красный
+      });
+  };
 });
 
 // Подгрузка существующих групп и подгрупп
@@ -469,7 +471,7 @@ function loadExistingGroups() {
       let currentGroup = null; // Текущая группа
       for (const [group, subgroups] of Object.entries(data)) {
         if (group !== currentGroup) {
-          // Добавляем разделитель перед началом новой группы
+          // Добавляет разделитель перед началом новой группы
           const divider = document.createElement("option");
           divider.disabled = true;
           divider.textContent = "---";
@@ -495,8 +497,8 @@ document.getElementById("existingGroups").addEventListener("change", function() 
 
   if (selectedOption) {
     const [group, subgroup] = selectedOption.split("|");
-    this.options[0].textContent = `Выбрана: ${group} / ${subgroup}`; // Меняем текст в первой строке
-    this.options[0].classList.add("highlight-selected"); // Добавляем класс выделения
+    this.options[0].textContent = `Выбрана: ${group} / ${subgroup}`; // Меняет текст в первой строке
+    this.options[0].classList.add("highlight-selected"); // Добавляет класс выделения
   }
 });
 
@@ -510,8 +512,9 @@ document.getElementById("moveClientForm").addEventListener("keydown", function(e
 // Закрытие модального окна "Переместить в..."
 function closeMoveModal() {
   const modal = document.getElementById("moveClientModal");
-  modal.style.display = "none"; // Скрываем модальное окно
+  modal.style.display = "none"; // Скрывает модальное окно
 }
+
 
 
 
@@ -522,12 +525,12 @@ function moveClientCheckClient() {
   const checkedClients = Object.keys(checkboxStates).filter((clientId) => checkboxStates[clientId] === true);
 
   if (checkedClients.length === 0) {
-	showPush("Нет выбранных клиентов для перемещения.", "#ff4d4d"); // Красный
+    showPush("Нет выбранных клиентов для перемещения.", "#ff4d4d"); // Красный
     return;
   }
 
   loadExistingGroupsCheck(); // Загрузка списка групп и подгрупп
-  showMoveCheckClientsModal(); // Показываем модальное окно
+  showMoveCheckClientsModal(); // Показывает модальное окно
 }
 
 // Показ модального окна перемещения выделенных клиентов
@@ -542,41 +545,41 @@ function closeMoveCheckModal() {
   modal.style.display = "none";
 }
 
-	// Привязка обработчиков событий к модальному окну
-	document.getElementById("closeMoveCheckModal").addEventListener("click", closeMoveCheckModal);
+// Привязка обработчиков событий к модальному окну
+document.getElementById("closeMoveCheckModal").addEventListener("click", closeMoveCheckModal);
 
-	// Обработка выбора опций (существующая группа/новая)
-	document.querySelectorAll('#moveCheckClientsForm input[name="moveOption"]').forEach((radio) =>
-		radio.addEventListener("change", (e) => {
-			const isExisting = e.target.value === "existing";
-			document.getElementById("existingGroupsCheck").disabled = !isExisting;
-			document.getElementById("newGroupNameCheck").disabled = isExisting;
-			document.getElementById("newSubgroupNameCheck").disabled = isExisting;
-			
-			// Сбрасывает валидацию при переключении
-			if (isExisting) {
-				resetFieldValidation(document.getElementById("newGroupNameCheck"));
-				resetFieldValidation(document.getElementById("newSubgroupNameCheck"));
-			}
-		})
-	);
+// Обработка выбора опций (существующая группа/новая)
+document.querySelectorAll('#moveCheckClientsForm input[name="moveOption"]').forEach((radio) =>
+  radio.addEventListener("change", (e) => {
+    const isExisting = e.target.value === "existing";
+    document.getElementById("existingGroupsCheck").disabled = !isExisting;
+    document.getElementById("newGroupNameCheck").disabled = isExisting;
+    document.getElementById("newSubgroupNameCheck").disabled = isExisting;
 
-	// Инициализация валидации для полей ввода групп (массовое перемещение)
-	const newGroupNameCheckInput = document.getElementById("newGroupNameCheck");
-	const newSubgroupNameCheckInput = document.getElementById("newSubgroupNameCheck");
+    // Сбрасывает валидацию при переключении
+    if (isExisting) {
+      resetFieldValidation(document.getElementById("newGroupNameCheck"));
+      resetFieldValidation(document.getElementById("newSubgroupNameCheck"));
+    }
+  })
+);
 
-	if (newGroupNameCheckInput) {
-		newGroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newGroupNameCheckInput, true));
-	}
-	if (newSubgroupNameCheckInput) {
-		newSubgroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameCheckInput, true));
-	}
+// Инициализация валидации для полей ввода групп (массовое перемещение)
+const newGroupNameCheckInput = document.getElementById("newGroupNameCheck");
+const newSubgroupNameCheckInput = document.getElementById("newSubgroupNameCheck");
+
+if (newGroupNameCheckInput) {
+  newGroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newGroupNameCheckInput, true));
+}
+if (newSubgroupNameCheckInput) {
+  newSubgroupNameCheckInput.addEventListener('input', () => updateFieldValidation(newSubgroupNameCheckInput, true));
+}
 
 // Подтверждение массового перемещения клиентов
 document.getElementById("confirmMoveCheckClientsButton").addEventListener("click", () => {
   const checkedClients = Object.keys(checkboxStates)
     .filter((clientId) => checkboxStates[clientId] === true)
-    .map((clientId) => clientId.replace("checkbox_", "")); // Убираем префикс "checkbox_"
+    .map((clientId) => clientId.replace("checkbox_", "")); // Убирает префикс "checkbox_"
 
   if (checkedClients.length === 0) {
     showPush("Нет выбранных клиентов для перемещения.", "#ff4d4d"); // Красный
@@ -593,76 +596,76 @@ document.getElementById("confirmMoveCheckClientsButton").addEventListener("click
       return;
     }
     [newGroupID, newSubgroupID] = selectedOption.split("|");
-      } else {
-		  newGroupID = document.getElementById("newGroupNameCheck").value.trim();
-		  newSubgroupID = document.getElementById("newSubgroupNameCheck").value.trim();
+  } else {
+    newGroupID = document.getElementById("newGroupNameCheck").value.trim();
+    newSubgroupID = document.getElementById("newSubgroupNameCheck").value.trim();
 
-		  if (!newGroupID || !newSubgroupID) {
-			showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
-			return;
-		  }
-
-		  // Проверка на разрешённые символы (true = разрешить пробелы)
-		  if (!validateInput(newGroupID, true)) {
-			showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
-			return;
-		  }
-		  if (!validateInput(newSubgroupID, true)) {
-			showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
-			return;
-		  }
+    if (!newGroupID || !newSubgroupID) {
+      showPush("Введите названия новой группы и подгруппы.", "#ff4d4d"); // Красный
+      return;
     }
 
-	// Формирование данных для POST
-	const requestData = {
-		clientIDs: checkedClients,
-        newGroup: newGroupID,
-        newSubgroup: newSubgroupID,
-	};
+    // Проверка на разрешённые символы (true = разрешить пробелы)
+    if (!validateInput(newGroupID, true)) {
+      showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+      return;
+    }
+    if (!validateInput(newSubgroupID, true)) {
+      showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
+      return;
+    }
+  }
 
-		apiPostJson("/move-selected-clients", requestData)
-		.then((response) => {
-			if (!response.ok) {
-				// Читает текст ошибки
-				return response.text().then((errorText) => {
-					throw new Error(errorText || "Ошибка перемещения клиентов");
-				});
-			}
-			// Если ответ успешный, парсит его как JSON
-			return response.json();
-		})
-		.then((data) => {
-			clearAllCheckboxStates(); // Снимаем все галочки в sessionStorage
+  // Формирование данных для POST
+  const requestData = {
+    clientIDs: checkedClients,
+    newGroup: newGroupID,
+    newSubgroup: newSubgroupID,
+  };
 
-			let pushMessage = data.message;
-			let pushColor;
+  apiPostJson("/move-selected-clients", requestData)
+    .then((response) => {
+      if (!response.ok) {
+        // Читает текст ошибки
+        return response.text().then((errorText) => {
+          throw new Error(errorText || "Ошибка перемещения клиентов");
+        });
+      }
+      // Если ответ успешный, парсит его как JSON
+      return response.json();
+    })
+    .then((data) => {
+      clearAllCheckboxStates(); // Снимает все галочки в sessionStorage
 
-			// Определяем цвет на основе поля "status"
-			if (data.status === "Предупреждение") {
-				pushColor = "#ff4081"; // Розовый
-			} else { // "Успех" или любой другой положительный статус
-				pushColor = "#4CAF50"; // Зелёный
-			}
+      let pushMessage = data.message;
+      let pushColor;
 
-			// Сохраняем сообщение и цвет push-уведомления в sessionStorage
-			sessionStorage.setItem("pushMessage", pushMessage);
-			sessionStorage.setItem("pushColor", pushColor);
+      // Определяет цвет на основе поля "status"
+      if (data.status === "Предупреждение") {
+        pushColor = "#ff4081"; // Розовый
+      } else { // "Успех" или любой другой положительный статус
+        pushColor = "#4CAF50"; // Зелёный
+      }
 
-			closeMoveCheckModal(); // Закрываем модальное окно только при успехе
-			location.reload(); // Перезагружаем страницу для отображения изменений
-		})
-		// Критические ошибки — модальное окно остаётся открытым
-		.catch((error) => showPush(error.message, "#ff4d4d")); // Красный
+      // Сохраняет сообщение и цвет push-уведомления в sessionStorage
+      sessionStorage.setItem("pushMessage", pushMessage);
+      sessionStorage.setItem("pushColor", pushColor);
+
+      closeMoveCheckModal(); // Закрывает модальное окно только при успехе
+      location.reload(); // Перезагружает страницу для отображения изменений
+    })
+    // Критические ошибки — модальное окно остаётся открытым
+    .catch((error) => showPush(error.message, "#ff4d4d")); // Красный
 });
 
 // Очистка (false) выделенных клиентов в "sessionStorage" после массового премещения клиентов
 function clearAllCheckboxStates() {
   for (const clientId in checkboxStates) {
     if (checkboxStates.hasOwnProperty(clientId)) {
-      checkboxStates[clientId] = false; // Устанавливаем состояние в false
+      checkboxStates[clientId] = false; // Устанавливает состояние в false
     }
   }
-  // Сохраняем изменения в sessionStorage
+  // Сохраняет изменения в sessionStorage
   sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
 }
 
@@ -701,8 +704,8 @@ document.getElementById("existingGroupsCheck").addEventListener("change", functi
 
   if (selectedOption) {
     const [group, subgroup] = selectedOption.split("|");
-    this.options[0].textContent = `Выбрана: ${group} / ${subgroup}`; // Меняем текст в первой строке
-    this.options[0].classList.add("highlight-selected"); // Добавляем класс выделения
+    this.options[0].textContent = `Выбрана: ${group} / ${subgroup}`; // Меняет текст в первой строке
+    this.options[0].classList.add("highlight-selected"); // Добавляет класс выделения
   }
 });
 
@@ -723,26 +726,26 @@ let pendingPermissionChange = null;
 
 // Данные для модального окна выбора групп перемещения
 let pendingGroupsSelection = {
-    context: null, 			// 'new' для новой учётки, 'existing' для существующей
-	permissionType: null, 	// 'move' для перемещения, 'delete' для удаления клиентов
-	login: null, 			// Логин учётки (для existing)
-	userName: null, 		// Имя учётки (для existing)
-	allowAllGroups: true,	// Разрешить все группы
-	selectedGroups: [] 		// Список выбранных групп
+  context: null, // 'new' для новой учётки, 'existing' для существующей
+  permissionType: null, // 'move' для перемещения, 'delete' для удаления клиентов
+  login: null, // Логин учётки (для existing)
+  userName: null, // Имя учётки (для existing)
+  allowAllGroups: true, // Разрешить все группы
+  selectedGroups: [] // Список выбранных групп
 };
 
 // Открытие модального окна
 function openAccountsModal() {
   document.getElementById("accountsModal").style.display = "flex";
   loadAccounts();
-  
-	// Обработчики для кнопок переключения пароля
-    document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', () => {
-            const targetId = button.getAttribute('data-target');
-            togglePasswordVisibility(targetId);
-        });
+
+  // Обработчики для кнопок переключения пароля
+  document.querySelectorAll('.toggle-password').forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.getAttribute('data-target');
+      togglePasswordVisibility(targetId);
     });
+  });
 }
 
 // Закрытие модального окна
@@ -752,548 +755,555 @@ function closeAccountsModal() {
 
 // Загрузка учётных записей
 function loadAccounts() {
-    fetch("/get-admin-names", {
+  fetch("/get-admin-names", {})
+    .then((response) => response.json())
+    .then((data) => {
+      const accountsList = document.getElementById("accountsList");
+      accountsList.innerHTML = "";
+      data.forEach((user) => {
+        // Создаём форму для каждой учётной записи
+        const accountForm = document.createElement("form");
+        accountForm.className = "account-form";
+
+        // Создаём контейнер для элементов учётной записи
+        const accountItem = document.createElement("div");
+        accountItem.className = "account-item";
+        const encodedLogin = encodeURIComponent(user.auth_login);
+
+        // Обёртка для поля имени с валидацией
+        const nameWrapper = document.createElement("div");
+        nameWrapper.className = "input-validation-wrapper";
+
+        // Поле ввода имени
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.name = `update-name-${encodedLogin}`;
+        nameInput.placeholder = "Обновить имя (до 40)";
+        nameInput.maxLength = 40;
+        nameInput.value = user.auth_name;
+        nameInput.setAttribute("origNameAdmin", user.auth_name);
+        nameInput.dataset.login = encodedLogin;
+        nameInput.className = "update-name";
+        nameInput.required = true;
+
+        const nameTooltip = document.createElement("span");
+        nameTooltip.className = "validation-tooltip";
+
+        nameWrapper.appendChild(nameInput);
+        nameWrapper.appendChild(nameTooltip);
+
+        // Отображение логина
+        const loginDisplay = document.createElement("div");
+        loginDisplay.className = "login-display";
+        const loginSpan = document.createElement("span");
+        loginSpan.className = "login-name";
+        loginSpan.textContent = user.auth_login;
+        loginDisplay.appendChild(loginSpan);
+
+        // Обёртка для пароля с валидацией
+        const passwordWrapper = document.createElement("div");
+        passwordWrapper.className = "input-validation-wrapper";
+
+        // Контейнер для пароля
+        const passwordContainer = document.createElement("div");
+        passwordContainer.className = "password-input-container";
+        const passwordInput = document.createElement("input");
+        passwordInput.type = "password";
+        passwordInput.name = `update-password-${encodedLogin}`;
+        passwordInput.placeholder = "Обновить пароль (до 64)";
+        passwordInput.maxLength = 64;
+        passwordInput.dataset.login = encodedLogin;
+        passwordInput.className = "update-password";
+        passwordInput.autocomplete = "off";
+
+        // Кнопка переключения видимости пароля
+        const toggleButton = document.createElement("button");
+        toggleButton.type = "button";
+        toggleButton.className = "toggle-password";
+        toggleButton.dataset.login = encodedLogin;
+        const toggleIcon = document.createElement("img");
+        toggleIcon.id = `passwordIcon-${encodedLogin}`;
+        toggleIcon.src = "../icon/Hide_Passwd.svg";
+        toggleIcon.alt = "Показать пароль";
+        toggleButton.appendChild(toggleIcon);
+        passwordContainer.appendChild(passwordInput);
+        passwordContainer.appendChild(toggleButton);
+
+        const passwordTooltip = document.createElement("span");
+        passwordTooltip.className = "validation-tooltip";
+
+        passwordWrapper.appendChild(passwordContainer);
+        passwordWrapper.appendChild(passwordTooltip);
+
+        // Контейнер для иконок разрешений
+        const permissionsIcons = document.createElement("div");
+        permissionsIcons.className = "permissions-icons";
+
+        // Обёртка для иконки создания с подсказкой
+        const createWrapper = document.createElement("span");
+        createWrapper.className = "permission-icon-wrapper";
+        createWrapper.setAttribute("data-tooltip", user.perm_create ?
+          "Создание новых учётных записей разрешено" :
+          "Создание новых учётных записей запрещено");
+        const createIcon = document.createElement("img");
+        createIcon.src = user.perm_create ? "../icon/Permission_Create_ON.svg" : "../icon/Permission_Create_OFF.svg";
+        createIcon.alt = user.perm_create ? "Создание разрешено" : "Создание запрещено";
+        createIcon.className = "permission-icon";
+        createWrapper.appendChild(createIcon);
+
+        // Обёртка для иконки изменения с подсказкой
+        const updateWrapper = document.createElement("span");
+        updateWrapper.className = "permission-icon-wrapper";
+        updateWrapper.setAttribute("data-tooltip", user.perm_update ?
+          "Обновление действующих учётных записей разрешено" :
+          "Обновление действующих учётных записей запрещено");
+        const updateIcon = document.createElement("img");
+        updateIcon.src = user.perm_update ? "../icon/Permission_Update_ON.svg" : "../icon/Permission_Update_OFF.svg";
+        updateIcon.alt = user.perm_update ? "Обновление разрешено" : "Обновление запрещено";
+        updateIcon.className = "permission-icon";
+        updateWrapper.appendChild(updateIcon);
+
+        // Обёртка для иконки удаления с подсказкой
+        const deleteWrapper = document.createElement("span");
+        deleteWrapper.className = "permission-icon-wrapper";
+        deleteWrapper.setAttribute("data-tooltip", user.perm_delete ?
+          "Удаление действующих учётных записей разрешено" :
+          "Удаление действующих учётных записей запрещено");
+        const deleteIcon = document.createElement("img");
+        deleteIcon.src = user.perm_delete ? "../icon/Permission_Delete_ON.svg" : "../icon/Permission_Delete_OFF.svg";
+        deleteIcon.alt = user.perm_delete ? "Удаление разрешено" : "Удаление запрещено";
+        deleteIcon.className = "permission-icon";
+        deleteWrapper.appendChild(deleteIcon);
+
+        // Обёртка для иконки переименования клиентов с подсказкой
+        const renameClientsWrapper = document.createElement("span");
+        renameClientsWrapper.className = "permission-icon-wrapper";
+
+        // Формирует подсказку с учётом разрешённых групп для переименования
+        let renameClientsTooltip;
+        if (!user.perm_rename_clients) {
+          renameClientsTooltip = "Переименование клиентов запрещено";
+        } else if (!user.perm_rename_clients_groups || user.perm_rename_clients_groups.length === 0) {
+          renameClientsTooltip = "Переименование клиентов разрешено (все группы)";
+        } else {
+          renameClientsTooltip = `Переименование клиентов разрешено (группы: ${user.perm_rename_clients_groups.join(", ")})`;
+        }
+        renameClientsWrapper.setAttribute("data-tooltip", renameClientsTooltip);
+
+        const renameClientsIcon = document.createElement("img");
+        // Определяет иконку для переименования клиентов: OFF/HALF/ON
+        if (!user.perm_rename_clients) {
+          renameClientsIcon.src = "../icon/Permission_Rename_OFF.svg";
+          renameClientsIcon.alt = "Переименование запрещено";
+        } else if (user.perm_rename_clients_groups && user.perm_rename_clients_groups.length > 0) {
+          renameClientsIcon.src = "../icon/Permission_Rename_HALF.svg";
+          renameClientsIcon.alt = "Переименование разрешено (частично)";
+        } else {
+          renameClientsIcon.src = "../icon/Permission_Rename_ON.svg";
+          renameClientsIcon.alt = "Переименование разрешено (все группы)";
+        }
+        renameClientsIcon.className = "permission-icon";
+        renameClientsWrapper.appendChild(renameClientsIcon);
+
+        // Обёртка для иконки удаления клиентов с подсказкой
+        const deleteClientsWrapper = document.createElement("span");
+        deleteClientsWrapper.className = "permission-icon-wrapper";
+
+        // Формирует подсказку с учётом разрешённых групп для удаления
+        let deleteClientsTooltip;
+        if (!user.perm_delete_clients) {
+          deleteClientsTooltip = "Удаление клиентов запрещено";
+        } else if (!user.perm_delete_clients_groups || user.perm_delete_clients_groups.length === 0) {
+          deleteClientsTooltip = "Удаление клиентов разрешено (все группы)";
+        } else {
+          deleteClientsTooltip = `Удаление клиентов разрешено (группы: ${user.perm_delete_clients_groups.join(", ")})`;
+        }
+        deleteClientsWrapper.setAttribute("data-tooltip", deleteClientsTooltip);
+
+        const deleteClientsIcon = document.createElement("img");
+        // Определяет иконку для удаления клиентов: OFF/HALF/ON
+        if (!user.perm_delete_clients) {
+          deleteClientsIcon.src = "../icon/Permission_DeleteUser_OFF.svg";
+          deleteClientsIcon.alt = "Удаление клиентов запрещено";
+        } else if (user.perm_delete_clients_groups && user.perm_delete_clients_groups.length > 0) {
+          deleteClientsIcon.src = "../icon/Permission_DeleteUser_HALF.svg";
+          deleteClientsIcon.alt = "Удаление клиентов разрешено (частично)";
+        } else {
+          deleteClientsIcon.src = "../icon/Permission_DeleteUser_ON.svg";
+          deleteClientsIcon.alt = "Удаление клиентов разрешено (все группы)";
+        }
+        deleteClientsIcon.className = "permission-icon";
+        deleteClientsWrapper.appendChild(deleteClientsIcon);
+
+        // Обёртка для иконки перемещения клиентов с подсказкой
+        const moveClientsWrapper = document.createElement("span");
+        moveClientsWrapper.className = "permission-icon-wrapper";
+
+        // Формирует подсказку с учётом разрешённых групп
+        let moveTooltip;
+        if (!user.perm_move_clients) {
+          moveTooltip = "Перемещение клиентов запрещено";
+        } else if (!user.perm_move_clients_groups || user.perm_move_clients_groups.length === 0) {
+          moveTooltip = "Перемещение клиентов разрешено (все группы)";
+        } else {
+          moveTooltip = `Перемещение клиентов разрешено (группы: ${user.perm_move_clients_groups.join(", ")})`;
+        }
+        moveClientsWrapper.setAttribute("data-tooltip", moveTooltip);
+
+        const moveClientsIcon = document.createElement("img");
+        // Определяет иконку для перемещения клиентов: OFF/HALF/ON
+        if (!user.perm_move_clients) {
+          moveClientsIcon.src = "../icon/Permission_MovingGroup_OFF.svg";
+          moveClientsIcon.alt = "Перемещение клиентов запрещено";
+        } else if (user.perm_move_clients_groups && user.perm_move_clients_groups.length > 0) {
+          moveClientsIcon.src = "../icon/Permission_MovingGroup_HALF.svg";
+          moveClientsIcon.alt = "Перемещение клиентов разрешено (частично)";
+        } else {
+          moveClientsIcon.src = "../icon/Permission_MovingGroup_ON.svg";
+          moveClientsIcon.alt = "Перемещение клиентов разрешено (все группы)";
+        }
+        moveClientsIcon.className = "permission-icon";
+        moveClientsWrapper.appendChild(moveClientsIcon);
+
+        // Обёртка для иконки полного удаления FiReAgent с подсказкой
+        const uninstallAgentsWrapper = document.createElement("span");
+        uninstallAgentsWrapper.className = "permission-icon-wrapper";
+        uninstallAgentsWrapper.setAttribute("data-tooltip", user.perm_uninstall_agents ?
+          "Полное удаление FiReAgent разрешено" :
+          "Полное удаление FiReAgent запрещено");
+        const uninstallAgentsIcon = document.createElement("img");
+        uninstallAgentsIcon.src = user.perm_uninstall_agents ? "../icon/Permission_DeleteFiReAgent_ON.svg" : "../icon/Permission_DeleteFiReAgent_OFF.svg";
+        uninstallAgentsIcon.alt = user.perm_uninstall_agents ? "Удаление FiReAgent разрешено" : "Удаление FiReAgent запрещено";
+        uninstallAgentsIcon.className = "permission-icon";
+        uninstallAgentsWrapper.appendChild(uninstallAgentsIcon);
+
+        // Обёртка для иконки отправки cmd/PowerShell команд с подсказкой
+        const terminalCommandsWrapper = document.createElement("span");
+        terminalCommandsWrapper.className = "permission-icon-wrapper";
+
+        // Формирует подсказку с учётом разрешённых групп для cmd/PowerShell команд
+        let terminalCommandsTooltip;
+        if (!user.perm_terminal_commands) {
+          terminalCommandsTooltip = "Отправка cmd/PowerShell команд запрещена";
+        } else if (!user.perm_terminal_commands_groups || user.perm_terminal_commands_groups.length === 0) {
+          terminalCommandsTooltip = "Отправка cmd/PowerShell команд разрешена (все группы)";
+        } else {
+          terminalCommandsTooltip = `Отправка cmd/PowerShell команд разрешена (группы: ${user.perm_terminal_commands_groups.join(", ")})`;
+        }
+        terminalCommandsWrapper.setAttribute("data-tooltip", terminalCommandsTooltip);
+
+        const terminalCommandsIcon = document.createElement("img");
+        // Определяет иконку для cmd/PowerShell команд: OFF/HALF/ON
+        if (!user.perm_terminal_commands) {
+          terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_OFF.svg";
+          terminalCommandsIcon.alt = "Терминальные команды запрещены";
+        } else if (user.perm_terminal_commands_groups && user.perm_terminal_commands_groups.length > 0) {
+          terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_HALF.svg";
+          terminalCommandsIcon.alt = "Терминальные команды разрешены (частично)";
+        } else {
+          terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_ON.svg";
+          terminalCommandsIcon.alt = "Терминальные команды разрешены (все группы)";
+        }
+        terminalCommandsIcon.className = "permission-icon";
+        terminalCommandsWrapper.appendChild(terminalCommandsIcon);
+
+        // Обёртка для иконки установки ПО с подсказкой
+        const installProgramsWrapper = document.createElement("span");
+        installProgramsWrapper.className = "permission-icon-wrapper";
+
+        // Формирует подсказку с учётом разрешённых групп для установки ПО
+        let installProgramsTooltip;
+        if (!user.perm_install_programs) {
+          installProgramsTooltip = "Установка ПО запрещена";
+        } else if (!user.perm_install_programs_groups || user.perm_install_programs_groups.length === 0) {
+          installProgramsTooltip = "Установка ПО разрешена (все группы)";
+        } else {
+          installProgramsTooltip = `Установка ПО разрешена (группы: ${user.perm_install_programs_groups.join(", ")})`;
+        }
+        installProgramsWrapper.setAttribute("data-tooltip", installProgramsTooltip);
+
+        const installProgramsIcon = document.createElement("img");
+        // Определяет иконку для установки ПО: OFF/HALF/ON
+        if (!user.perm_install_programs) {
+          installProgramsIcon.src = "../icon/Permission_InstallProgram_OFF.svg";
+          installProgramsIcon.alt = "Установка ПО запрещена";
+        } else if (user.perm_install_programs_groups && user.perm_install_programs_groups.length > 0) {
+          installProgramsIcon.src = "../icon/Permission_InstallProgram_HALF.svg";
+          installProgramsIcon.alt = "Установка ПО разрешена (частично)";
+        } else {
+          installProgramsIcon.src = "../icon/Permission_InstallProgram_ON.svg";
+          installProgramsIcon.alt = "Установка ПО разрешена (все группы)";
+        }
+        installProgramsIcon.className = "permission-icon";
+        installProgramsWrapper.appendChild(installProgramsIcon);
+
+        // Обёртка для иконки системных настроек с подсказкой
+        const systemSettingsWrapper = document.createElement("span");
+        systemSettingsWrapper.className = "permission-icon-wrapper";
+        systemSettingsWrapper.setAttribute("data-tooltip", user.perm_system_settings ?
+          "Системные настройки разрешены (обновление/откат, MQTT авторизация)" :
+          "Системные настройки запрещены (обновление/откат, MQTT авторизация)");
+        const systemSettingsIcon = document.createElement("img");
+        systemSettingsIcon.src = user.perm_system_settings ? "../icon/Permission_SystemSettings_ON.svg" : "../icon/Permission_SystemSettings_OFF.svg";
+        systemSettingsIcon.alt = user.perm_system_settings ? "Системные настройки разрешены" : "Системные настройки запрещены";
+        systemSettingsIcon.className = "permission-icon";
+        systemSettingsWrapper.appendChild(systemSettingsIcon);
+
+        // Добавляет обработчики для корректировки позиции подсказок
+        createWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        updateWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        deleteWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        renameClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        deleteClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        moveClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        uninstallAgentsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        terminalCommandsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+        installProgramsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
+
+        // Добавляет обработчики клика для изменения разрешений
+        createWrapper.addEventListener('click', () => {
+          showPermissionConfirmModal(encodedLogin, user.auth_name, 'create', !user.perm_create);
+        });
+        updateWrapper.addEventListener('click', () => {
+          showPermissionConfirmModal(encodedLogin, user.auth_name, 'update', !user.perm_update);
+        });
+        deleteWrapper.addEventListener('click', () => {
+          showPermissionConfirmModal(encodedLogin, user.auth_name, 'delete', !user.perm_delete);
+        });
+        renameClientsWrapper.addEventListener('click', () => {
+          // Открывает модальное окно выбора групп для переименования клиентов
+          openGroupsSelectModal('existing', 'rename', encodedLogin, user.auth_name, user.perm_rename_clients, user.perm_rename_clients_groups || []);
+        });
+        deleteClientsWrapper.addEventListener('click', () => {
+          // Открывает модальное окно выбора групп для удаления клиентов
+          openGroupsSelectModal('existing', 'delete', encodedLogin, user.auth_name, user.perm_delete_clients, user.perm_delete_clients_groups || []);
+        });
+        moveClientsWrapper.addEventListener('click', () => {
+          // Открывает модальное окно выбора групп для перемещения клиентов
+          openGroupsSelectModal('existing', 'move', encodedLogin, user.auth_name, user.perm_move_clients, user.perm_move_clients_groups || []);
+        });
+        uninstallAgentsWrapper.addEventListener('click', () => {
+          showPermissionConfirmModal(encodedLogin, user.auth_name, 'uninstall_agents', !user.perm_uninstall_agents);
+        });
+        terminalCommandsWrapper.addEventListener('click', () => {
+          // Открывает модальное окно выбора групп для cmd/PowerShell команд
+          openGroupsSelectModal('existing', 'terminal', encodedLogin, user.auth_name, user.perm_terminal_commands, user.perm_terminal_commands_groups || []);
+        });
+        installProgramsWrapper.addEventListener('click', () => {
+          // Открывает модальное окно выбора групп для установки ПО
+          openGroupsSelectModal('existing', 'install', encodedLogin, user.auth_name, user.perm_install_programs, user.perm_install_programs_groups || []);
+        });
+        systemSettingsWrapper.addEventListener('click', () => {
+          showPermissionConfirmModal(encodedLogin, user.auth_name, 'system_settings', !user.perm_system_settings);
+        });
+
+        // Добавляет стиль курсора для кликабельных иконок
+        createWrapper.style.cursor = 'pointer';
+        updateWrapper.style.cursor = 'pointer';
+        deleteWrapper.style.cursor = 'pointer';
+        renameClientsWrapper.style.cursor = 'pointer';
+        deleteClientsWrapper.style.cursor = 'pointer';
+        moveClientsWrapper.style.cursor = 'pointer';
+        uninstallAgentsWrapper.style.cursor = 'pointer';
+        terminalCommandsWrapper.style.cursor = 'pointer';
+        installProgramsWrapper.style.cursor = 'pointer';
+        systemSettingsWrapper.style.cursor = 'pointer';
+
+        // Добавляет обёртки с иконками в контейнер
+        permissionsIcons.appendChild(createWrapper);
+        permissionsIcons.appendChild(updateWrapper);
+        permissionsIcons.appendChild(deleteWrapper);
+        permissionsIcons.appendChild(renameClientsWrapper);
+        permissionsIcons.appendChild(deleteClientsWrapper);
+        permissionsIcons.appendChild(moveClientsWrapper);
+        permissionsIcons.appendChild(uninstallAgentsWrapper);
+        permissionsIcons.appendChild(terminalCommandsWrapper);
+        permissionsIcons.appendChild(installProgramsWrapper);
+        permissionsIcons.appendChild(systemSettingsWrapper);
+
+        // Информация о датах
+        const dateInfo = document.createElement("div");
+        dateInfo.className = "date-info";
+        if (user.date_change === "--.--.--(--:--)")
+          dateInfo.classList.add("padding-right-26");
+        dateInfo.innerHTML = `Создан: ${user.date_create} | Изменён: ${user.date_change}`;
+
+        // Кнопка "Обновить"
+        const updateButton = document.createElement("button");
+        updateButton.type = "button"; // Изменяет тип на button
+        updateButton.className = "save-buttonModal update-button";
+        updateButton.dataset.login = encodedLogin;
+        updateButton.textContent = "Обновить";
+
+        // Кнопка "Удалить"
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "save-buttonModal delete-button";
+        deleteButton.dataset.login = encodedLogin;
+        deleteButton.textContent = "Удалить";
+
+        // Собирает элементы в "accountItem"
+        accountItem.appendChild(nameWrapper);
+        accountItem.appendChild(loginDisplay);
+        accountItem.appendChild(passwordWrapper);
+        accountItem.appendChild(permissionsIcons);
+        accountItem.appendChild(dateInfo);
+        accountItem.appendChild(updateButton);
+        accountItem.appendChild(deleteButton);
+
+        // Добавляет "accountItem" в форму
+        accountForm.appendChild(accountItem);
+
+        // Добавляет форму в "accountsList"
+        accountsList.appendChild(accountForm);
+
+        // Обработчики событий для кнопок
+        toggleButton.addEventListener("click", () => {
+          togglePasswordVisibility(encodedLogin);
+        });
+
+        updateButton.addEventListener("click", (event) => {
+          event.preventDefault(); // Предотвращает любые действия формы
+          toggleUpdateButtonState(encodedLogin);
+        });
+
+        deleteButton.addEventListener("click", () => {
+          toggleDeleteButtonState(encodedLogin);
+        });
+
+        // Инициализация валидации для динамических полей
+        initDynamicFieldValidation(nameInput, passwordInput);
+      });
     })
-        .then((response) => response.json())
-        .then((data) => {
-            const accountsList = document.getElementById("accountsList");
-            accountsList.innerHTML = "";
-            data.forEach((user) => {
-                // Создаём форму для каждой учётной записи
-                const accountForm = document.createElement("form");
-                accountForm.className = "account-form";
-
-                // Создаём контейнер для элементов учётной записи
-                const accountItem = document.createElement("div");
-                accountItem.className = "account-item";
-                const encodedLogin = encodeURIComponent(user.auth_login);
-
-                // Обёртка для поля имени с валидацией
-				const nameWrapper = document.createElement("div");
-				nameWrapper.className = "input-validation-wrapper";
-
-				// Поле ввода имени
-				const nameInput = document.createElement("input");
-				nameInput.type = "text";
-				nameInput.name = `update-name-${encodedLogin}`;
-				nameInput.placeholder = "Обновить имя (до 40)";
-				nameInput.maxLength = 40;
-				nameInput.value = user.auth_name;
-				nameInput.setAttribute("origNameAdmin", user.auth_name);
-				nameInput.dataset.login = encodedLogin;
-				nameInput.className = "update-name";
-				nameInput.required = true;
-
-				const nameTooltip = document.createElement("span");
-				nameTooltip.className = "validation-tooltip";
-
-				nameWrapper.appendChild(nameInput);
-				nameWrapper.appendChild(nameTooltip);
-
-                // Отображение логина
-                const loginDisplay = document.createElement("div");
-                loginDisplay.className = "login-display";
-                const loginSpan = document.createElement("span");
-                loginSpan.className = "login-name";
-                loginSpan.textContent = user.auth_login;
-                loginDisplay.appendChild(loginSpan);
-
-                // Обёртка для пароля с валидацией
-				const passwordWrapper = document.createElement("div");
-				passwordWrapper.className = "input-validation-wrapper";
-
-				// Контейнер для пароля
-				const passwordContainer = document.createElement("div");
-				passwordContainer.className = "password-input-container";
-				const passwordInput = document.createElement("input");
-				passwordInput.type = "password";
-				passwordInput.name = `update-password-${encodedLogin}`;
-				passwordInput.placeholder = "Обновить пароль (до 64)";
-				passwordInput.maxLength = 64;
-				passwordInput.dataset.login = encodedLogin;
-				passwordInput.className = "update-password";
-				passwordInput.autocomplete = "off";
-
-				// Кнопка переключения видимости пароля
-				const toggleButton = document.createElement("button");
-				toggleButton.type = "button";
-				toggleButton.className = "toggle-password";
-				toggleButton.dataset.login = encodedLogin;
-				const toggleIcon = document.createElement("img");
-				toggleIcon.id = `passwordIcon-${encodedLogin}`;
-				toggleIcon.src = "../icon/Hide_Passwd.svg";
-				toggleIcon.alt = "Показать пароль";
-				toggleButton.appendChild(toggleIcon);
-				passwordContainer.appendChild(passwordInput);
-				passwordContainer.appendChild(toggleButton);
-
-				const passwordTooltip = document.createElement("span");
-				passwordTooltip.className = "validation-tooltip";
-
-				passwordWrapper.appendChild(passwordContainer);
-				passwordWrapper.appendChild(passwordTooltip);
-
-                // Контейнер для иконок разрешений
-				const permissionsIcons = document.createElement("div");
-				permissionsIcons.className = "permissions-icons";
-
-				// Обёртка для иконки создания с подсказкой
-				const createWrapper = document.createElement("span");
-				createWrapper.className = "permission-icon-wrapper";
-				createWrapper.setAttribute("data-tooltip", user.perm_create 
-					? "Создание новых учётных записей разрешено" 
-					: "Создание новых учётных записей запрещено");
-				const createIcon = document.createElement("img");
-				createIcon.src = user.perm_create ? "../icon/Permission_Create_ON.svg" : "../icon/Permission_Create_OFF.svg";
-				createIcon.alt = user.perm_create ? "Создание разрешено" : "Создание запрещено";
-				createIcon.className = "permission-icon";
-				createWrapper.appendChild(createIcon);
-
-				// Обёртка для иконки изменения с подсказкой
-				const updateWrapper = document.createElement("span");
-				updateWrapper.className = "permission-icon-wrapper";
-				updateWrapper.setAttribute("data-tooltip", user.perm_update 
-					? "Обновление действующих учётных записей разрешено" 
-					: "Обновление действующих учётных записей запрещено");
-				const updateIcon = document.createElement("img");
-				updateIcon.src = user.perm_update ? "../icon/Permission_Update_ON.svg" : "../icon/Permission_Update_OFF.svg";
-				updateIcon.alt = user.perm_update ? "Обновление разрешено" : "Обновление запрещено";
-				updateIcon.className = "permission-icon";
-				updateWrapper.appendChild(updateIcon);
-
-				// Обёртка для иконки удаления с подсказкой
-				const deleteWrapper = document.createElement("span");
-				deleteWrapper.className = "permission-icon-wrapper";
-				deleteWrapper.setAttribute("data-tooltip", user.perm_delete
-					? "Удаление действующих учётных записей разрешено"
-					: "Удаление действующих учётных записей запрещено");
-				const deleteIcon = document.createElement("img");
-				deleteIcon.src = user.perm_delete ? "../icon/Permission_Delete_ON.svg" : "../icon/Permission_Delete_OFF.svg";
-				deleteIcon.alt = user.perm_delete ? "Удаление разрешено" : "Удаление запрещено";
-				deleteIcon.className = "permission-icon";
-				deleteWrapper.appendChild(deleteIcon);
-
-				// Обёртка для иконки переименования клиентов с подсказкой
-				const renameClientsWrapper = document.createElement("span");
-				renameClientsWrapper.className = "permission-icon-wrapper";
-
-				// Формирует подсказку с учётом разрешённых групп для переименования
-				let renameClientsTooltip;
-				if (!user.perm_rename_clients) {
-				renameClientsTooltip = "Переименование клиентов запрещено";
-				} else if (!user.perm_rename_clients_groups || user.perm_rename_clients_groups.length === 0) {
-				renameClientsTooltip = "Переименование клиентов разрешено (все группы)";
-				} else {
-				renameClientsTooltip = `Переименование клиентов разрешено (группы: ${user.perm_rename_clients_groups.join(", ")})`;
-				}
-				renameClientsWrapper.setAttribute("data-tooltip", renameClientsTooltip);
-
-				const renameClientsIcon = document.createElement("img");
-				// Определяет иконку для переименования клиентов: OFF/HALF/ON
-				if (!user.perm_rename_clients) {
-				renameClientsIcon.src = "../icon/Permission_Rename_OFF.svg";
-				renameClientsIcon.alt = "Переименование запрещено";
-				} else if (user.perm_rename_clients_groups && user.perm_rename_clients_groups.length > 0) {
-				renameClientsIcon.src = "../icon/Permission_Rename_HALF.svg";
-				renameClientsIcon.alt = "Переименование разрешено (частично)";
-				} else {
-				renameClientsIcon.src = "../icon/Permission_Rename_ON.svg";
-				renameClientsIcon.alt = "Переименование разрешено (все группы)";
-				}
-				renameClientsIcon.className = "permission-icon";
-				renameClientsWrapper.appendChild(renameClientsIcon);
-
-				// Обёртка для иконки удаления клиентов с подсказкой
-				const deleteClientsWrapper = document.createElement("span");
-				deleteClientsWrapper.className = "permission-icon-wrapper";
-
-				// Формирует подсказку с учётом разрешённых групп для удаления
-				let deleteClientsTooltip;
-				if (!user.perm_delete_clients) {
-				deleteClientsTooltip = "Удаление клиентов запрещено";
-				} else if (!user.perm_delete_clients_groups || user.perm_delete_clients_groups.length === 0) {
-				deleteClientsTooltip = "Удаление клиентов разрешено (все группы)";
-				} else {
-				deleteClientsTooltip = `Удаление клиентов разрешено (группы: ${user.perm_delete_clients_groups.join(", ")})`;
-				}
-				deleteClientsWrapper.setAttribute("data-tooltip", deleteClientsTooltip);
-
-				const deleteClientsIcon = document.createElement("img");
-                // Определяет иконку для удаления клиентов: OFF/HALF/ON
-                if (!user.perm_delete_clients) {
-                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_OFF.svg";
-                    deleteClientsIcon.alt = "Удаление клиентов запрещено";
-                } else if (user.perm_delete_clients_groups && user.perm_delete_clients_groups.length > 0) {
-                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_HALF.svg";
-                    deleteClientsIcon.alt = "Удаление клиентов разрешено (частично)";
-                } else {
-                    deleteClientsIcon.src = "../icon/Permission_DeleteUser_ON.svg";
-                    deleteClientsIcon.alt = "Удаление клиентов разрешено (все группы)";
-                }
-                deleteClientsIcon.className = "permission-icon";
-                deleteClientsWrapper.appendChild(deleteClientsIcon);
-
-				// Обёртка для иконки перемещения клиентов с подсказкой
-				const moveClientsWrapper = document.createElement("span");
-				moveClientsWrapper.className = "permission-icon-wrapper";
-
-				// Формирует подсказку с учётом разрешённых групп
-				let moveTooltip;
-				if (!user.perm_move_clients) {
-					moveTooltip = "Перемещение клиентов запрещено";
-				} else if (!user.perm_move_clients_groups || user.perm_move_clients_groups.length === 0) {
-					moveTooltip = "Перемещение клиентов разрешено (все группы)";
-				} else {
-					moveTooltip = `Перемещение клиентов разрешено (группы: ${user.perm_move_clients_groups.join(", ")})`;
-				}
-				moveClientsWrapper.setAttribute("data-tooltip", moveTooltip);
-
-				const moveClientsIcon = document.createElement("img");
-                // Определяет иконку для перемещения клиентов: OFF/HALF/ON
-                if (!user.perm_move_clients) {
-                    moveClientsIcon.src = "../icon/Permission_MovingGroup_OFF.svg";
-                    moveClientsIcon.alt = "Перемещение клиентов запрещено";
-                } else if (user.perm_move_clients_groups && user.perm_move_clients_groups.length > 0) {
-                    moveClientsIcon.src = "../icon/Permission_MovingGroup_HALF.svg";
-                    moveClientsIcon.alt = "Перемещение клиентов разрешено (частично)";
-                } else {
-                    moveClientsIcon.src = "../icon/Permission_MovingGroup_ON.svg";
-                    moveClientsIcon.alt = "Перемещение клиентов разрешено (все группы)";
-                }
-                moveClientsIcon.className = "permission-icon";
-                moveClientsWrapper.appendChild(moveClientsIcon);
-
-				// Обёртка для иконки полного удаления FiReAgent с подсказкой
-				const uninstallAgentsWrapper = document.createElement("span");
-				uninstallAgentsWrapper.className = "permission-icon-wrapper";
-				uninstallAgentsWrapper.setAttribute("data-tooltip", user.perm_uninstall_agents
-					? "Полное удаление FiReAgent разрешено"
-					: "Полное удаление FiReAgent запрещено");
-				const uninstallAgentsIcon = document.createElement("img");
-				uninstallAgentsIcon.src = user.perm_uninstall_agents ? "../icon/Permission_DeleteFiReAgent_ON.svg" : "../icon/Permission_DeleteFiReAgent_OFF.svg";
-				uninstallAgentsIcon.alt = user.perm_uninstall_agents ? "Удаление FiReAgent разрешено" : "Удаление FiReAgent запрещено";
-				uninstallAgentsIcon.className = "permission-icon";
-				uninstallAgentsWrapper.appendChild(uninstallAgentsIcon);
-
-				// Обёртка для иконки отправки cmd/PowerShell команд с подсказкой
-                const terminalCommandsWrapper = document.createElement("span");
-                terminalCommandsWrapper.className = "permission-icon-wrapper";
-
-                // Формирует подсказку с учётом разрешённых групп для cmd/PowerShell команд
-                let terminalCommandsTooltip;
-                if (!user.perm_terminal_commands) {
-                    terminalCommandsTooltip = "Отправка cmd/PowerShell команд запрещена";
-                } else if (!user.perm_terminal_commands_groups || user.perm_terminal_commands_groups.length === 0) {
-                    terminalCommandsTooltip = "Отправка cmd/PowerShell команд разрешена (все группы)";
-                } else {
-                    terminalCommandsTooltip = `Отправка cmd/PowerShell команд разрешена (группы: ${user.perm_terminal_commands_groups.join(", ")})`;
-                }
-                terminalCommandsWrapper.setAttribute("data-tooltip", terminalCommandsTooltip);
-
-                const terminalCommandsIcon = document.createElement("img");
-                // Определяет иконку для cmd/PowerShell команд: OFF/HALF/ON
-                if (!user.perm_terminal_commands) {
-                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_OFF.svg";
-                    terminalCommandsIcon.alt = "Терминальные команды запрещены";
-                } else if (user.perm_terminal_commands_groups && user.perm_terminal_commands_groups.length > 0) {
-                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_HALF.svg";
-                    terminalCommandsIcon.alt = "Терминальные команды разрешены (частично)";
-                } else {
-                    terminalCommandsIcon.src = "../icon/Permission_cmd_PowerShell_ON.svg";
-                    terminalCommandsIcon.alt = "Терминальные команды разрешены (все группы)";
-                }
-                terminalCommandsIcon.className = "permission-icon";
-                terminalCommandsWrapper.appendChild(terminalCommandsIcon);
-
-				// Обёртка для иконки установки ПО с подсказкой
-                const installProgramsWrapper = document.createElement("span");
-                installProgramsWrapper.className = "permission-icon-wrapper";
-
-                // Формирует подсказку с учётом разрешённых групп для установки ПО
-                let installProgramsTooltip;
-                if (!user.perm_install_programs) {
-                    installProgramsTooltip = "Установка ПО запрещена";
-                } else if (!user.perm_install_programs_groups || user.perm_install_programs_groups.length === 0) {
-                    installProgramsTooltip = "Установка ПО разрешена (все группы)";
-                } else {
-                    installProgramsTooltip = `Установка ПО разрешена (группы: ${user.perm_install_programs_groups.join(", ")})`;
-                }
-                installProgramsWrapper.setAttribute("data-tooltip", installProgramsTooltip);
-
-                const installProgramsIcon = document.createElement("img");
-                // Определяет иконку для установки ПО: OFF/HALF/ON
-                if (!user.perm_install_programs) {
-                    installProgramsIcon.src = "../icon/Permission_InstallProgram_OFF.svg";
-                    installProgramsIcon.alt = "Установка ПО запрещена";
-                } else if (user.perm_install_programs_groups && user.perm_install_programs_groups.length > 0) {
-                    installProgramsIcon.src = "../icon/Permission_InstallProgram_HALF.svg";
-                    installProgramsIcon.alt = "Установка ПО разрешена (частично)";
-                } else {
-                    installProgramsIcon.src = "../icon/Permission_InstallProgram_ON.svg";
-                    installProgramsIcon.alt = "Установка ПО разрешена (все группы)";
-                }
-                installProgramsIcon.className = "permission-icon";
-                installProgramsWrapper.appendChild(installProgramsIcon);
-
-				// Обёртка для иконки системных настроек с подсказкой
-				const systemSettingsWrapper = document.createElement("span");
-				systemSettingsWrapper.className = "permission-icon-wrapper";
-				systemSettingsWrapper.setAttribute("data-tooltip", user.perm_system_settings
-					? "Системные настройки разрешены (обновление/откат, MQTT авторизация)"
-					: "Системные настройки запрещены (обновление/откат, MQTT авторизация)");
-				const systemSettingsIcon = document.createElement("img");
-				systemSettingsIcon.src = user.perm_system_settings ? "../icon/Permission_SystemSettings_ON.svg" : "../icon/Permission_SystemSettings_OFF.svg";
-				systemSettingsIcon.alt = user.perm_system_settings ? "Системные настройки разрешены" : "Системные настройки запрещены";
-				systemSettingsIcon.className = "permission-icon";
-				systemSettingsWrapper.appendChild(systemSettingsIcon);
-
-				// Добавляет обработчики для корректировки позиции подсказок
-				createWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				updateWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				deleteWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				renameClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				deleteClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				moveClientsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				uninstallAgentsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				terminalCommandsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-				installProgramsWrapper.addEventListener('mouseenter', adjustTooltipPosition);
-
-				// Добавляет обработчики клика для изменения разрешений
-				createWrapper.addEventListener('click', () => {
-					showPermissionConfirmModal(encodedLogin, user.auth_name, 'create', !user.perm_create);
-				});
-				updateWrapper.addEventListener('click', () => {
-					showPermissionConfirmModal(encodedLogin, user.auth_name, 'update', !user.perm_update);
-				});
-				deleteWrapper.addEventListener('click', () => {
-					showPermissionConfirmModal(encodedLogin, user.auth_name, 'delete', !user.perm_delete);
-				});
-				renameClientsWrapper.addEventListener('click', () => {
-					// Открывает модальное окно выбора групп для переименования клиентов
-					openGroupsSelectModal('existing', 'rename', encodedLogin, user.auth_name, user.perm_rename_clients, user.perm_rename_clients_groups || []);
-				});
-				deleteClientsWrapper.addEventListener('click', () => {
-					// Открывает модальное окно выбора групп для удаления клиентов
-					openGroupsSelectModal('existing', 'delete', encodedLogin, user.auth_name, user.perm_delete_clients, user.perm_delete_clients_groups || []);
-				});
-				moveClientsWrapper.addEventListener('click', () => {
-					// Открывает модальное окно выбора групп для перемещения клиентов
-					openGroupsSelectModal('existing', 'move', encodedLogin, user.auth_name, user.perm_move_clients, user.perm_move_clients_groups || []);
-				});
-				uninstallAgentsWrapper.addEventListener('click', () => {
-				showPermissionConfirmModal(encodedLogin, user.auth_name, 'uninstall_agents', !user.perm_uninstall_agents);
-				});
-				terminalCommandsWrapper.addEventListener('click', () => {
-                    // Открывает модальное окно выбора групп для cmd/PowerShell команд
-                    openGroupsSelectModal('existing', 'terminal', encodedLogin, user.auth_name, user.perm_terminal_commands, user.perm_terminal_commands_groups || []);
-                });
-				installProgramsWrapper.addEventListener('click', () => {
-                    // Открывает модальное окно выбора групп для установки ПО
-                    openGroupsSelectModal('existing', 'install', encodedLogin, user.auth_name, user.perm_install_programs, user.perm_install_programs_groups || []);
-                });
-				systemSettingsWrapper.addEventListener('click', () => {
-					showPermissionConfirmModal(encodedLogin, user.auth_name, 'system_settings', !user.perm_system_settings);
-				});
-
-				// Добавляет стиль курсора для кликабельных иконок
-				createWrapper.style.cursor = 'pointer';
-				updateWrapper.style.cursor = 'pointer';
-				deleteWrapper.style.cursor = 'pointer';
-				renameClientsWrapper.style.cursor = 'pointer';
-				deleteClientsWrapper.style.cursor = 'pointer';
-				moveClientsWrapper.style.cursor = 'pointer';
-				uninstallAgentsWrapper.style.cursor = 'pointer';
-				terminalCommandsWrapper.style.cursor = 'pointer';
-				installProgramsWrapper.style.cursor = 'pointer';
-				systemSettingsWrapper.style.cursor = 'pointer';
-
-				// Добавляет обёртки с иконками в контейнер
-				permissionsIcons.appendChild(createWrapper);
-				permissionsIcons.appendChild(updateWrapper);
-				permissionsIcons.appendChild(deleteWrapper);
-				permissionsIcons.appendChild(renameClientsWrapper);
-				permissionsIcons.appendChild(deleteClientsWrapper);
-				permissionsIcons.appendChild(moveClientsWrapper);
-				permissionsIcons.appendChild(uninstallAgentsWrapper);
-				permissionsIcons.appendChild(terminalCommandsWrapper);
-				permissionsIcons.appendChild(installProgramsWrapper);
-				permissionsIcons.appendChild(systemSettingsWrapper);
-
-				// Информация о датах
-				const dateInfo = document.createElement("div");
-				dateInfo.className = "date-info";
-				if (user.date_change === "--.--.--(--:--)")
-					dateInfo.classList.add("padding-right-26");
-				dateInfo.innerHTML = `Создан: ${user.date_create} | Изменён: ${user.date_change}`;
-
-                // Кнопка "Обновить"
-                const updateButton = document.createElement("button");
-                updateButton.type = "button"; // Изменяем тип на button
-                updateButton.className = "save-buttonModal update-button";
-                updateButton.dataset.login = encodedLogin;
-                updateButton.textContent = "Обновить";
-
-                // Кнопка "Удалить"
-                const deleteButton = document.createElement("button");
-                deleteButton.type = "button";
-                deleteButton.className = "save-buttonModal delete-button";
-                deleteButton.dataset.login = encodedLogin;
-                deleteButton.textContent = "Удалить";
-
-                // Собираем элементы в "accountItem"
-				accountItem.appendChild(nameWrapper);
-				accountItem.appendChild(loginDisplay);
-				accountItem.appendChild(passwordWrapper);
-				accountItem.appendChild(permissionsIcons);
-                accountItem.appendChild(dateInfo);
-                accountItem.appendChild(updateButton);
-                accountItem.appendChild(deleteButton);
-
-                // Добавляем "accountItem" в форму
-                accountForm.appendChild(accountItem);
-
-                // Добавляем форму в "accountsList"
-                accountsList.appendChild(accountForm);
-
-                // Обработчики событий для кнопок
-                toggleButton.addEventListener("click", () => {
-                    togglePasswordVisibility(encodedLogin);
-                });
-				
-                updateButton.addEventListener("click", (event) => {
-                    event.preventDefault(); // Предотвращаем любые действия формы
-                    toggleUpdateButtonState(encodedLogin);
-                });
-				
-                deleteButton.addEventListener("click", () => {
-                    toggleDeleteButtonState(encodedLogin);
-                });
-				
-				// Инициализация валидации для динамических полей
-				initDynamicFieldValidation(nameInput, passwordInput);
-            });
-        })
-        .catch((error) => console.error("Ошибка загрузки учётных записей:", error));
+    .catch((error) => console.error("Ошибка загрузки учётных записей:", error));
 }
 
 // Обновление учётной записи
 function updateUser(login) {
-    const newName = document.querySelector(`.update-name[data-login="${login}"]`).value;
-    const newPassword = document.querySelector(`.update-password[data-login="${login}"]`).value;
+  const newName = document.querySelector(`.update-name[data-login="${login}"]`).value;
+  const newPassword = document.querySelector(`.update-password[data-login="${login}"]`).value;
 
-    const updateData = {
-        auth_login: login,
-        auth_new_name: newName,
-        auth_new_password: newPassword,
-    };
+  const updateData = {
+    auth_login: login,
+    auth_new_name: newName,
+    auth_new_password: newPassword,
+  };
 
-	apiPostJson("/update-admin", updateData)	
-	
+  apiPostJson("/update-admin", updateData)
+
     .then((response) => response.text())
     .then((message) => {
-        showPush(message, "#2196F3");
-        loadAccounts();
-		
-		if (newName.trim() !== '') {
-                fetchAuthName();
-        }
+      showPush(message, "#2196F3");
+      loadAccounts();
+
+      if (newName.trim() !== '') {
+        fetchAuthName();
+      }
     })
     .catch((error) => console.error("Ошибка обновления пользователя:", error));
 }
 
 // Функция для изменения состояния кнопки "Обновить"
 function toggleUpdateButtonState(login) {
-    const updateButton = document.querySelector(`button.update-button[data-login="${login}"]`);
+  const updateButton = document.querySelector(`button.update-button[data-login="${login}"]`);
 
-    if (!updateButton) return;
+  if (!updateButton) return;
 
-    const handleConfirm = (e) => {
-        e.preventDefault();
-        updateUser(login);
-    };
+  const handleConfirm = (e) => {
+    e.preventDefault();
+    updateUser(login);
+  };
 
-    const handleCancel = (e) => {
-        if (e.button === 0) {
-            resetUpdateButtonState(updateButton);
-        }
-    };
-
-    const resetUpdateButtonState = (button) => {
-        button.textContent = "Обновить";
-        button.classList.remove("confirm-mode");
-        button.removeEventListener("contextmenu", handleConfirm);
-        button.removeEventListener("click", handleCancel);
-    };
-
-    if (!updateButton.classList.contains("confirm-mode")) {
-		const nameInput = document.querySelector(`.update-name[data-login="${login}"]`);
-		const origName = nameInput.getAttribute("origNameAdmin").trim();
-        const newName = nameInput.value.trim();
-        const newPassword = document.querySelector(`.update-password[data-login="${login}"]`).value;
-
-        // Проверка на пустое имя
-        if (!newName) {
-            showPush("Имя пользователя должно быть заполнено.", "#ff4081"); // Розовый
-            return;
-        }
-
-		// Проверка на совпадение имени и пустой пароль
-        if (newName === origName && newPassword === "") {
-            showPush("Имя админа совпадает с текущим!", "#ff4081"); // Розовый
-            return;
-        }
-		
-		// Проверка на спецсимволы по каждому полю отдельно
-		if (!validateInput(newName, true)) {
-			showPush("Имя обновляемого админа содержит запрещённые символы!", "#ff4081"); // Розовый
-			return;
-		}
-		
-		if (newPassword && !validateInput(newPassword)) {
-            showPush("Пароль обновляемого админа содержит запрещённые символы!", "#ff4081"); // Розовый
-            return;
-        }
-
-        updateButton.textContent = "Подтверди ПКМ";
-        updateButton.classList.add("confirm-mode");
-
-        updateButton.addEventListener("contextmenu", handleConfirm);
-        updateButton.addEventListener("click", handleCancel);
+  const handleCancel = (e) => {
+    if (e.button === 0) {
+      resetUpdateButtonState(updateButton);
     }
+  };
+
+  const resetUpdateButtonState = (button) => {
+    button.textContent = "Обновить";
+    button.classList.remove("confirm-mode");
+    button.removeEventListener("contextmenu", handleConfirm);
+    button.removeEventListener("click", handleCancel);
+  };
+
+  if (!updateButton.classList.contains("confirm-mode")) {
+    const nameInput = document.querySelector(`.update-name[data-login="${login}"]`);
+    const origName = nameInput.getAttribute("origNameAdmin").trim();
+    const newName = nameInput.value.trim();
+    const newPassword = document.querySelector(`.update-password[data-login="${login}"]`).value;
+
+    // Проверка на пустое имя
+    if (!newName) {
+      showPush("Имя пользователя должно быть заполнено.", "#ff4081"); // Розовый
+      return;
+    }
+
+    // Проверка на совпадение имени и пустой пароль
+    if (newName === origName && newPassword === "") {
+      showPush("Имя админа совпадает с текущим!", "#ff4081"); // Розовый
+      return;
+    }
+
+    // Проверка на спецсимволы по каждому полю отдельно
+    if (!validateInput(newName, true)) {
+      showPush("Имя обновляемого админа содержит запрещённые символы!", "#ff4081"); // Розовый
+      return;
+    }
+
+    if (newPassword && !validateInput(newPassword)) {
+      showPush("Пароль обновляемого админа содержит запрещённые символы!", "#ff4081"); // Розовый
+      return;
+    }
+
+    updateButton.textContent = "Подтверди ПКМ";
+    updateButton.classList.add("confirm-mode");
+
+    updateButton.addEventListener("contextmenu", handleConfirm);
+    updateButton.addEventListener("click", handleCancel);
+  }
 }
 
 // Удаление учётной записи
 function deleteUser(login) {
-    const deleteData = { auth_login: login };
-	apiPostJson("/delete-admin", deleteData)
- 
+  const deleteData = {
+    auth_login: login
+  };
+  apiPostJson("/delete-admin", deleteData)
+
     .then(response => {
-        const status = response.status;
-        return response.text().then(text => ({ status, text }));
+      const status = response.status;
+      return response.text().then(text => ({
+        status,
+        text
+      }));
     })
-    .then(({ status, text }) => {
-        if (status === 200) {
-            showPush(text, "#ff4d4d"); // Красный
-            loadAccounts();
-        } else if (status === 401) {
-            showPush(text, "#ff4d4d"); // Красный
-            // Перезагружаем страницу через 1,5 секунды (что бы успеть увидеть PUSH уведомление)
-            setTimeout(() => {
-                window.location.href = "/auth.html";
-            }, 1500);
-        } else {
-            showPush(text, "#ff4d4d"); // Красный
-        }
+    .then(({
+      status,
+      text
+    }) => {
+      if (status === 200) {
+        showPush(text, "#ff4d4d"); // Красный
+        loadAccounts();
+      } else if (status === 401) {
+        showPush(text, "#ff4d4d"); // Красный
+        // Перезагружает страницу через 1,5 секунды (что бы успеть увидеть PUSH уведомление)
+        setTimeout(() => {
+          window.location.href = "/auth.html";
+        }, 1500);
+      } else {
+        showPush(text, "#ff4d4d"); // Красный
+      }
     })
     .catch((error) => console.error("Ошибка удаления пользователя:", error));
 }
 
 // Функция для изменения состояния кнопки "Удалить"
 function toggleDeleteButtonState(login) {
-  // Используем более надёжный селектор
+  // Использует более надёжный селектор
   const deleteButton = document.querySelector(`button.save-buttonModal[data-login="${login}"]:not(.update-button)`);
 
-  // Проверяем, что кнопка найдена
+  // Проверяет, что кнопка найдена
   if (!deleteButton) {
     console.error('Кнопка "Удалить" не найдена для логина:', login);
     return;
@@ -1332,146 +1342,141 @@ function toggleDeleteButtonState(login) {
 
 // Добавление новой учётной записи
 document.getElementById("addUserForm").addEventListener("submit", function(event) {
-	event.preventDefault();
+  event.preventDefault();
 
-	const newName = document.getElementById("newName").value;
-	const newLogin = document.getElementById("newLogin").value;
-	const newPassword = document.getElementById("newPassword").value;
+  const newName = document.getElementById("newName").value;
+  const newLogin = document.getElementById("newLogin").value;
+  const newPassword = document.getElementById("newPassword").value;
 
-	// Получает состояние чекбоксов разрешений
-	const permCreate = document.getElementById("permCreate").checked;
-	const permUpdate = document.getElementById("permUpdate").checked;
-	const permDelete = document.getElementById("permDelete").checked;
-	const permRenameClientsCheckbox = document.getElementById("permRenameClients");
-	const permRenameClients = permRenameClientsCheckbox.checked;
-	const permRenameClientsGroups = permRenameClientsCheckbox.dataset.allowedGroups
-	? JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups)
-	: [];
-	const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
-	const permDeleteClients = permDeleteClientsCheckbox.checked;
-	const permDeleteClientsGroups = permDeleteClientsCheckbox.dataset.allowedGroups
-	? JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups)
-	: [];
-	const permMoveClientsCheckbox = document.getElementById("permMoveClients");
-	const permMoveClients = permMoveClientsCheckbox.checked;
-	const permMoveClientsGroups = permMoveClientsCheckbox.dataset.allowedGroups
-	? JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups)
-	: [];
-	const permUninstallAgents = document.getElementById("permUninstallAgents").checked;
-    const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
-    const permTerminalCommands = permTerminalCommandsCheckbox.checked;
-    const permTerminalCommandsGroups = permTerminalCommandsCheckbox.dataset.allowedGroups
-        ? JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups)
-        : [];
-    const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
-    const permInstallPrograms = permInstallProgramsCheckbox.checked;
-    const permInstallProgramsGroups = permInstallProgramsCheckbox.dataset.allowedGroups
-        ? JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups)
-        : [];
-	const permSystemSettings = document.getElementById("permSystemSettings").checked;
+  // Получает состояние чекбоксов разрешений
+  const permCreate = document.getElementById("permCreate").checked;
+  const permUpdate = document.getElementById("permUpdate").checked;
+  const permDelete = document.getElementById("permDelete").checked;
+  const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+  const permRenameClients = permRenameClientsCheckbox.checked;
+  const permRenameClientsGroups = permRenameClientsCheckbox.dataset.allowedGroups ?
+    JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups) : [];
+  const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+  const permDeleteClients = permDeleteClientsCheckbox.checked;
+  const permDeleteClientsGroups = permDeleteClientsCheckbox.dataset.allowedGroups ?
+    JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups) : [];
+  const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+  const permMoveClients = permMoveClientsCheckbox.checked;
+  const permMoveClientsGroups = permMoveClientsCheckbox.dataset.allowedGroups ?
+    JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups) : [];
+  const permUninstallAgents = document.getElementById("permUninstallAgents").checked;
+  const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+  const permTerminalCommands = permTerminalCommandsCheckbox.checked;
+  const permTerminalCommandsGroups = permTerminalCommandsCheckbox.dataset.allowedGroups ?
+    JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups) : [];
+  const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+  const permInstallPrograms = permInstallProgramsCheckbox.checked;
+  const permInstallProgramsGroups = permInstallProgramsCheckbox.dataset.allowedGroups ?
+    JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups) : [];
+  const permSystemSettings = document.getElementById("permSystemSettings").checked;
 
-	// Проверка на пустые поля
-	if (!newName || !newLogin || !newPassword) {
-		showPush("Все поля должны быть заполнены.", "#ff4081"); // Розовый
-		return;
-	}
+  // Проверка на пустые поля
+  if (!newName || !newLogin || !newPassword) {
+    showPush("Все поля должны быть заполнены.", "#ff4081"); // Розовый
+    return;
+  }
 
-	// Проверка на спецсимволы по каждому полю отдельно
-	if (!validateInput(newName, true)) {
-		showPush("Имя нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-		return;
-	}
+  // Проверка на спецсимволы по каждому полю отдельно
+  if (!validateInput(newName, true)) {
+    showPush("Имя нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+    return;
+  }
 
-	if (!validateInput(newLogin)) {
-		showPush("Логин нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-		return;
-	}
+  if (!validateInput(newLogin)) {
+    showPush("Логин нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+    return;
+  }
 
-	if (!validateInput(newPassword)) {
-		showPush("Пароль нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
-		return;
-	}
+  if (!validateInput(newPassword)) {
+    showPush("Пароль нового админа содержит запрещённые символы!", "#ff4081"); // Розовый
+    return;
+  }
 
-		const addData = {
-			auth_name: newName,
-			auth_login: newLogin,
-			auth_password: newPassword,
-			perm_create: permCreate,
-			perm_update: permUpdate,
-			perm_delete: permDelete,
-			perm_rename_clients: permRenameClients,
-			perm_rename_clients_groups: permRenameClientsGroups,
-			perm_delete_clients: permDeleteClients,
-			perm_delete_clients_groups: permDeleteClientsGroups,
-			perm_move_clients: permMoveClients,
-			perm_move_clients_groups: permMoveClientsGroups,
-			perm_uninstall_agents: permUninstallAgents,
-			perm_terminal_commands: permTerminalCommands,
-			perm_terminal_commands_groups: permTerminalCommandsGroups,
-			perm_install_programs: permInstallPrograms,
-			perm_install_programs_groups: permInstallProgramsGroups,
-			perm_system_settings: permSystemSettings,
-		};
+  const addData = {
+    auth_name: newName,
+    auth_login: newLogin,
+    auth_password: newPassword,
+    perm_create: permCreate,
+    perm_update: permUpdate,
+    perm_delete: permDelete,
+    perm_rename_clients: permRenameClients,
+    perm_rename_clients_groups: permRenameClientsGroups,
+    perm_delete_clients: permDeleteClients,
+    perm_delete_clients_groups: permDeleteClientsGroups,
+    perm_move_clients: permMoveClients,
+    perm_move_clients_groups: permMoveClientsGroups,
+    perm_uninstall_agents: permUninstallAgents,
+    perm_terminal_commands: permTerminalCommands,
+    perm_terminal_commands_groups: permTerminalCommandsGroups,
+    perm_install_programs: permInstallPrograms,
+    perm_install_programs_groups: permInstallProgramsGroups,
+    perm_system_settings: permSystemSettings,
+  };
 
-	apiPostJson("/add-admin", addData)
+  apiPostJson("/add-admin", addData)
 
-	.then(response => {
-		if (response.ok) {
-			return response.text();
-		} else if (response.status === 409) {
-			return response.text().then(text => Promise.reject(text));
-		} else {
-			return response.text().then(text => Promise.reject(text));
-		}
-	})
-	.then(message => {
-	  showPush(message, "#4CAF50"); // Зелёный
-	  loadAccounts();
-	  document.getElementById("addUserForm").reset();
+    .then(response => {
+      if (response.ok) {
+        return response.text();
+      } else if (response.status === 409) {
+        return response.text().then(text => Promise.reject(text));
+      } else {
+        return response.text().then(text => Promise.reject(text));
+      }
+    })
+    .then(message => {
+      showPush(message, "#4CAF50"); // Зелёный
+      loadAccounts();
+      document.getElementById("addUserForm").reset();
 
-	  // Сбрасывает данные о группах переименования клиентов
-	  const permRenameClientsCheckbox = document.getElementById("permRenameClients");
-	  if (permRenameClientsCheckbox) {
-		permRenameClientsCheckbox.dataset.allowedGroups = '[]';
-		const renameIndicator = permRenameClientsCheckbox.parentElement.querySelector('.groups-indicator');
-		if (renameIndicator) renameIndicator.remove();
-	  }
+      // Сбрасывает данные о группах переименования клиентов
+      const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+      if (permRenameClientsCheckbox) {
+        permRenameClientsCheckbox.dataset.allowedGroups = '[]';
+        const renameIndicator = permRenameClientsCheckbox.parentElement.querySelector('.groups-indicator');
+        if (renameIndicator) renameIndicator.remove();
+      }
 
-	  // Сбрасывает данные о группах перемещения
-	  const permMoveClientsCheckbox = document.getElementById("permMoveClients");
-	  if (permMoveClientsCheckbox) {
-		permMoveClientsCheckbox.dataset.allowedGroups = '[]';
-		const moveIndicator = permMoveClientsCheckbox.parentElement.querySelector('.groups-indicator');
-		if (moveIndicator) moveIndicator.remove();
-	  }
+      // Сбрасывает данные о группах перемещения
+      const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+      if (permMoveClientsCheckbox) {
+        permMoveClientsCheckbox.dataset.allowedGroups = '[]';
+        const moveIndicator = permMoveClientsCheckbox.parentElement.querySelector('.groups-indicator');
+        if (moveIndicator) moveIndicator.remove();
+      }
 
-        // Сбрасывает данные о группах удаления клиентов
-        const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
-            if (permDeleteClientsCheckbox) {
-                permDeleteClientsCheckbox.dataset.allowedGroups = '[]';
-                const deleteIndicator = permDeleteClientsCheckbox.parentElement.querySelector('.groups-indicator');
-                    if (deleteIndicator) deleteIndicator.remove();
-            }
+      // Сбрасывает данные о группах удаления клиентов
+      const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+      if (permDeleteClientsCheckbox) {
+        permDeleteClientsCheckbox.dataset.allowedGroups = '[]';
+        const deleteIndicator = permDeleteClientsCheckbox.parentElement.querySelector('.groups-indicator');
+        if (deleteIndicator) deleteIndicator.remove();
+      }
 
-        // Сбрасывает данные о группах cmd/PowerShell команд
-        const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
-            if (permTerminalCommandsCheckbox) {
-                permTerminalCommandsCheckbox.dataset.allowedGroups = '[]';
-                const terminalIndicator = permTerminalCommandsCheckbox.parentElement.querySelector('.groups-indicator');
-                    if (terminalIndicator) terminalIndicator.remove();
-            }
+      // Сбрасывает данные о группах cmd/PowerShell команд
+      const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+      if (permTerminalCommandsCheckbox) {
+        permTerminalCommandsCheckbox.dataset.allowedGroups = '[]';
+        const terminalIndicator = permTerminalCommandsCheckbox.parentElement.querySelector('.groups-indicator');
+        if (terminalIndicator) terminalIndicator.remove();
+      }
 
-        // Сбрасывает данные о группах установки ПО
-        const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
-            if (permInstallProgramsCheckbox) {
-                permInstallProgramsCheckbox.dataset.allowedGroups = '[]';
-                const installIndicator = permInstallProgramsCheckbox.parentElement.querySelector('.groups-indicator');
-                    if (installIndicator) installIndicator.remove();
-            }
-        })
-	.catch(errorMessage => {
-		showPush(errorMessage, "#ff4081"); // Розовый
-	});
+      // Сбрасывает данные о группах установки ПО
+      const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+      if (permInstallProgramsCheckbox) {
+        permInstallProgramsCheckbox.dataset.allowedGroups = '[]';
+        const installIndicator = permInstallProgramsCheckbox.parentElement.querySelector('.groups-indicator');
+        if (installIndicator) installIndicator.remove();
+      }
+    })
+    .catch(errorMessage => {
+      showPush(errorMessage, "#ff4081"); // Розовый
+    });
 });
 
 // Обработка клика по ссылке "Учётные записи"
@@ -1502,233 +1507,237 @@ function togglePasswordVisibility(elementId) {
 
 // Обработчик закрытия модального окна крестиком и инициализация валидации
 document.addEventListener("DOMContentLoaded", function() {
-    const closeButton = document.getElementById("closeAccountsModal");
-    if (closeButton) {
-        closeButton.addEventListener("click", closeAccountsModal);
-    }
+  const closeButton = document.getElementById("closeAccountsModal");
+  if (closeButton) {
+    closeButton.addEventListener("click", closeAccountsModal);
+  }
 
-    // Инициализация валидации для статических полей
-    initStaticFieldsValidation();
+  // Инициализация валидации для статических полей
+  initStaticFieldsValidation();
 
-    // Обработчик клика на чекбокс перемещения клиентов для новой учётки
-	const permMoveClientsCheckbox = document.getElementById("permMoveClients");
-	if (permMoveClientsCheckbox) {
-		permMoveClientsCheckbox.addEventListener("click", function(e) {
-			// Предотвращает стандартное поведение чекбокса
-			e.preventDefault();
-			// Открывает модальное окно выбора групп
-			const currentChecked = permMoveClientsCheckbox.checked;
-			const currentGroups = permMoveClientsCheckbox.dataset.allowedGroups ?
-				JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups) : [];
-			openGroupsSelectModal('new', 'move', null, null, currentChecked, currentGroups);
-		});
-	}
+  // Обработчик клика на чекбокс перемещения клиентов для новой учётки
+  const permMoveClientsCheckbox = document.getElementById("permMoveClients");
+  if (permMoveClientsCheckbox) {
+    permMoveClientsCheckbox.addEventListener("click", function(e) {
+      // Предотвращает стандартное поведение чекбокса
+      e.preventDefault();
+      // Открывает модальное окно выбора групп
+      const currentChecked = permMoveClientsCheckbox.checked;
+      const currentGroups = permMoveClientsCheckbox.dataset.allowedGroups ?
+        JSON.parse(permMoveClientsCheckbox.dataset.allowedGroups) : [];
+      openGroupsSelectModal('new', 'move', null, null, currentChecked, currentGroups);
+    });
+  }
 
-	// Обработчик клика на чекбокс переименования клиентов для новой учётки
-	const permRenameClientsCheckbox = document.getElementById("permRenameClients");
-	if (permRenameClientsCheckbox) {
-	  permRenameClientsCheckbox.addEventListener("click", function(e) {
-		// Предотвращает стандартное поведение чекбокса
-		e.preventDefault();
-		// Открывает модальное окно выбора групп
-		const currentChecked = permRenameClientsCheckbox.checked;
-		const currentGroups = permRenameClientsCheckbox.dataset.allowedGroups ?
-		  JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups) : [];
-		openGroupsSelectModal('new', 'rename', null, null, currentChecked, currentGroups);
-	  });
-	}
+  // Обработчик клика на чекбокс переименования клиентов для новой учётки
+  const permRenameClientsCheckbox = document.getElementById("permRenameClients");
+  if (permRenameClientsCheckbox) {
+    permRenameClientsCheckbox.addEventListener("click", function(e) {
+      // Предотвращает стандартное поведение чекбокса
+      e.preventDefault();
+      // Открывает модальное окно выбора групп
+      const currentChecked = permRenameClientsCheckbox.checked;
+      const currentGroups = permRenameClientsCheckbox.dataset.allowedGroups ?
+        JSON.parse(permRenameClientsCheckbox.dataset.allowedGroups) : [];
+      openGroupsSelectModal('new', 'rename', null, null, currentChecked, currentGroups);
+    });
+  }
 
-    // Обработчик клика на чекбокс удаления клиентов для новой учётки
-    const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
-    if (permDeleteClientsCheckbox) {
-        permDeleteClientsCheckbox.addEventListener("click", function(e) {
-            // Предотвращает стандартное поведение чекбокса
-            e.preventDefault();
-            // Открывает модальное окно выбора групп
-            const currentChecked = permDeleteClientsCheckbox.checked;
-            const currentGroups = permDeleteClientsCheckbox.dataset.allowedGroups ?
-                JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups) : [];
-            openGroupsSelectModal('new', 'delete', null, null, currentChecked, currentGroups);
-        });
-    }
+  // Обработчик клика на чекбокс удаления клиентов для новой учётки
+  const permDeleteClientsCheckbox = document.getElementById("permDeleteClients");
+  if (permDeleteClientsCheckbox) {
+    permDeleteClientsCheckbox.addEventListener("click", function(e) {
+      // Предотвращает стандартное поведение чекбокса
+      e.preventDefault();
+      // Открывает модальное окно выбора групп
+      const currentChecked = permDeleteClientsCheckbox.checked;
+      const currentGroups = permDeleteClientsCheckbox.dataset.allowedGroups ?
+        JSON.parse(permDeleteClientsCheckbox.dataset.allowedGroups) : [];
+      openGroupsSelectModal('new', 'delete', null, null, currentChecked, currentGroups);
+    });
+  }
 
-    // Обработчик клика на чекбокс cmd/PowerShell команд для новой учётки
-    const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
-    if (permTerminalCommandsCheckbox) {
-        permTerminalCommandsCheckbox.addEventListener("click", function(e) {
-            // Предотвращает стандартное поведение чекбокса
-            e.preventDefault();
-            // Открывает модальное окно выбора групп
-            const currentChecked = permTerminalCommandsCheckbox.checked;
-            const currentGroups = permTerminalCommandsCheckbox.dataset.allowedGroups ?
-                JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups) : [];
-            openGroupsSelectModal('new', 'terminal', null, null, currentChecked, currentGroups);
-        });
-    }
+  // Обработчик клика на чекбокс cmd/PowerShell команд для новой учётки
+  const permTerminalCommandsCheckbox = document.getElementById("permTerminalCommands");
+  if (permTerminalCommandsCheckbox) {
+    permTerminalCommandsCheckbox.addEventListener("click", function(e) {
+      // Предотвращает стандартное поведение чекбокса
+      e.preventDefault();
+      // Открывает модальное окно выбора групп
+      const currentChecked = permTerminalCommandsCheckbox.checked;
+      const currentGroups = permTerminalCommandsCheckbox.dataset.allowedGroups ?
+        JSON.parse(permTerminalCommandsCheckbox.dataset.allowedGroups) : [];
+      openGroupsSelectModal('new', 'terminal', null, null, currentChecked, currentGroups);
+    });
+  }
 
-    // Обработчик клика на чекбокс установки ПО для новой учётки
-    const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
-    if (permInstallProgramsCheckbox) {
-        permInstallProgramsCheckbox.addEventListener("click", function(e) {
-            // Предотвращает стандартное поведение чекбокса
-            e.preventDefault();
-            // Открывает модальное окно выбора групп
-            const currentChecked = permInstallProgramsCheckbox.checked;
-            const currentGroups = permInstallProgramsCheckbox.dataset.allowedGroups ?
-                JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups) : [];
-            openGroupsSelectModal('new', 'install', null, null, currentChecked, currentGroups);
-        });
-    }
+  // Обработчик клика на чекбокс установки ПО для новой учётки
+  const permInstallProgramsCheckbox = document.getElementById("permInstallPrograms");
+  if (permInstallProgramsCheckbox) {
+    permInstallProgramsCheckbox.addEventListener("click", function(e) {
+      // Предотвращает стандартное поведение чекбокса
+      e.preventDefault();
+      // Открывает модальное окно выбора групп
+      const currentChecked = permInstallProgramsCheckbox.checked;
+      const currentGroups = permInstallProgramsCheckbox.dataset.allowedGroups ?
+        JSON.parse(permInstallProgramsCheckbox.dataset.allowedGroups) : [];
+      openGroupsSelectModal('new', 'install', null, null, currentChecked, currentGroups);
+    });
+  }
 
-    // Обработчики для универсального модального окна выбора групп
-    initGroupsSelectModalHandlers();
+  // Обработчики для универсального модального окна выбора групп
+  initGroupsSelectModalHandlers();
 });
 
 // Инициализация валидации для статических полей (добавление нового админа)
 function initStaticFieldsValidation() {
-    const newNameInput = document.getElementById('newName');
-    const newLoginInput = document.getElementById('newLogin');
-    const newPasswordInput = document.getElementById('newPassword');
-    
-    if (newNameInput) {
-        newNameInput.addEventListener('input', () => updateFieldValidation(newNameInput, true));
-    }
-    if (newLoginInput) {
-        newLoginInput.addEventListener('input', () => updateFieldValidation(newLoginInput, false));
-    }
-    if (newPasswordInput) {
-        newPasswordInput.addEventListener('input', () => updateFieldValidation(newPasswordInput, false));
-    }
+  const newNameInput = document.getElementById('newName');
+  const newLoginInput = document.getElementById('newLogin');
+  const newPasswordInput = document.getElementById('newPassword');
+
+  if (newNameInput) {
+    newNameInput.addEventListener('input', () => updateFieldValidation(newNameInput, true));
+  }
+  if (newLoginInput) {
+    newLoginInput.addEventListener('input', () => updateFieldValidation(newLoginInput, false));
+  }
+  if (newPasswordInput) {
+    newPasswordInput.addEventListener('input', () => updateFieldValidation(newPasswordInput, false));
+  }
 }
 
 // Инициализация валидации для динамических полей (обновление админа)
 function initDynamicFieldValidation(nameInput, passwordInput) {
-    if (nameInput) {
-        nameInput.addEventListener('input', () => updateFieldValidation(nameInput, true));
-    }
-    if (passwordInput) {
-        passwordInput.addEventListener('input', () => updateFieldValidation(passwordInput, false));
-    }
+  if (nameInput) {
+    nameInput.addEventListener('input', () => updateFieldValidation(nameInput, true));
+  }
+  if (passwordInput) {
+    passwordInput.addEventListener('input', () => updateFieldValidation(passwordInput, false));
+  }
 }
 
 // Корректирует позицию всплывающей подсказки, чтобы она не выходила за пределы модального окна
 function adjustTooltipPosition(event) {
-	const wrapper = event.currentTarget;
-	const modal = document.getElementById('accountsModal').querySelector('.modal-window-content');
-	if (!modal) return;
+  const wrapper = event.currentTarget;
+  const modal = document.getElementById('accountsModal').querySelector('.modal-window-content');
+  if (!modal) return;
 
-	const modalRect = modal.getBoundingClientRect();
-	const wrapperRect = wrapper.getBoundingClientRect();
+  const modalRect = modal.getBoundingClientRect();
+  const wrapperRect = wrapper.getBoundingClientRect();
 
-	// Примерная ширина подсказки (максимальная)
-	const tooltipWidth = 280;
-	const tooltipHalfWidth = tooltipWidth / 2;
+  // Примерная ширина подсказки (максимальная)
+  const tooltipWidth = 280;
+  const tooltipHalfWidth = tooltipWidth / 2;
 
-	// Вычисляет позицию центра иконки относительно модального окна
-	const wrapperCenter = wrapperRect.left + (wrapperRect.width / 2);
+  // Вычисляет позицию центра иконки относительно модального окна
+  const wrapperCenter = wrapperRect.left + (wrapperRect.width / 2);
 
-	// Сбрасывает предыдущие классы выравнивания
-	wrapper.classList.remove('tooltip-align-left', 'tooltip-align-right');
+  // Сбрасывает предыдущие классы выравнивания
+  wrapper.classList.remove('tooltip-align-left', 'tooltip-align-right');
 
-	// Проверяет, хватает ли места слева для центрированной подсказки
-	const spaceLeft = wrapperCenter - modalRect.left;
-	// Проверяет, хватает ли места справа для центрированной подсказки
-	const spaceRight = modalRect.right - wrapperCenter;
+  // Проверяет, хватает ли места слева для центрированной подсказки
+  const spaceLeft = wrapperCenter - modalRect.left;
+  // Проверяет, хватает ли места справа для центрированной подсказки
+  const spaceRight = modalRect.right - wrapperCenter;
 
-	if (spaceLeft < tooltipHalfWidth + 15) {
-		// Мало места слева — выравнивает подсказку по левому краю иконки
-		wrapper.classList.add('tooltip-align-left');
-	} else if (spaceRight < tooltipHalfWidth + 15) {
-		// Мало места справа — выравнивает подсказку по правому краю иконки
-		wrapper.classList.add('tooltip-align-right');
-	}
+  if (spaceLeft < tooltipHalfWidth + 15) {
+    // Мало места слева — выравнивает подсказку по левому краю иконки
+    wrapper.classList.add('tooltip-align-left');
+  } else if (spaceRight < tooltipHalfWidth + 15) {
+    // Мало места справа — выравнивает подсказку по правому краю иконки
+    wrapper.classList.add('tooltip-align-right');
+  }
 }
 
 // Показывает модальное окно подтверждения изменения разрешения
 function showPermissionConfirmModal(login, userName, permissionType, newValue) {
-	const modal = document.getElementById('permissionConfirmModal');
-	const textElement = document.getElementById('permissionConfirmText');
-	const confirmBtn = document.getElementById('confirmPermissionBtn');
+  const modal = document.getElementById('permissionConfirmModal');
+  const textElement = document.getElementById('permissionConfirmText');
+  const confirmBtn = document.getElementById('confirmPermissionBtn');
 
-	// Определяет название разрешения для отображения
-    let permissionName;
-    switch (permissionType) {
-        case 'create':
-            permissionName = 'создание новых учётных записей';
-            break;
-        case 'update':
-            permissionName = 'изменение действующих учётных записей';
-            break;
-        case 'delete':
-            permissionName = 'удаление действующих учётных записей';
-            break;
-        case 'uninstall_agents':
-            permissionName = 'полное удаление FiReAgent';
-            break;
-        case 'system_settings':
-            permissionName = 'системные настройки (обновление/откат, MQTT авторизация)';
-            break;
+  // Определяет название разрешения для отображения
+  let permissionName;
+  switch (permissionType) {
+    case 'create':
+      permissionName = 'создание новых учётных записей';
+      break;
+    case 'update':
+      permissionName = 'изменение действующих учётных записей';
+      break;
+    case 'delete':
+      permissionName = 'удаление действующих учётных записей';
+      break;
+    case 'uninstall_agents':
+      permissionName = 'полное удаление FiReAgent';
+      break;
+    case 'system_settings':
+      permissionName = 'системные настройки (обновление/откат, MQTT авторизация)';
+      break;
+  }
+
+  // Формирует текст подтверждения с цветовым выделением
+  const actionWord = newValue ? 'Разрешить' : 'Запретить';
+  const actionClass = newValue ? 'action-allow' : 'action-deny';
+  textElement.innerHTML = `<span class="${actionClass}">${actionWord}</span> ${permissionName} для <strong>"${userName}"</strong>?`;
+
+  // Сохраняет данные для подтверждения
+  pendingPermissionChange = {
+    login: login,
+    permissionType: permissionType,
+    newValue: newValue
+  };
+
+  modal.style.display = 'flex';
+
+  // Устанавливает фокус на кнопку подтверждения с небольшой задержкой
+  setTimeout(() => {
+    if (confirmBtn) {
+      confirmBtn.focus();
     }
-
-	// Формирует текст подтверждения с цветовым выделением
-	const actionWord = newValue ? 'Разрешить' : 'Запретить';
-	const actionClass = newValue ? 'action-allow' : 'action-deny';
-	textElement.innerHTML = `<span class="${actionClass}">${actionWord}</span> ${permissionName} для <strong>"${userName}"</strong>?`;
-
-	// Сохраняет данные для подтверждения
-	pendingPermissionChange = {
-		login: login,
-		permissionType: permissionType,
-		newValue: newValue
-	};
-
-	modal.style.display = 'flex';
-
-	// Устанавливает фокус на кнопку подтверждения с небольшой задержкой
-	setTimeout(() => {
-		if (confirmBtn) {
-			confirmBtn.focus();
-		}
-	}, 50);
+  }, 50);
 }
 
 // Закрывает модальное окно подтверждения
 function closePermissionConfirmModal() {
-	const modal = document.getElementById('permissionConfirmModal');
-	modal.style.display = 'none';
-	pendingPermissionChange = null;
+  const modal = document.getElementById('permissionConfirmModal');
+  modal.style.display = 'none';
+  pendingPermissionChange = null;
 }
 
 // Отправляет запрос на изменение разрешения
 async function confirmPermissionChange() {
-	if (!pendingPermissionChange) return;
+  if (!pendingPermissionChange) return;
 
-	const { login, permissionType, newValue } = pendingPermissionChange;
+  const {
+    login,
+    permissionType,
+    newValue
+  } = pendingPermissionChange;
 
-	try {
-		const response = await apiPostJson('/toggle-admin-permission', {
-			auth_login: login,
-			permission_type: permissionType,
-			new_value: newValue
-		});
+  try {
+    const response = await apiPostJson('/toggle-admin-permission', {
+      auth_login: login,
+      permission_type: permissionType,
+      new_value: newValue
+    });
 
-		const status = response.status;
-		const text = await response.text();
+    const status = response.status;
+    const text = await response.text();
 
-		if (status === 200) {
-			showPush(text, '#4CAF50'); // Зелёный
-			loadAccounts(); // Перезагружает список учётных записей
-		} else if (status === 403) {
-			showPush(text, '#ff4081'); // Розовый
-		} else {
-			showPush(text, '#ff4d4d'); // Красный
-		}
-	} catch (error) {
-		console.error('Ошибка изменения разрешения:', error);
-		showPush('Ошибка при изменении разрешения', '#ff4d4d'); // Красный
-	} finally {
-		closePermissionConfirmModal();
-	}
+    if (status === 200) {
+      showPush(text, '#4CAF50'); // Зелёный
+      loadAccounts(); // Перезагружает список учётных записей
+    } else if (status === 403) {
+      showPush(text, '#ff4081'); // Розовый
+    } else {
+      showPush(text, '#ff4d4d'); // Красный
+    }
+  } catch (error) {
+    console.error('Ошибка изменения разрешения:', error);
+    showPush('Ошибка при изменении разрешения', '#ff4d4d'); // Красный
+  } finally {
+    closePermissionConfirmModal();
+  }
 }
 
 // Обработчики для модального окна подтверждения изменения разрешения
@@ -1742,36 +1751,36 @@ document.getElementById('confirmPermissionBtn')?.addEventListener('click', confi
 
 // Конфигурация для разных типов разрешений
 const groupsSelectConfig = {
-    rename: {
-        title: 'Разрешённые группы для переименования',
-        description: 'Выберите группы, в которых разрешено переименовывать клиентов, без выбора — переименование запрещено.',
-        checkboxId: 'permRenameClients',
-        endpoint: '/update-rename-clients-groups'
-    },
-    move: {
-        title: 'Разрешённые группы для перемещения',
-        description: 'Выберите группы, между которыми разрешено перемещать клиентов, без выбора — перемещение запрещено.',
-        checkboxId: 'permMoveClients',
-        endpoint: '/update-move-clients-groups'
-    },
-    delete: {
-        title: 'Разрешённые группы для удаления',
-        description: 'Выберите группы, в которых разрешено удалять клиентов, без выбора — удаление запрещено.',
-        checkboxId: 'permDeleteClients',
-        endpoint: '/update-delete-clients-groups'
-    },
-    terminal: {
-        title: 'Разрешённые группы для cmd/PowerShell',
-        description: 'Выберите группы, в которых разрешено отправлять cmd/PowerShell команды клиентам, без выбора — отправка команд запрещена.',
-        checkboxId: 'permTerminalCommands',
-        endpoint: '/update-terminal-commands-groups'
-    },
-    install: {
-        title: 'Разрешённые группы для установки ПО',
-        description: 'Выберите группы, в которых разрешена установка ПО клиентам, без выбора — установка запрещена.',
-        checkboxId: 'permInstallPrograms',
-        endpoint: '/update-install-programs-groups'
-    }
+  rename: {
+    title: 'Разрешённые группы для переименования',
+    description: 'Выберите группы, в которых разрешено переименовывать клиентов, без выбора — переименование запрещено.',
+    checkboxId: 'permRenameClients',
+    endpoint: '/update-rename-clients-groups'
+  },
+  move: {
+    title: 'Разрешённые группы для перемещения',
+    description: 'Выберите группы, между которыми разрешено перемещать клиентов, без выбора — перемещение запрещено.',
+    checkboxId: 'permMoveClients',
+    endpoint: '/update-move-clients-groups'
+  },
+  delete: {
+    title: 'Разрешённые группы для удаления',
+    description: 'Выберите группы, в которых разрешено удалять клиентов, без выбора — удаление запрещено.',
+    checkboxId: 'permDeleteClients',
+    endpoint: '/update-delete-clients-groups'
+  },
+  terminal: {
+    title: 'Разрешённые группы для cmd/PowerShell',
+    description: 'Выберите группы, в которых разрешено отправлять cmd/PowerShell команды клиентам, без выбора — отправка команд запрещена.',
+    checkboxId: 'permTerminalCommands',
+    endpoint: '/update-terminal-commands-groups'
+  },
+  install: {
+    title: 'Разрешённые группы для установки ПО',
+    description: 'Выберите группы, в которых разрешена установка ПО клиентам, без выбора — установка запрещена.',
+    checkboxId: 'permInstallPrograms',
+    endpoint: '/update-install-programs-groups'
+  }
 };
 
 // Открывает универсальное модальное окно выбора групп
@@ -2009,7 +2018,7 @@ function showMqttAuthModal() {
   const modal = document.getElementById("mqttAuthModal");
   modal.style.display = "flex";
 
-  // Сбрасываем состояние интерфейса
+  // Сбрасывает состояние интерфейса
   const resetUIState = () => {
     const saveButton = document.getElementById("saveMqttAuth");
     saveButton.textContent = "Сохранить";
@@ -2022,21 +2031,21 @@ function showMqttAuthModal() {
     usernameInput.value = "";
     passwordInput.value = "";
 
-    // Устанавливаем тип поля пароля и обновляем иконку
+    // Устанавливает тип поля пароля и обновляет иконку
     passwordInput.setAttribute("type", "password");
 
-    // Сбрасываем иконку пароля
+    // Сбрасывает иконку пароля
     const passwordIcon = document.getElementById("mqttPasswordIcon");
     if (passwordIcon) {
       passwordIcon.setAttribute("src", "../icon/Hide_Passwd.svg");
       passwordIcon.setAttribute("alt", "Показать пароль");
     }
-	
-	// Сбрасывает состояние валидации
-	resetFieldValidation(usernameInput);
-	resetFieldValidation(passwordInput);
+
+    // Сбрасывает состояние валидации
+    resetFieldValidation(usernameInput);
+    resetFieldValidation(passwordInput);
   };
-  
+
   resetUIState();
 
   // Загрузка данных с сервера
@@ -2073,7 +2082,7 @@ function showMqttAuthModal() {
 // Обработчик для кнопки "Включить/Выключить"
 document.getElementById("toggleReserveAccount").addEventListener("click", toggleReserveAccountState);
 
-// Объявляем обработчики как глобальные переменные, чтобы они были доступны в resetReserveAccountButtonState
+// Объявляет обработчики как глобальные переменные, чтобы они были доступны в resetReserveAccountButtonState
 let handleConfirm, handleCancel;
 
 function toggleReserveAccountState(e) {
@@ -2083,11 +2092,11 @@ function toggleReserveAccountState(e) {
 
   // Если аккаунт выключен и кнопка не в режиме подтверждения
   if (!isEnabled && !toggleButton.classList.contains("confirm-mode")) {
-    // Активируем режим подтверждения
+    // Активирует режим подтверждения
     toggleButton.textContent = "Подтверди правым кликом!";
     toggleButton.classList.add("confirm-mode");
 
-    // Определяем обработчики для подтверждения и отмены
+    // Определяет обработчики для подтверждения и отмены
     handleConfirm = (e) => {
       e.preventDefault();
       updateReserveAccountStatus(true);
@@ -2100,15 +2109,15 @@ function toggleReserveAccountState(e) {
       }
     };
 
-    // Удаляем старые обработчики перед добавлением новых
+    // Удаляет старые обработчики перед добавлением новых
     toggleButton.removeEventListener("contextmenu", handleConfirm);
     toggleButton.removeEventListener("click", handleCancel);
 
-    // Добавляем новые обработчики
+    // Добавляет новые обработчики
     toggleButton.addEventListener("contextmenu", handleConfirm);
     toggleButton.addEventListener("click", handleCancel);
   } else if (isEnabled) {
-    // Если аккаунт включён, выключаем без подтверждения
+    // Если аккаунт включён, выключает без подтверждения
     updateReserveAccountStatus(false);
   }
 }
@@ -2119,34 +2128,36 @@ function resetReserveAccountButtonState() {
   toggleButton.textContent = "Включить";
   toggleButton.classList.remove("confirm-mode");
 
-  // Удаляем обработчики событий
+  // Удаляет обработчики событий
   toggleButton.removeEventListener("contextmenu", handleConfirm);
   toggleButton.removeEventListener("click", handleCancel);
 }
 
 // Функция для обновления статуса резервного аккаунта
 function updateReserveAccountStatus(allow) {
-    apiPostJson("/update-allow-mqtt", { allow })
+  apiPostJson("/update-allow-mqtt", {
+      allow
+    })
 
-        .then(async (response) => {
-            const data = await response.json();
-            if (response.ok && data.success) {
-                showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
-                // Сбрасываем состояние кнопки после успешного подтверждения
-                resetReserveAccountButtonState();
-                // Перезагружаем модальное окно для обновления состояния
-                showMqttAuthModal();
-            } else if (response.status === 403) {
-                // Показываем сообщение от сервера при ошибке прав доступа
-                showPush(data.message || "У вас нет прав на это действие", "#ff4d4d"); // Красный
-            } else {
-                showPush(data.message || "Ошибка при обновлении статуса", "#ff4081"); // Розовый
-            }
-        })
-        .catch((error) => {
-            console.error("Ошибка при обновлении статуса:", error);
-            showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
-        });
+    .then(async (response) => {
+      const data = await response.json();
+      if (response.ok && data.success) {
+        showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
+        // Сбрасывает состояние кнопки после успешного подтверждения
+        resetReserveAccountButtonState();
+        // Перезагружает модальное окно для обновления состояния
+        showMqttAuthModal();
+      } else if (response.status === 403) {
+        // Показывает сообщение от сервера при ошибке прав доступа
+        showPush(data.message || "У вас нет прав на это действие", "#ff4d4d"); // Красный
+      } else {
+        showPush(data.message || "Ошибка при обновлении статуса", "#ff4081"); // Розовый
+      }
+    })
+    .catch((error) => {
+      console.error("Ошибка при обновлении статуса:", error);
+      showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
+    });
 }
 
 // Закрытие модального окна
@@ -2160,13 +2171,13 @@ function closeMqttAuthModal() {
   saveButton.classList.remove("confirm-mode");
   document.getElementById("mqttUsername").disabled = false;
   document.getElementById("mqttPassword").disabled = false;
-  
-  
+
+
   // Сбрасывает состояние валидации
   resetFieldValidation(document.getElementById("mqttUsername"));
   resetFieldValidation(document.getElementById("mqttPassword"));
 
-  // Удаляем все обработчики с кнопки
+  // Удаляет все обработчики с кнопки
   const newSaveButton = saveButton.cloneNode(true);
   saveButton.parentNode.replaceChild(newSaveButton, saveButton);
   document.getElementById("saveMqttAuth").addEventListener("click", toggleSaveButtonState);
@@ -2177,23 +2188,26 @@ function saveMqttAuth() {
   const username = document.getElementById("mqttUsername").value;
   const password = document.getElementById("mqttPassword").value;
 
-  apiPostJson("/update-account-mqtt", { username, password })
- 
+  apiPostJson("/update-account-mqtt", {
+      username,
+      password
+    })
+
     .then(async (response) => {
-    const data = await response.text();
-    if (response.ok) {
+      const data = await response.text();
+      if (response.ok) {
         showPush(data, "#2196F3"); // Голубой
-        closeMqttAuthModal(); // Закрываем модальное окно только при успехе
-    } else if (response.status === 403) {
+        closeMqttAuthModal(); // Закрывает модальное окно только при успехе
+      } else if (response.status === 403) {
         showPush(data, "#ff4d4d"); // Красный для ошибки прав доступа
-    } else {
+      } else {
         showPush(data, "#ff4081"); // Розовый для других ошибок
-    }
-})
+      }
+    })
     .catch((error) => {
-        console.error("Ошибка сохранения данных:", error);
-        showPush("Ошибка соединения с сервером", "#ff4081");
-        // Модальное окно НЕ закрываем!
+      console.error("Ошибка сохранения данных:", error);
+      showPush("Ошибка соединения с сервером", "#ff4081");
+      // Модальное окно НЕ закрывает!
     });
 }
 
@@ -2203,7 +2217,7 @@ function toggleSaveButtonState() {
   const usernameInput = document.getElementById("mqttUsername");
   const passwordInput = document.getElementById("mqttPassword");
 
-  // Объявляем обработчики как константы для последующего удаления
+  // Объявляет обработчики как константы для последующего удаления
   const handleConfirm = (e) => {
     e.preventDefault();
     saveMqttAuth();
@@ -2222,42 +2236,42 @@ function toggleSaveButtonState() {
     usernameInput.disabled = false;
     passwordInput.disabled = false;
 
-    // Удаляем обработчики событий
+    // Удаляет обработчики событий
     saveButton.removeEventListener("contextmenu", handleConfirm);
     saveButton.removeEventListener("click", handleCancel);
   };
 
   // Проверка полей при первом нажатии
   if (!saveButton.classList.contains("confirm-mode")) {
-	const username = usernameInput.value.trim();
+    const username = usernameInput.value.trim();
     const passwd = passwordInput.value.trim();
-	
+
     // Проверка на пустые поля
     if (!username || !passwd) {
       showPush("Все поля должны быть заполнены.", "#ff4081"); // Розовый
       return;
     }
 
-	if (!validateInput(username)) {
-		showPush("Логин содержит запрещённые символы!", "#ff4081"); // Розовый
-		return;
-		}
-	if (!validateInput(passwd)) {
-		showPush("Пароль содержит запрещённые символы!", "#ff4081"); // Розовый
-		return;
-	}
-		
+    if (!validateInput(username)) {
+      showPush("Логин содержит запрещённые символы!", "#ff4081"); // Розовый
+      return;
+    }
+    if (!validateInput(passwd)) {
+      showPush("Пароль содержит запрещённые символы!", "#ff4081"); // Розовый
+      return;
+    }
+
     // Активация режима подтверждения
     saveButton.textContent = "Подтверди правым кликом!";
     saveButton.classList.add("confirm-mode");
     usernameInput.disabled = true;
     passwordInput.disabled = true;
 
-    // Удаляем старые обработчики перед добавлением новых
+    // Удаляет старые обработчики перед добавлением новых
     saveButton.removeEventListener("contextmenu", handleConfirm);
     saveButton.removeEventListener("click", handleCancel);
 
-    // Добавляем новые обработчики
+    // Добавляет новые обработчики
     saveButton.addEventListener("contextmenu", handleConfirm);
     saveButton.addEventListener("click", handleCancel);
   }
@@ -2274,15 +2288,15 @@ document.getElementById("accountsMQTT").addEventListener("click", showMqttAuthMo
 
 // Инициализация валидации для полей MQTT авторизации
 document.addEventListener("DOMContentLoaded", function() {
-const mqttUsernameInput = document.getElementById("mqttUsername");
-const mqttPasswordInput = document.getElementById("mqttPassword");
+  const mqttUsernameInput = document.getElementById("mqttUsername");
+  const mqttPasswordInput = document.getElementById("mqttPassword");
 
-if (mqttUsernameInput) {
-	mqttUsernameInput.addEventListener('input', () => updateFieldValidation(mqttUsernameInput, false));
-}
-if (mqttPasswordInput) {
-	mqttPasswordInput.addEventListener('input', () => updateFieldValidation(mqttPasswordInput, false));
-}
+  if (mqttUsernameInput) {
+    mqttUsernameInput.addEventListener('input', () => updateFieldValidation(mqttUsernameInput, false));
+  }
+  if (mqttPasswordInput) {
+    mqttPasswordInput.addEventListener('input', () => updateFieldValidation(mqttPasswordInput, false));
+  }
 });
 
 
@@ -2293,16 +2307,16 @@ if (mqttPasswordInput) {
 // Инициализация состояния при загрузке
 document.addEventListener("DOMContentLoaded", function() {
   const passwordField = document.getElementById("commandPassword");
-  passwordField.disabled = true; // Деактивируем поле "Пароль" при загрузке страницы
+  passwordField.disabled = true; // Деактивирует поле "Пароль" при загрузке страницы
   updateUserExecutionRadioState();
 
-	// Обработчик для кнопки переключения пароля
-    const togglePasswordButton = document.querySelector(".command-toggle-password");
-    if (togglePasswordButton) {
-        togglePasswordButton.addEventListener("click", toggleCommandPasswordVisibility);
-    }
-	
-	// Кнопка "Памятка с командами"
+  // Обработчик для кнопки переключения пароля
+  const togglePasswordButton = document.querySelector(".command-toggle-password");
+  if (togglePasswordButton) {
+    togglePasswordButton.addEventListener("click", toggleCommandPasswordVisibility);
+  }
+
+  // Кнопка "Памятка с командами"
   const openCheatsheetButton = document.getElementById("openCommandCheatsheet");
   if (openCheatsheetButton) {
     openCheatsheetButton.addEventListener("click", openCommandCheatsheetModal);
@@ -2310,49 +2324,49 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Крестик закрытия окна "Памятка с командами"
   const closeCheatsheetBtn = document.getElementById("closeCommandCheatsheetModal");
-	if (closeCheatsheetBtn) {
-	  closeCheatsheetBtn.addEventListener("click", closeCommandCheatsheetModal);
-	}
+  if (closeCheatsheetBtn) {
+    closeCheatsheetBtn.addEventListener("click", closeCommandCheatsheetModal);
+  }
 
-	// Инициализация вкладок в модалке "Список полезных команд"
-	initCheatsheetTabs();
+  // Инициализация вкладок в модалке "Список полезных команд"
+  initCheatsheetTabs();
 
-	// Клик по кнопке "вставить" рядом с командой
-	const cheatsheetModalEl = document.getElementById("commandCheatsheetModal");
-	if (cheatsheetModalEl) {
-	  cheatsheetModalEl.addEventListener("click", (e) => {
-		const btn = e.target.closest(".cheat-insert-btn");
-		if (!btn) return;
+  // Клик по кнопке "вставить" рядом с командой
+  const cheatsheetModalEl = document.getElementById("commandCheatsheetModal");
+  if (cheatsheetModalEl) {
+    cheatsheetModalEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cheat-insert-btn");
+      if (!btn) return;
 
-		e.preventDefault();
-		e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
 
-		const row = btn.closest(".cheat-row");
-		const codeEl = row && row.querySelector(".cheat-cmd code");
-		const cmdText = codeEl ? codeEl.textContent.trim() : "";
+      const row = btn.closest(".cheat-row");
+      const codeEl = row && row.querySelector(".cheat-cmd code");
+      const cmdText = codeEl ? codeEl.textContent.trim() : "";
 
-		if (cmdText) {
-		  const textarea = document.getElementById("commandText");
-		  if (textarea) {
-			textarea.value = cmdText; // вставляем команду
-			textarea.focus();
-			// курсор в конец
-			textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-		  }
+      if (cmdText) {
+        const textarea = document.getElementById("commandText");
+        if (textarea) {
+          textarea.value = cmdText; // Вставляет команду
+          textarea.focus();
+          // Курсор в конец
+          textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+        }
 
-		  // Автовыбор типа терминала по активной панели (CMD/PowerShell)
-		  const panel = btn.closest(".cheatsheet-panel");
-		  if (panel) {
-			const isPs = panel.id.includes("powershell");
-			const radio = document.querySelector(`input[name="terminalType"][value="${isPs ? "powershell" : "cmd"}"]`);
-			if (radio) radio.checked = true;
-		  }
-		}
+        // Автовыбор типа терминала по активной панели (CMD/PowerShell)
+        const panel = btn.closest(".cheatsheet-panel");
+        if (panel) {
+          const isPs = panel.id.includes("powershell");
+          const radio = document.querySelector(`input[name="terminalType"][value="${isPs ? "powershell" : "cmd"}"]`);
+          if (radio) radio.checked = true;
+        }
+      }
 
-		// Закрываем только "Список полезных команд"
-		closeCommandCheatsheetModal();
-	  });
-	}
+      // Закрывает только "Список полезных команд"
+      closeCommandCheatsheetModal();
+    });
+  }
 });
 
 // Открытие модального окна для выполнения команды
@@ -2389,7 +2403,7 @@ function openCommandCheatsheetModal() {
   const modal = document.getElementById("commandCheatsheetModal");
   if (modal) {
     modal.style.display = "flex";
-    setCheatsheetActiveTab("cmd"); // по умолчанию открываем вкладку CMD
+    setCheatsheetActiveTab("cmd"); // По умолчанию открывает вкладку CMD
   }
 }
 
@@ -2415,12 +2429,12 @@ function setCheatsheetActiveTab(name) {
   const modal = document.getElementById("commandCheatsheetModal");
   if (!modal) return;
 
-  // Переключаем активные кнопки
+  // Переключает активные кнопки
   modal.querySelectorAll(".cheatsheet-tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
 
-  // Переключаем активные панели
+  // Переключает активные панели
   modal.querySelectorAll(".cheatsheet-panel").forEach((panel) => {
     panel.classList.remove("active");
   });
@@ -2440,7 +2454,7 @@ function toggleCommandPasswordVisibility() {
     passwordIcon.setAttribute("src", isPasswordHidden ? "../icon/Show_Passwd.svg" : "../icon/Hide_Passwd.svg");
     passwordIcon.setAttribute("alt", isPasswordHidden ? "Показать пароль" : "Скрыть пароль");
 
-    // Если поле "Имя пользователя" пустое, сохраняем стили для неактивного поля
+    // Если поле "Имя пользователя" пустое, сохраняет стили для неактивного поля
     if (userNameField.value.trim() === "") {
       passwordInput.disabled = true;
     }
@@ -2456,13 +2470,13 @@ function updateUserExecutionRadioState() {
   radios.forEach((radio) => {
     radio.disabled = isDisabled;
 
-    // Если поле пустое, форсируем выбор "Выполнять для всех пользователей"
+    // Если поле пустое, форсирует выбор "Выполнять для всех пользователей"
     if (isDisabled) {
       document.querySelector('#userExecutionFieldset input[value="true"]').checked = true;
     }
   });
 
-  // Обновляем стили для всего fieldset
+  // Обновляет стили для всего fieldset
   const fieldset = document.getElementById("userExecutionFieldset");
   fieldset.style.opacity = isDisabled ? 0.6 : 1;
   fieldset.style.pointerEvents = isDisabled ? "none" : "auto";
@@ -2473,40 +2487,40 @@ document.getElementById("closeExecuteCommandModal").addEventListener("click", cl
 
 // Поддержка абзаца клавишей Enter в поле "textarea"
 document.getElementById("commandText").addEventListener("keydown", function(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-        event.stopPropagation(); // Предотвращаем всплытие
-        return; // Обычное поведение textarea (перенос строки)
-    }
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.stopPropagation(); // Предотвращает всплытие
+    return; // Обычное поведение textarea (перенос строки)
+  }
 });
 
 // Поддержка Tab в поле "textarea" (отступ вместо переключения фокуса)
 document.getElementById("commandText").addEventListener("keydown", function(event) {
-    if (event.key === "Tab") {
-        // Блокировка стандартного поведения клавиши Tab
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  if (event.key === "Tab") {
+    // Блокировка стандартного поведения клавиши Tab
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
 
-        const textarea = this;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
+    const textarea = this;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
 
-        // Отступ: 4 пробела
-        const tabChar = "    ";
+    // Отступ: 4 пробела
+    const tabChar = "    ";
 
-		// Вставка только пробелов
-        textarea.value = textarea.value.substring(0, start) + tabChar + textarea.value.substring(end);
+    // Вставка только пробелов
+    textarea.value = textarea.value.substring(0, start) + tabChar + textarea.value.substring(end);
 
-        // Сдвиг курсора сразу после вставленных пробелов
-        textarea.selectionStart = textarea.selectionEnd = start + tabChar.length;
-    }
+    // Сдвиг курсора сразу после вставленных пробелов
+    textarea.selectionStart = textarea.selectionEnd = start + tabChar.length;
+  }
 });
 
 // Обработка отправки формы
 document.getElementById("executeCommandForm").addEventListener("submit", function(event) {
   event.preventDefault();
 
-  // Получаем выбранных клиентов (true в checkboxStates)
+  // Получает выбранных клиентов (true в checkboxStates)
   const selectedClients = Object.entries(checkboxStates)
     .filter(([key, state]) => state && key.startsWith("checkbox_"))
     .map(([clientId]) => clientId.replace("checkbox_", ""));
@@ -2516,7 +2530,7 @@ document.getElementById("executeCommandForm").addEventListener("submit", functio
     return;
   }
 
-  // Формируем константы перед отправкой
+  // Формирует константы перед отправкой
   const terminalType = document.querySelector('input[name="terminalType"]:checked').value;
   const commandText = document.getElementById("commandText").value.trim();
   const workingFolder = document.getElementById("workingFolder").value.trim();
@@ -2531,13 +2545,13 @@ document.getElementById("executeCommandForm").addEventListener("submit", functio
     return;
   }
 
-  // Переопределяем runUserScope если имя пользователя не указано
+  // Переопределяет runUserScope если имя пользователя не указано
   let finalRunUserScope = runUserScope;
   if (commandUserName === "") {
     finalRunUserScope = true;
   }
 
-  // Формируем данные для отправки
+  // Формирует данные для отправки
   const requestData = {
     client_ids: selectedClients,
     terminal_command: terminalType,
@@ -2550,28 +2564,28 @@ document.getElementById("executeCommandForm").addEventListener("submit", functio
   };
 
   // Отправка POST-запроса на сервер
-	apiPostJson("/send-terminal-command", requestData)
-	.then(async (response) => {
-	// Проверяем статус ответа перед парсингом
-	if (!response.ok) {
-		// При ошибке (403, 500 и т.д.) читаем текст ответа
-		const errorText = await response.text();
-		showPush(errorText || "Ошибка отправки команды", "#ff4d4d"); // Красный
-		return;
-	}
-	// При успешном ответе парсим JSON
-	const data = await response.json();
-	if (data.status === "Ошибка") {
-		showPush(data.message, "#ff4d4d"); // Красный
-	} else if (data.status === "Успех") {
-		showPush(data.message, "#4CAF50"); // Зелёный
-		closeExecuteCommandModal(); // Закрываем модальное окно только при успехе
-	}
-	})
-	.catch((error) => {
-		console.error("Ошибка отправки команды:", error);
-		showPush("Не удалось отправить команду.", "#ff4081"); // Розовый
-	});
+  apiPostJson("/send-terminal-command", requestData)
+    .then(async (response) => {
+      // Проверяет статус ответа перед парсингом
+      if (!response.ok) {
+        // При ошибке (403, 500 и т.д.) читает текст ответа
+        const errorText = await response.text();
+        showPush(errorText || "Ошибка отправки команды", "#ff4d4d"); // Красный
+        return;
+      }
+      // При успешном ответе парсим JSON
+      const data = await response.json();
+      if (data.status === "Ошибка") {
+        showPush(data.message, "#ff4d4d"); // Красный
+      } else if (data.status === "Успех") {
+        showPush(data.message, "#4CAF50"); // Зелёный
+        closeExecuteCommandModal(); // Закрывает модальное окно только при успехе
+      }
+    })
+    .catch((error) => {
+      console.error("Ошибка отправки команды:", error);
+      showPush("Не удалось отправить команду.", "#ff4081"); // Розовый
+    });
 });
 
 // Обработчик изменений в поле "Имя пользователя"
@@ -2591,12 +2605,12 @@ document.getElementById("commandUserName").addEventListener("input", function(ev
   updateUserExecutionRadioState();
 });
 
-// При открытии модального окна проверяем состояние поля "Имя пользователя"
+// При открытии модального окна проверяет состояние поля "Имя пользователя"
 document.getElementById("executeCommandModal").addEventListener("click", function() {
   const userNameField = document.getElementById("commandUserName");
   const passwordField = document.getElementById("commandPassword");
   if (userNameField.value.trim() === "") {
-    passwordField.disabled = true; // Деактивируем поле "Пароль", если имя пользователя пустое
+    passwordField.disabled = true; // Деактивирует поле "Пароль", если имя пользователя пустое
   }
 });
 
@@ -2607,6 +2621,7 @@ function runCommand() {
 
 
 
+
 /* МОДАЛЬНОЕ ОКНО УСТАНОВКА ПО */
 
 // Глобальные переменные
@@ -2614,8 +2629,8 @@ let uploadXHR = null; // Для отмены загрузки
 let uploadedFilePath = null; // Для хранения пути загруженного файла
 let isUploading = false; // Флаг для отслеживания состояния загрузки
 
-let currentUploadFile = null; // Добавляем для отслеживания текущего файла
-let lastUploadPercent = -1; // Добавляем для хранения последнего процента
+let currentUploadFile = null; // Добавляет для отслеживания текущего файла
+let lastUploadPercent = -1; // Добавляет для хранения последнего процента
 
 // Возвращает true, если в данный момент мы НЕ МОЖЕМ начать новую загрузку
 function isBlocked() {
@@ -2633,7 +2648,7 @@ document.addEventListener("DOMContentLoaded", function() {
 function openInstallProgramModal() {
   document.getElementById("installProgramModal").style.display = "flex";
 
-  // Если идет загрузка, восстанавливаем состояние
+  // Если идет загрузка, восстанавливает состояние
   if (isUploading && currentUploadFile) {
     document.getElementById("dropText").style.display = "none";
     document.getElementById("fileNameText").textContent = currentUploadFile.name;
@@ -2669,7 +2684,7 @@ function toggleInstallPasswordVisibility() {
     passwordIcon.setAttribute("src", isPasswordHidden ? "../icon/Show_Passwd.svg" : "../icon/Hide_Passwd.svg");
     passwordIcon.setAttribute("alt", isPasswordHidden ? "Показать пароль" : "Скрыть пароль");
 
-    // Если поле "Имя пользователя" пустое, сохраняем стили для неактивного поля
+    // Если поле "Имя пользователя" пустое, сохраняет стили для неактивного поля
     if (userNameField.value.trim() === "") {
       passwordInput.disabled = true;
     }
@@ -2690,12 +2705,12 @@ function updateInstallUserExecutionRadioState() {
     }
   });
 
-  // Обновляем стили для всего fieldset
+  // Обновляет стили для всего fieldset
   const fieldset = document.getElementById("installUserExecutionFieldset");
   fieldset.style.opacity = isDisabled ? 0.6 : 1;
   fieldset.style.pointerEvents = isDisabled ? "none" : "auto";
 
-  // Обновляем состояние поля пароля
+  // Обновляет состояние поля пароля
   if (isDisabled) {
     passwordField.disabled = true;
     passwordField.value = "";
@@ -2706,10 +2721,10 @@ function updateInstallUserExecutionRadioState() {
 
 // Обработчик для кнопки переключения пароля в установке ПО
 document.addEventListener('DOMContentLoaded', function() {
-    const toggleInstallPasswordButton = document.getElementById('toggleInstallPasswordButton');
-    if (toggleInstallPasswordButton) {
-        toggleInstallPasswordButton.addEventListener('click', toggleInstallPasswordVisibility);
-    }
+  const toggleInstallPasswordButton = document.getElementById('toggleInstallPasswordButton');
+  if (toggleInstallPasswordButton) {
+    toggleInstallPasswordButton.addEventListener('click', toggleInstallPasswordVisibility);
+  }
 });
 
 // Обработчик изменений в поле "Имя пользователя" для "Установка ПО"
@@ -2724,14 +2739,14 @@ const dropText = document.getElementById("dropText");
 
 // Выбор файла по клику
 dropArea.addEventListener("click", () => {
-  if (isBlocked()) return; // <-- блокируем клик
+  if (isBlocked()) return; // <-- блокирует клик
   fileInput.click();
 });
 
 // Выбор файла методом перетягивания на панель
 fileInput.addEventListener("change", (event) => {
   if (isBlocked()) {
-    // сбрасываем ненужный выбор, чтобы input.value не хранил новый файл
+    // Сбрасывает ненужный выбор, чтобы input.value не хранил новый файл
     event.target.value = "";
     return;
   }
@@ -2749,7 +2764,7 @@ dropArea.addEventListener("dragover", (event) => {
   }
 
   dropText.textContent = "Отпустите кнопку мыши";
-  event.dataTransfer.dropEffect = "copy"; // Разрешаем копирование
+  event.dataTransfer.dropEffect = "copy"; // Разрешает копирование
 });
 
 dropArea.addEventListener("dragleave", () => {
@@ -2775,13 +2790,13 @@ function uploadFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  // Сохраняем текущий файл и состояние
+  // Сохраняет текущий файл и состояние
   currentUploadFile = file;
   isUploading = true;
   lastUploadPercent = 0;
   dropArea.classList.add("blocked");
 
-  // Показываем информацию о загрузке
+  // Показывает информацию о загрузке
   document.getElementById("dropText").style.display = "none";
   document.getElementById("fileNameText").textContent = file.name;
   document.getElementById("fileNameText").style.display = "block";
@@ -2804,72 +2819,72 @@ function uploadFile(file) {
 
   // Обработчик onload
   uploadXHR.onload = function() {
-  try {
-    // Подхват ротации токена из ответа XHR
-    const newTok = uploadXHR.getResponseHeader("X-CSRF-Token");
-    if (newTok) window.CSRF_TOKEN = newTok;
-  } catch (_) {}
-
-  if (uploadXHR.status === 403) {
-    // Читаем сообщение от сервера и парсим JSON
-    let serverMessage = "Доступ запрещён";
     try {
+      // Подхват ротации токена из ответа XHR
+      const newTok = uploadXHR.getResponseHeader("X-CSRF-Token");
+      if (newTok) window.CSRF_TOKEN = newTok;
+    } catch (_) {}
+
+    if (uploadXHR.status === 403) {
+      // Читает сообщение от сервера и парсим JSON
+      let serverMessage = "Доступ запрещён";
+      try {
         const errorData = JSON.parse(uploadXHR.responseText);
         serverMessage = errorData.message || serverMessage;
-    } catch (e) {
-        // Если не JSON, используем текст как есть
+      } catch (e) {
+        // Если не JSON, использует текст как есть
         serverMessage = uploadXHR.responseText || serverMessage;
-    }
-    showPush(serverMessage, "#ff4d4d"); // Красный
-    // Обновляем CSRF токен на всякий случай
-    fetchCsrfToken();
-
-    // Сброс визуального состояния
-    isUploading = false;
-    currentUploadFile = null;
-    lastUploadPercent = -1;
-    dropArea.classList.remove("blocked");
-
-    document.getElementById("uploadProgress").style.display = "none";
-    document.getElementById("cancelUploadText").style.display = "none";
-    document.getElementById("fileNameText").style.display = "none";
-    document.getElementById("dropText").style.display = "block";
-
-  } else if (uploadXHR.status === 200) {
-    try {
-      const response = JSON.parse(uploadXHR.responseText);
-      if (response.status === "Успех") {
-        showPush("Файл успешно загружен на сервер", "#4CAF50"); // Зелёный
-        uploadedFilePath = response.filePath;
-        document.getElementById("dropText").textContent = file.name;
-
-        const postUploadCancelTextElement = document.getElementById("postUploadCancelText");
-        if (postUploadCancelTextElement) {
-          postUploadCancelTextElement.style.display = "block";
-        }
-      } else {
-        showPush(response.message || "Ошибка загрузки файла", "#ff4d4d"); // Красный
       }
-    } catch (e) {
-      showPush("Ошибка парсинга ответа сервера", "#ff4d4d"); // Красный
+      showPush(serverMessage, "#ff4d4d"); // Красный
+      // Обновляет CSRF токен на всякий случай
+      fetchCsrfToken();
+
+      // Сброс визуального состояния
+      isUploading = false;
+      currentUploadFile = null;
+      lastUploadPercent = -1;
+      dropArea.classList.remove("blocked");
+
+      document.getElementById("uploadProgress").style.display = "none";
+      document.getElementById("cancelUploadText").style.display = "none";
+      document.getElementById("fileNameText").style.display = "none";
+      document.getElementById("dropText").style.display = "block";
+
+    } else if (uploadXHR.status === 200) {
+      try {
+        const response = JSON.parse(uploadXHR.responseText);
+        if (response.status === "Успех") {
+          showPush("Файл успешно загружен на сервер", "#4CAF50"); // Зелёный
+          uploadedFilePath = response.filePath;
+          document.getElementById("dropText").textContent = file.name;
+
+          const postUploadCancelTextElement = document.getElementById("postUploadCancelText");
+          if (postUploadCancelTextElement) {
+            postUploadCancelTextElement.style.display = "block";
+          }
+        } else {
+          showPush(response.message || "Ошибка загрузки файла", "#ff4d4d"); // Красный
+        }
+      } catch (e) {
+        showPush("Ошибка парсинга ответа сервера", "#ff4d4d"); // Красный
+      }
+
+      isUploading = false;
+      currentUploadFile = null;
+      lastUploadPercent = -1;
+      document.getElementById("uploadProgress").style.display = "none";
+      document.getElementById("cancelUploadText").style.display = "none";
+
+    } else {
+      showPush("Ошибка загрузки файла", "#ff4d4d"); // Красный
+
+      isUploading = false;
+      currentUploadFile = null;
+      lastUploadPercent = -1;
+      document.getElementById("fileNameText").style.display = "none";
+      document.getElementById("dropText").style.display = "block";
     }
-
-    isUploading = false;
-    currentUploadFile = null;
-    lastUploadPercent = -1;
-    document.getElementById("uploadProgress").style.display = "none";
-    document.getElementById("cancelUploadText").style.display = "none";
-
-  } else {
-    showPush("Ошибка загрузки файла", "#ff4d4d"); // Красный
-
-    isUploading = false;
-    currentUploadFile = null;
-    lastUploadPercent = -1;
-    document.getElementById("fileNameText").style.display = "none";
-    document.getElementById("dropText").style.display = "block";
-  }
-};
+  };
 
   // Полный обработчик onerror
   uploadXHR.onerror = function() {
@@ -2909,7 +2924,7 @@ function updateFieldsBasedOnOnlyDownload() {
     installHighestPrivilegesCheckbox.checked = false;
     notDeleteAfterInstallationCheckbox.checked = false;
 
-    // Явно обновляем состояние полей "Выполнение для пользователей:" и "Пароль (опционально):"
+    // Явно обновляет состояние полей "Выполнение для пользователей:" и "Пароль (опционально):"
     updateInstallUserExecutionRadioState();
   }
 }
@@ -2927,7 +2942,7 @@ document.getElementById("installProgramForm").addEventListener("submit", functio
     return;
   }
 
-  // Получаем выбранных клиентов
+  // Получает выбранных клиентов
   const selectedClients = Object.entries(checkboxStates)
     .filter(([key, state]) => state && key.startsWith("checkbox_"))
     .map(([clientId]) => clientId.replace("checkbox_", ""));
@@ -2937,7 +2952,7 @@ document.getElementById("installProgramForm").addEventListener("submit", functio
     return;
   }
 
-  // Собираем данные формы
+  // Собирает данные формы
   const onlyDownload = document.getElementById("onlyDownload").checked;
   const downloadPath = document.getElementById("downloadPath").value.trim();
   let launchKeys = document.getElementById("launchKeys").value.trim();
@@ -2947,16 +2962,16 @@ document.getElementById("installProgramForm").addEventListener("submit", functio
   let highestPrivileges = document.getElementById("installHighestPrivileges").checked;
   let notDeleteAfterInstallation = document.getElementById("notDeleteAfterInstallation").checked;
 
-  // Формируем "DownloadRunPath"
+  // Формирует "DownloadRunPath"
   let downloadRunPath;
-  const fileName = uploadedFilePath.split("/").pop(); // Получаем имя файла
+  const fileName = uploadedFilePath.split("/").pop(); // Получает имя файла
   if (downloadPath) {
     downloadRunPath = `${downloadPath}\\${fileName}`.replace(/\\+/g, "\\");
   } else {
     downloadRunPath = fileName; // Только имя файла, если путь не указан
   }
 
-  // Если "OnlyDownload" == true, корректируем значения
+  // Если "OnlyDownload" == true, корректирует значения
   if (onlyDownload) {
     launchKeys = "";
     installUserName = "";
@@ -2968,7 +2983,7 @@ document.getElementById("installProgramForm").addEventListener("submit", functio
     runUserScope = true;
   }
 
-  // Формируем данные для отправки
+  // Формирует данные для отправки
   const requestData = {
     client_ids: selectedClients,
     OnlyDownload: onlyDownload,
@@ -2982,15 +2997,15 @@ document.getElementById("installProgramForm").addEventListener("submit", functio
   };
 
   // Отправка POST-запроса на сервер
-	apiPostJson("/send-install-QUIC-program", requestData)
+  apiPostJson("/send-install-QUIC-program", requestData)
     .then((response) => response.json())
     .then((data) => {
       if (data.status === "Ошибка") {
         showPush(data.message, "#ff4d4d"); // Красный
       } else if (data.status === "Успех") {
         showPush(data.message, "#4CAF50"); // Зелёный
-        resetDropArea(); // Очищаем только Drag-and-drop панель
-        closeInstallProgramModal(); // Закрываем модальное окно только при успехе
+        resetDropArea(); // Очищает только Drag-and-drop панель
+        closeInstallProgramModal(); // Закрывает модальное окно только при успехе
       }
     })
     .catch((error) => {
@@ -3041,22 +3056,24 @@ function showConfirmCancelUploadModal(message, onConfirm) {
   confirmButton.addEventListener("click", confirmHandler);
   closeButton.addEventListener("click", cancelHandler);
 
-  // Добавляем обработчик Enter для кнопки
+  // Добавляет обработчик Enter для кнопки
   confirmButton.addEventListener("keydown", handleKeyPress);
 
-  // Добавляем обработчик Esc для всего документа
+  // Добавляет обработчик Esc для всего документа
   document.addEventListener("keydown", handleEscPress);
 
-  // Устанавливаем фокус на кнопку "Отменить"
+  // Устанавливает фокус на кнопку "Отменить"
   confirmButton.focus();
 }
 
 // Функция для удаления файла на сервере
 async function deleteFileOnServer(filename) {
   try {
-    const resp = await apiPostJson("/delete-file-QUIC", { filename });
+    const resp = await apiPostJson("/delete-file-QUIC", {
+      filename
+    });
     const data = await resp.json();
-	
+
     if (data.status === "Успех") {
       showPush(data.message, "#2196F3"); // Голубой
       return true;
@@ -3079,10 +3096,10 @@ function resetUploadState() {
   document.getElementById("dropText").textContent = "Перетащите исполняемый файл на панель или кликнете сюда";
 
   const postUploadCancelTextElement = document.getElementById("postUploadCancelText");
-    if (postUploadCancelTextElement) {
-        postUploadCancelTextElement.style.display = "none";
-    }
-	
+  if (postUploadCancelTextElement) {
+    postUploadCancelTextElement.style.display = "none";
+  }
+
   uploadedFilePath = null;
   isUploading = false;
   currentUploadFile = null;
@@ -3098,12 +3115,12 @@ function resetDropArea() {
   document.getElementById("cancelUploadText").style.display = "none";
   document.getElementById("dropText").style.display = "block";
   document.getElementById("dropText").textContent = "Перетащите исполняемый файл на панель или кликнете сюда";
-  
+
   const postUploadCancelTextElement = document.getElementById("postUploadCancelText");
-    if (postUploadCancelTextElement) {
-        postUploadCancelTextElement.style.display = "none";
-    }
-	
+  if (postUploadCancelTextElement) {
+    postUploadCancelTextElement.style.display = "none";
+  }
+
   uploadedFilePath = null;
   currentUploadFile = null;
   lastUploadPercent = -1;
@@ -3120,7 +3137,7 @@ dropArea.addEventListener("contextmenu", async (event) => {
     return;
   }
 
-  // Определяем имя файла для сообщения
+  // Определяет имя файла для сообщения
   let fileName = "";
   if (currentUploadFile) {
     fileName = currentUploadFile.name;
@@ -3128,7 +3145,7 @@ dropArea.addEventListener("contextmenu", async (event) => {
     fileName = uploadedFilePath.split("/").pop();
   }
 
-  // Формируем сообщение в зависимости от состояния
+  // Формирует сообщение в зависимости от состояния
   let message;
   if (isUploading) {
     message = `"${fileName}"?`;
@@ -3137,28 +3154,166 @@ dropArea.addEventListener("contextmenu", async (event) => {
   }
 
   showConfirmCancelUploadModal(message, async () => {
-    // Отменяем загрузку, если она идет
+    // Отменяет загрузку, если она идет
     if (isUploading && uploadXHR) {
       uploadXHR.abort();
     }
 
-    // Отправляем запрос на удаление файла на сервере
+    // Отправляет запрос на удаление файла на сервере
     let deleteSuccess = true;
     if (fileName) {
       deleteSuccess = await deleteFileOnServer(fileName);
     }
 
-    // Сбрасываем состояние только если удаление прошло успешно или файла не было
+    // Сбрасывает состояние только если удаление прошло успешно или файла не было
     if (deleteSuccess || !fileName) {
       resetUploadState();
     } else {
-      // Если не удалось удалить, но файл был загружен - оставляем его
+      // Если не удалось удалить, но файл был загружен - оставляет его
       if (uploadedFilePath) {
         document.getElementById("dropText").textContent = fileName;
       }
     }
   });
 });
+
+
+
+// СОРТИРОВКА В МОДАЛЬНОМ ОКНЕ "Отчёт"
+
+// Получение текущего состояния сортировки из localStorage
+function getReportSortState(tab) {
+  const key = tab === 'install' ? 'reportInstallSort' : 'reportCmdSort';
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      /* Игнорирует */
+    }
+  }
+  return {
+    field: 'client',
+    dir: 'asc'
+  }; // По умолчанию: клиенты по возрастанию
+}
+
+// Сохранение состояния сортировки в localStorage
+function saveReportSortState(tab, state) {
+  const key = tab === 'install' ? 'reportInstallSort' : 'reportCmdSort';
+  localStorage.setItem(key, JSON.stringify(state));
+}
+
+// Определение типа статуса ячейки "Выполнено"
+function getReportStatusType(cell) {
+  if (cell.querySelector('.done')) return 'success';
+  if (cell.querySelector('.error')) return 'error';
+  return 'pending';
+}
+
+// Следующее направление для столбца "Выполнено" (три состояния)
+function nextDoneDir(currentDir) {
+  if (currentDir === 'success') return 'pending';
+  if (currentDir === 'pending') return 'error';
+  return 'success';
+}
+
+// Сортировка таблицы отчёта
+function sortReportTable(tab, field, forceApply) {
+  const sortState = getReportSortState(tab);
+
+  if (!forceApply) {
+    // Клик пользователя — переключает направление
+    if (sortState.field === field) {
+      if (field === 'client') {
+        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortState.dir = nextDoneDir(sortState.dir);
+      }
+    } else {
+      // Другое поле — устанавливает направление по умолчанию
+      sortState.field = field;
+      sortState.dir = field === 'client' ? 'asc' : 'success';
+    }
+    saveReportSortState(tab, sortState);
+  }
+
+  const tbodyId = tab === 'install' ? 'installClientsTableBody' : 'clientsTableBody';
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.rows);
+
+  rows.sort((a, b) => {
+    if (sortState.field === 'client') {
+      const nameA = a.cells[0].textContent.trim();
+      const nameB = b.cells[0].textContent.trim();
+      const cmp = nameA.localeCompare(nameB, 'ru');
+      return sortState.dir === 'asc' ? cmp : -cmp;
+    } else {
+      const typeA = getReportStatusType(a.cells[1]);
+      const typeB = getReportStatusType(b.cells[1]);
+
+      let order;
+      if (sortState.dir === 'success') {
+        order = {
+          success: 0,
+          pending: 1,
+          error: 2
+        };
+      } else if (sortState.dir === 'pending') {
+        order = {
+          pending: 0,
+          success: 1,
+          error: 2
+        };
+      } else {
+        order = {
+          error: 0,
+          pending: 1,
+          success: 2
+        };
+      }
+
+      return order[typeA] - order[typeB];
+    }
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+  updateReportSortIndicator(tab, sortState);
+}
+
+// Применение сохранённой сортировки (без переключения направления)
+function applyReportSort(tab) {
+  const sortState = getReportSortState(tab);
+  sortReportTable(tab, sortState.field, true);
+}
+
+// Обновление индикатора сортировки в модальном окне "Отчёт"
+function updateReportSortIndicator(tab, sortState) {
+  // Сбрасывает индикаторы для текущей вкладки
+  ['client', 'done'].forEach(f => {
+    const el = document.getElementById('reportSortIndicator_' + tab + '_' + f);
+    if (el) {
+      el.classList.remove('active');
+      el.textContent = '';
+    }
+  });
+
+  // Устанавливает индикатор для активного поля
+  const indicator = document.getElementById('reportSortIndicator_' + tab + '_' + sortState.field);
+  if (indicator) {
+    indicator.classList.add('active');
+    if (sortState.field === 'client') {
+      indicator.textContent = sortState.dir === 'asc' ? '▲' : '▼';
+    } else {
+      if (sortState.dir === 'success') indicator.textContent = '▲';
+      else if (sortState.dir === 'pending') indicator.textContent = '▶';
+      else indicator.textContent = '▼';
+    }
+  }
+}
+
 
 
 
@@ -3185,53 +3340,53 @@ function openReportTab(event, tabName) {
 
   if (tabName === "cmdReport") {
     loadCmdDates();
-    CmdAutoUpdater.start(); // Запускаем автообновление
+    CmdAutoUpdater.start(); // Запускает автообновление
     InstallAutoUpdater.stop();
   } else if (tabName === "installReport") {
     loadInstallDates();
     InstallAutoUpdater.start();
-    CmdAutoUpdater.stop(); // Останавливаем автообновление
+    CmdAutoUpdater.stop(); // Останавливает автообновление
   }
 }
 
 // Закрытие модального окна отчётов
 function closeReportModal() {
   document.getElementById("reportModal").style.display = "none";
-  CmdAutoUpdater.stop(); // Останавливаем автообновление при закрытии модального окна
+  CmdAutoUpdater.stop(); // Останавливает автообновление при закрытии модального окна
   InstallAutoUpdater.stop();
 }
 
 // Открытие модального окна отчётов
 function openReportModal() {
-    document.getElementById("reportModal").style.display = "flex";
-    
-    // Создаем фейковое событие для инициализации
-    const fakeEvent = {
-        currentTarget: document.getElementById("installReportTab")
-    };
-    openReportTab(fakeEvent, "installReport");
+  document.getElementById("reportModal").style.display = "flex";
+
+  // Создаёт фейковое событие для инициализации
+  const fakeEvent = {
+    currentTarget: document.getElementById("installReportTab")
+  };
+  openReportTab(fakeEvent, "installReport");
 }
 
 // Функция для парсинга даты из строки
 function parseCustomDate(dateString) {
-    const [datePart, timeAndMs] = dateString.split('(');
-    const [day, month, year] = datePart.split('.');
-    const [timePart] = timeAndMs.split(')');
-    const [hours, minutes, seconds] = timePart.split(':');
-    const fullYear = parseInt(year) < 100 ? 2000 + parseInt(year) : parseInt(year);
-    return new Date(fullYear, month - 1, day, hours, minutes, seconds);
+  const [datePart, timeAndMs] = dateString.split('(');
+  const [day, month, year] = datePart.split('.');
+  const [timePart] = timeAndMs.split(')');
+  const [hours, minutes, seconds] = timePart.split(':');
+  const fullYear = parseInt(year) < 100 ? 2000 + parseInt(year) : parseInt(year);
+  return new Date(fullYear, month - 1, day, hours, minutes, seconds);
 }
 
 // Функция для форматирования даты
 function formatDate(dateString) {
-    const date = parseCustomDate(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(2);
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${day}.${month}.${year} (${hours}:${minutes}:${seconds})`;
+  const date = parseCustomDate(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(2);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${day}.${month}.${year} (${hours}:${minutes}:${seconds})`;
 }
 
 // Функция вычисления размера загруженного файла на сервер
@@ -3255,94 +3410,97 @@ function formatFileSize(bytes) {
 }
 
 function adjustHeaderPadding(containerClass) {
-    const bodyContainer = document.querySelector(`.${containerClass} .clients-table-body-container`);
-    const headerContainer = document.querySelector(`.${containerClass} .clients-table-header-container`);
-    if (!bodyContainer || !headerContainer) return;
-    const isChromium = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    if (bodyContainer.scrollHeight > bodyContainer.clientHeight && isChromium) {
-        headerContainer.style.paddingRight = "18px";
-    } else {
-        headerContainer.style.paddingRight = "3px";
-    }
+  const bodyContainer = document.querySelector(`.${containerClass} .clients-table-body-container`);
+  const headerContainer = document.querySelector(`.${containerClass} .clients-table-header-container`);
+  if (!bodyContainer || !headerContainer) return;
+  const isChromium = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+  if (bodyContainer.scrollHeight > bodyContainer.clientHeight && isChromium) {
+    headerContainer.style.paddingRight = "18px";
+  } else {
+    headerContainer.style.paddingRight = "3px";
+  }
 }
 
 // Функция для загрузки дат создания команд
 function loadDates(url, selectId, reportType) {
-    fetch(url, { method: "GET", credentials: "same-origin" })
-	
+  fetch(url, {
+      method: "GET",
+      credentials: "same-origin"
+    })
+
     .then((response) => response.json())
     .then((data) => {
-        const select = document.getElementById(selectId);
-        if (!data || data.length === 0) {
-            select.innerHTML = '<option value="">Нет запросов</option>';
-            return;
+      const select = document.getElementById(selectId);
+      if (!data || data.length === 0) {
+        select.innerHTML = '<option value="">Нет запросов</option>';
+        return;
+      }
+      data.sort((a, b) => parseCustomDate(b.Date_Of_Creation) - parseCustomDate(a.Date_Of_Creation));
+      select.innerHTML = "";
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.Date_Of_Creation;
+        option.textContent = formatDate(item.Date_Of_Creation);
+        select.appendChild(option);
+      });
+      if (data.length > 0) {
+        if (reportType === 'cmd') {
+          loadCmdReport();
+        } else if (reportType === 'install') {
+          loadInstallReport();
         }
-        data.sort((a, b) => parseCustomDate(b.Date_Of_Creation) - parseCustomDate(a.Date_Of_Creation));
-        select.innerHTML = "";
-        data.forEach((item) => {
-            const option = document.createElement("option");
-            option.value = item.Date_Of_Creation;
-            option.textContent = formatDate(item.Date_Of_Creation);
-            select.appendChild(option);
-        });
-        if (data.length > 0) {
-            if (reportType === 'cmd') {
-                loadCmdReport();
-            } else if (reportType === 'install') {
-                loadInstallReport();
-            }
-        }
+      }
     })
     .catch((error) => {
-        console.error("Ошибка загрузки дат:", error);
+      console.error("Ошибка загрузки дат:", error);
     });
 }
 
 // Функция для удаления всего запроса с подтверждением
 function deleteSelectedRequest(url, selectId, reportType) {
-    const selectElement = document.getElementById(selectId);
-    const selectedDate = selectElement.value;
-    if (!selectedDate) {
-        showPush("Выберите запрос для удаления!", "#ff4081");
-        return;
-    }
-    const selectedOptionText = selectElement.options[selectElement.selectedIndex].text;
-    showConfirmModal(`От "${selectedOptionText}"?`, function() {
+  const selectElement = document.getElementById(selectId);
+  const selectedDate = selectElement.value;
+  if (!selectedDate) {
+    showPush("Выберите запрос для удаления!", "#ff4081");
+    return;
+  }
+  const selectedOptionText = selectElement.options[selectElement.selectedIndex].text;
+  showConfirmModal(`От "${selectedOptionText}"?`, function() {
 
-        apiPostJson(url, {
-                Date_Of_Creation: selectedDate
-            })
+    apiPostJson(url, {
+        Date_Of_Creation: selectedDate
+      })
 
-            .then(async (response) => {
-                // Проверяем статус ответа перед парсингом
-                if (!response.ok) {
-                    // При ошибке (403, 500 и т.д.) читаем текст ответа
-                    const errorText = await response.text();
-                    showPush(errorText || "Ошибка удаления запроса", "#ff4d4d"); // Красный
-                    return;
-                }
-                // При успешном ответе парсим JSON
-                const result = await response.json();
-                if (result.status === "Успех") {
-                    showPush(result.message, "#4CAF50"); // Зелёный
-                    if (reportType === 'cmd') {
-                        loadCmdDates();
-                        document.getElementById("cmdDetails").innerHTML = "";
-                        document.getElementById("clientsTableBody").innerHTML = "";
-                    } else if (reportType === 'install') {
-                        loadInstallDates();
-                        document.getElementById("installDetails").innerHTML = "";
-                        document.getElementById("installClientsTableBody").innerHTML = "";
-                    }
-                } else {
-                    showPush(result.message, "#ff4d4d"); // Красный
-                }
-            })
-            .catch((error) => {
-                console.error("Ошибка:", error);
-                showPush("Ошибка: " + error.message, "#ff4d4d"); // Красный
-            });
-    });
+      .then(async (response) => {
+        // Проверяет статус ответа перед парсингом
+        if (!response.ok) {
+          // При ошибке (403, 500 и т.д.) читает текст ответа
+          const errorText = await response.text();
+          showPush(errorText || "Ошибка удаления запроса", "#ff4d4d"); // Красный
+          return;
+        }
+        // При успешном ответе парсим JSON
+        const result = await response.json();
+        if (result.status === "Успех") {
+          showPush(result.message, "#4CAF50"); // Зелёный
+          if (reportType === 'cmd') {
+            loadCmdDates();
+            document.getElementById("cmdDetails").innerHTML = "";
+            document.getElementById("clientsTableBody").innerHTML = "";
+          } else if (reportType === 'install') {
+            loadInstallDates();
+            document.getElementById("installDetails").innerHTML = "";
+            document.getElementById("installClientsTableBody").innerHTML = "";
+          }
+        } else {
+          showPush(result.message, "#ff4d4d"); // Красный
+        }
+      })
+      .catch((error) => {
+        console.error("Ошибка:", error);
+        showPush("Ошибка: " + error.message, "#ff4d4d"); // Красный
+      });
+  });
 }
 
 
@@ -3350,18 +3508,21 @@ function deleteSelectedRequest(url, selectId, reportType) {
 
 // Вызов загрузки дат для вкладки "По установкам ПО"
 function loadInstallDates() {
-    loadDates("/get-QUIC-report", "installDateSelect", "install");
+  loadDates("/get-QUIC-report", "installDateSelect", "install");
 }
 
 // Вызов удаления всего запроса с подтверждением
 function deleteSelectedInstall() {
-    deleteSelectedRequest("/delete-by-date-QUIC-report", "installDateSelect", "install");
+  deleteSelectedRequest("/delete-by-date-QUIC-report", "installDateSelect", "install");
 }
 
 function loadInstallReport() {
   const selectedDate = document.getElementById('installDateSelect').value;
-  fetch('/get-QUIC-report', { method: 'GET', credentials: "same-origin" })
-  
+  fetch('/get-QUIC-report', {
+      method: 'GET',
+      credentials: "same-origin"
+    })
+
     .then(response => response.json())
     .then(data => {
       if (!data || data.length === 0) {
@@ -3375,22 +3536,22 @@ function loadInstallReport() {
       if (selectedCommand) {
         displayInstallDetails(selectedCommand);
         displayInstallClients(selectedCommand.ClientID_QUIC);
-		
+
         const detailsDiv = document.getElementById('installDetails');
         const fieldset = document.querySelector('.install-fieldset-fixed');
-		const savedState = sessionStorage.getItem('installDetailsState') || 'collapsed';
-		
+        const savedState = sessionStorage.getItem('installDetailsState') || 'collapsed';
+
         if (savedState === 'expanded') {
-		  fieldset.classList.add('expanded');
-		  fieldset.classList.remove('collapsed');
-		  document.getElementById('toggleInstallDetails').textContent = '-';
-		} else {
-		  fieldset.classList.add('collapsed');
-		  fieldset.classList.remove('expanded');
-		  document.getElementById('toggleInstallDetails').textContent = '+';
-		}
-		setInstallClientsTableHeight();
-		adjustHeaderPadding('install-clients-table-container');
+          fieldset.classList.add('expanded');
+          fieldset.classList.remove('collapsed');
+          document.getElementById('toggleInstallDetails').textContent = '-';
+        } else {
+          fieldset.classList.add('collapsed');
+          fieldset.classList.remove('expanded');
+          document.getElementById('toggleInstallDetails').textContent = '+';
+        }
+        setInstallClientsTableHeight();
+        adjustHeaderPadding('install-clients-table-container');
       } else {
         document.getElementById('installDetails').innerHTML = '';
         document.getElementById('installClientsTableBody').innerHTML = '';
@@ -3400,7 +3561,7 @@ function loadInstallReport() {
     })
     .catch(error => {
       console.error('Ошибка загрузки отчёта:', error);
-      showPush("Ошибка: " + error.message, '#ff4d4d');  // Красный
+      showPush("Ошибка: " + error.message, '#ff4d4d'); // Красный
     });
 }
 
@@ -3421,7 +3582,7 @@ function toggleInstallDetails() {
     setInstallClientsTableHeight();
     adjustHeaderPadding('install-clients-table-container');
 
-	// Детали к 0px (плавное сворачивание)
+    // Детали к 0px (плавное сворачивание)
     const startHeight = details.offsetHeight;
     details.style.maxHeight = startHeight + 'px';
     void details.getBoundingClientRect();
@@ -3431,15 +3592,15 @@ function toggleInstallDetails() {
     const onEnd = (e) => {
       if (e.propertyName !== 'max-height') return;
       details.removeEventListener('transitionend', onEnd);
-	  
-	  // Только после окончания — переключаем класс "рамки"
+
+      // Только после окончания — переключает класс "рамки"
       fieldset.classList.remove('expanded');
       fieldset.classList.add('collapsed');
-	  
-	  // Чистим инлайн
+
+      // Чистим инлайн
       details.style.maxHeight = '';
-	  
-	  // Финальная корректировка шапки (после анимации)
+
+      // Финальная корректировка шапки (после анимации)
       setTimeout(() => adjustHeaderPadding('install-clients-table-container'), 0);
       details.dataset.animating = '0';
     };
@@ -3450,10 +3611,10 @@ function toggleInstallDetails() {
     setInstallClientsTableHeight();
     adjustHeaderPadding('install-clients-table-container');
 
-	// Детали к целевому значению через CSS
+    // Детали к целевому значению через CSS
     fieldset.classList.add('expanded');
     fieldset.classList.remove('collapsed');
-    details.style.maxHeight = ''; // позволяем правилу .expanded #cmdDetails анимировать до 185px
+    details.style.maxHeight = ''; // Позволяет правилу .expanded #cmdDetails анимировать до 185px
     toggleButton.textContent = '-';
 
     const onEnd = (e) => {
@@ -3563,7 +3724,7 @@ function displayInstallClients(clients) {
       </td>
     `;
 
-    // Сохраняем сигнатуру в ячейке "Выполнено"
+    // Сохраняет сигнатуру в ячейке "Выполнено"
     const doneCell = row.cells[1];
     if (doneCell) {
       doneCell.setAttribute('data-sig', getInstallStatusSig(clientData));
@@ -3589,6 +3750,9 @@ function displayInstallClients(clients) {
       }
     });
   });
+
+  // Применяет сохранённую сортировку
+  applyReportSort('install');
 }
 
 const InstallAutoUpdater = (function() {
@@ -3602,7 +3766,10 @@ const InstallAutoUpdater = (function() {
     const selectedDate = document.getElementById("installDateSelect").value;
     if (!selectedDate) return;
 
-    fetch('/get-QUIC-report', { method: 'GET', credentials: "same-origin" })
+    fetch('/get-QUIC-report', {
+        method: 'GET',
+        credentials: "same-origin"
+      })
       .then((response) => response.json())
       .then((data) => {
         if (!data) return;
@@ -3621,13 +3788,19 @@ const InstallAutoUpdater = (function() {
           const newSig = getInstallStatusSig(clientData);
           const oldSig = doneCell.getAttribute('data-sig') || '';
 
-          // Ничего не меняем, если данные идентичны — тултип не моргает
+          // Ничего не меняет, если данные идентичны — тултип не моргает
           if (newSig === oldSig) return;
 
-          // Данные изменились — обновляем ячейку и сигнатуру
+          // Данные изменились — обновляет ячейку и сигнатуру
           doneCell.innerHTML = buildInstallStatusHTML(clientData);
           doneCell.setAttribute('data-sig', newSig);
         });
+
+        // Пересортировка, если активна сортировка по столбцу "Выполнено"
+        const installSort = getReportSortState('install');
+        if (installSort.field === 'done') {
+          applyReportSort('install');
+        }
       })
       .catch((error) => console.error('Ошибка обновления колонки "Выполнено":', error));
   }
@@ -3644,7 +3817,10 @@ const InstallAutoUpdater = (function() {
       timerId = null;
     }
   }
-  return { start, stop };
+  return {
+    start,
+    stop
+  };
 })();
 
 
@@ -3653,25 +3829,28 @@ const InstallAutoUpdater = (function() {
 
 // Вызов загрузки дат
 function loadCmdDates() {
-    loadDates("/get-terminal-report", "cmdDateSelect", "cmd");
+  loadDates("/get-terminal-report", "cmdDateSelect", "cmd");
 }
 
 // Вызов удаления всего запроса с подтверждением
 function deleteSelectedCommand() {
-    deleteSelectedRequest("/delete-by-date-terminal-report", "cmdDateSelect", "cmd");
+  deleteSelectedRequest("/delete-by-date-terminal-report", "cmdDateSelect", "cmd");
 }
 
 // Функция для загрузки отчёта по выбранной дате
 function loadCmdReport() {
   const selectedDate = document.getElementById('cmdDateSelect').value;
-  fetch('/get-terminal-report', { method: 'GET', credentials: "same-origin" })
-  
+  fetch('/get-terminal-report', {
+      method: 'GET',
+      credentials: "same-origin"
+    })
+
     .then(response => response.json())
     .then(data => {
       if (!data || data.length === 0) {
         document.getElementById('cmdDetails').innerHTML = '';
         document.getElementById('clientsTableBody').innerHTML = '';
-        // Если данных нет, обновляем выпадающий список
+        // Если данных нет, обновляет выпадающий список
         document.getElementById('cmdDateSelect').innerHTML = '<option value="">Нет запросов</option>';
         showPush("Нет доступных запросов.", '#ff4081'); // Розовый
         return;
@@ -3680,23 +3859,23 @@ function loadCmdReport() {
       if (selectedCommand) {
         displayCmdDetails(selectedCommand);
         displayCmdClients(selectedCommand.ClientID_Command);
-		
+
         const detailsDiv = document.getElementById('cmdDetails');
         const fieldset = document.querySelector('.cmd-fieldset-fixed');
-		const savedState = sessionStorage.getItem('cmdDetailsState') || 'collapsed';
-		
-		if (savedState === 'expanded') {
-		  fieldset.classList.add('expanded'); // <-- ограничиваем высоту + скролл
-		  fieldset.classList.remove('collapsed');
-		  document.getElementById('toggleCmdDetails').textContent = '-';
-		} else {
-		  fieldset.classList.add('collapsed');
-		  fieldset.classList.remove('expanded');
-		  document.getElementById('toggleCmdDetails').textContent = '+';
-		}
+        const savedState = sessionStorage.getItem('cmdDetailsState') || 'collapsed';
+
+        if (savedState === 'expanded') {
+          fieldset.classList.add('expanded'); // <-- ограничивает высоту + скролл
+          fieldset.classList.remove('collapsed');
+          document.getElementById('toggleCmdDetails').textContent = '-';
+        } else {
+          fieldset.classList.add('collapsed');
+          fieldset.classList.remove('expanded');
+          document.getElementById('toggleCmdDetails').textContent = '+';
+        }
 
         setClientsTableHeight();
-		adjustHeaderPadding('cmd-clients-table-container');
+        adjustHeaderPadding('cmd-clients-table-container');
       } else {
         // Если выбранного запроса нет, очистим детали и таблицу и обновим выпадающий список
         document.getElementById('cmdDetails').innerHTML = '';
@@ -3740,14 +3919,14 @@ function toggleCmdDetails() {
     const onEnd = (e) => {
       if (e.propertyName !== 'max-height') return;
       details.removeEventListener('transitionend', onEnd);
-	  
-      // Только после окончания — переключаем класс "рамки"
+
+      // Только после окончания — переключает класс "рамки"
       fieldset.classList.remove('expanded');
       fieldset.classList.add('collapsed');
-	  
+
       // Чистим инлайн
       details.style.maxHeight = '';
-	  
+
       // Финальная корректировка шапки (после анимации)
       setTimeout(() => adjustHeaderPadding('cmd-clients-table-container'), 0);
       details.dataset.animating = '0';
@@ -3762,7 +3941,7 @@ function toggleCmdDetails() {
     // Детали к целевому значению через CSS
     fieldset.classList.add('expanded');
     fieldset.classList.remove('collapsed');
-    details.style.maxHeight = ''; // позволяем правилу .expanded #cmdDetails анимировать до 185px
+    details.style.maxHeight = ''; // Позволяет правилу .expanded #cmdDetails анимировать до 185px
     toggleButton.textContent = '-';
 
     const onEnd = (e) => {
@@ -3797,19 +3976,33 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('toggleInstallDetails').addEventListener('click', toggleInstallDetails);
   document.getElementById('toggleLegendInstall').addEventListener('click', toggleInstallDetails);
   document.getElementById('deleteInstallBtn').addEventListener('click', deleteSelectedInstall);
-  
+
   // Обработчики для кнопок вкладок
-document.getElementById('installReportTab').addEventListener('click', function(event) {
+  document.getElementById('installReportTab').addEventListener('click', function(event) {
     openReportTab(event, 'installReport');
-});
+  });
 
-document.getElementById('cmdReportTab').addEventListener('click', function(event) {
+  document.getElementById('cmdReportTab').addEventListener('click', function(event) {
     openReportTab(event, 'cmdReport');
-});
+  });
 
-// Обработчики для select-элементов
-document.getElementById('installDateSelect').addEventListener('change', loadInstallReport);
-document.getElementById('cmdDateSelect').addEventListener('change', loadCmdReport);
+  // Обработчики для select-элементов
+  document.getElementById('installDateSelect').addEventListener('change', loadInstallReport);
+  document.getElementById('cmdDateSelect').addEventListener('change', loadCmdReport);
+
+  // Обработчики сортировки для модального окна "Отчёт"
+  document.getElementById('reportSortTh_install_client').addEventListener('click', function() {
+    sortReportTable('install', 'client');
+  });
+  document.getElementById('reportSortTh_install_done').addEventListener('click', function() {
+    sortReportTable('install', 'done');
+  });
+  document.getElementById('reportSortTh_cmd_client').addEventListener('click', function() {
+    sortReportTable('cmd', 'client');
+  });
+  document.getElementById('reportSortTh_cmd_done').addEventListener('click', function() {
+    sortReportTable('cmd', 'done');
+  });
 });
 
 // Функция для отображения деталей команды
@@ -3837,12 +4030,12 @@ function displayCmdClients(clients) {
   tbody.innerHTML = '';
   for (const [clientId, clientData] of Object.entries(clients)) {
     const row = document.createElement('tr');
-    // Добавляем data-атрибут для идентификации строки по clientId
+    // Добавляет data-атрибут для идентификации строки по clientId
     row.setAttribute('data-client-id', clientId);
 
     const answerText = clientData.Answer ?
-	  `<span class="done">✓ - ` + clientData.Answer + `</span>` :
-	  `<span class="pending">—</span>`;
+      `<span class="done">✓ - ` + clientData.Answer + `</span>` :
+      `<span class="pending">—</span>`;
     row.innerHTML = `
   <td>${clientData.ClientName}</td>
   <td>${answerText}</td>
@@ -3854,6 +4047,7 @@ function displayCmdClients(clients) {
 
     tbody.appendChild(row);
   }
+
   tbody.querySelectorAll('.action-button').forEach(button => {
     button.addEventListener('click', function() {
       const clientId = this.dataset.clientId;
@@ -3871,6 +4065,9 @@ function displayCmdClients(clients) {
       }
     });
   });
+
+  // Применяет сохранённую сортировку
+  applyReportSort('cmd');
 }
 
 // Всплывающие подсказки в модальном окне отчётов
@@ -3880,37 +4077,37 @@ function displayCmdClients(clients) {
   let curTarget = null;
 
   // Обработчик наведения на элемент с классом .tt-btn
-document.addEventListener('mouseover', e => {
-  const target = e.target.closest('.tt-btn');
-  if (!target) return;
-  const text = target.getAttribute('data-tt');
-  if (!text) return;
+  document.addEventListener('mouseover', e => {
+    const target = e.target.closest('.tt-btn');
+    if (!target) return;
+    const text = target.getAttribute('data-tt');
+    if (!text) return;
 
-  clearTimeout(target._ttTimeout);
+    clearTimeout(target._ttTimeout);
 
-  target._ttTimeout = setTimeout(() => {
-    const tipHTML = (text || '')
-      .replace(/\r\n/g, '\n')
-      .replace(/\n\n+/g, '<br><br>')  // абзац
-      .replace(/\n/g, '<br>');        // перенос строки
+    target._ttTimeout = setTimeout(() => {
+      const tipHTML = (text || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\n\n+/g, '<br><br>') // абзац
+        .replace(/\n/g, '<br>'); // перенос строки
 
-    tooltipEl.innerHTML = tipHTML;
+      tooltipEl.innerHTML = tipHTML;
 
-    // Ширина тултипа: для "Выполнено" элементы имеют класс tt-wide
-    const isWide = target.classList.contains('tt-wide');
-    tooltipEl.classList.toggle('wide', isWide);
+      // Ширина тултипа: для "Выполнено" элементы имеют класс tt-wide
+      const isWide = target.classList.contains('tt-wide');
+      tooltipEl.classList.toggle('wide', isWide);
 
-    tooltipEl.style.display = 'block';
+      tooltipEl.style.display = 'block';
 
-    // Позиционируем после установки контента и ширины
-    const rect = target.getBoundingClientRect();
-    tooltipEl.style.left = rect.left + (rect.width - tooltipEl.offsetWidth) / 2 + window.pageXOffset + 'px';
-    tooltipEl.style.top  = rect.top  - tooltipEl.offsetHeight - 10 + window.pageYOffset + 'px';
-    tooltipEl.style.opacity = '1';
+      // Позиционирует после установки контента и ширины
+      const rect = target.getBoundingClientRect();
+      tooltipEl.style.left = rect.left + (rect.width - tooltipEl.offsetWidth) / 2 + window.pageXOffset + 'px';
+      tooltipEl.style.top = rect.top - tooltipEl.offsetHeight - 10 + window.pageYOffset + 'px';
+      tooltipEl.style.opacity = '1';
 
-    curTarget = target;
-  }, 500);
-});
+      curTarget = target;
+    }, 500);
+  });
 
   // Обработчик ухода курсора с элемента
   document.addEventListener('mouseout', (e) => {
@@ -3921,17 +4118,17 @@ document.addEventListener('mouseover', e => {
     hideTooltip();
   });
 
-function hideTooltip() {
-  tooltipEl.style.opacity = '0';
-  setTimeout(() => {
-    tooltipEl.style.display = 'none';
-    tooltipEl.innerHTML = '';
-    tooltipEl.classList.remove('wide'); // сброс ширины, чтобы другие подсказки были 180px
-    curTarget = null;
-  }, 300);
-}
+  function hideTooltip() {
+    tooltipEl.style.opacity = '0';
+    setTimeout(() => {
+      tooltipEl.style.display = 'none';
+      tooltipEl.innerHTML = '';
+      tooltipEl.classList.remove('wide'); // сброс ширины, чтобы другие подсказки были 180px
+      curTarget = null;
+    }, 300);
+  }
 
-  // MutationObserver – если элемент с активной подсказкой удаляется из DOM, принудительно скрываем подсказку
+  // MutationObserver – если элемент с активной подсказкой удаляется из DOM, принудительно скрывает подсказку
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       for (const node of mutation.removedNodes) {
@@ -3950,51 +4147,51 @@ function hideTooltip() {
 
 // Функция отправки запросов для операций удаления клиента или повторной отправки команды
 function sendActionRequest(url, data) {
-    apiPostJson(url, data)
+  apiPostJson(url, data)
 
-        .then(async (response) => {
-            // Проверяем статус ответа перед парсингом
-            if (!response.ok) {
-                // При ошибке (403, 500 и т.д.) читаем текст ответа
-                const errorText = await response.text();
-                showPush(errorText || "Ошибка выполнения действия", "#ff4d4d"); // Красный
-                return;
+    .then(async (response) => {
+      // Проверяет статус ответа перед парсингом
+      if (!response.ok) {
+        // При ошибке (403, 500 и т.д.) читает текст ответа
+        const errorText = await response.text();
+        showPush(errorText || "Ошибка выполнения действия", "#ff4d4d"); // Красный
+        return;
+      }
+      // При успешном ответе парсим JSON
+      const result = await response.json();
+      if (result.status === 'Успех') {
+        let pushColor = '#4CAF50'; // Зелёный по умолчанию
+        if (url.includes('/resend-')) {
+          pushColor = '#2196F3'; // Голубой для повторной отправки
+        } else if (url.includes('/delete-client-')) {
+          pushColor = '#4CAF50'; // Зелёный для удаления клиента
+        }
+        showPush(result.message, pushColor);
+        if (url.includes('QUIC')) {
+          loadInstallReport(); // Обновляет вкладку "По установкам ПО"
+          setTimeout(() => {
+            const tbody = document.getElementById('installClientsTableBody');
+            if (tbody.children.length === 0) {
+              loadInstallDates(); // Обновляет выпадающий список, если клиентов не осталось
             }
-            // При успешном ответе парсим JSON
-            const result = await response.json();
-            if (result.status === 'Успех') {
-                let pushColor = '#4CAF50'; // Зелёный по умолчанию
-                if (url.includes('/resend-')) {
-                    pushColor = '#2196F3'; // Голубой для повторной отправки
-                } else if (url.includes('/delete-client-')) {
-                    pushColor = '#4CAF50'; // Зелёный для удаления клиента
-                }
-                showPush(result.message, pushColor);
-                if (url.includes('QUIC')) {
-                    loadInstallReport(); // Обновляем вкладку "По установкам ПО"
-                    setTimeout(() => {
-                        const tbody = document.getElementById('installClientsTableBody');
-                        if (tbody.children.length === 0) {
-                            loadInstallDates(); // Обновляем выпадающий список, если клиентов не осталось
-                        }
-                    }, 100);
-                } else {
-                    loadCmdReport(); // Обновляем вкладку "По cmd / PowerShell"
-                    setTimeout(() => {
-                        const tbody = document.getElementById('clientsTableBody');
-                        if (tbody.children.length === 0) {
-                            loadCmdDates(); // Обновляем выпадающий список, если клиентов не осталось
-                        }
-                    }, 100);
-                }
-            } else {
-                showPush(result.message, '#ff4d4d'); // Красный
+          }, 100);
+        } else {
+          loadCmdReport(); // Обновляет вкладку "По cmd / PowerShell"
+          setTimeout(() => {
+            const tbody = document.getElementById('clientsTableBody');
+            if (tbody.children.length === 0) {
+              loadCmdDates(); // Обновляет выпадающий список, если клиентов не осталось
             }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            showPush("Ошибка: " + error.message, '#ff4d4d'); // Красный
-        });
+          }, 100);
+        }
+      } else {
+        showPush(result.message, '#ff4d4d'); // Красный
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка:', error);
+      showPush("Ошибка: " + error.message, '#ff4d4d'); // Красный
+    });
 }
 
 // Функция для отображения кастомного модального окна подтверждения удаления запроса
@@ -4026,7 +4223,7 @@ function showConfirmModal(message, onConfirm) {
   confirmButton.addEventListener("click", confirmHandler);
   closeButton.addEventListener("click", closeHandler);
 
-  // Устанавливаем фокус на кнопку "Удалить"
+  // Устанавливает фокус на кнопку "Удалить"
   confirmButton.focus();
 }
 
@@ -4036,14 +4233,17 @@ const CmdAutoUpdater = (function() {
 
   // Приватная функция для обновления колонки "Выполнено"
   function updateClientsColumn() {
-    // Если вкладка "По cmd / PowerShell" неактивна, останавливаем автообновление
+    // Если вкладка "По cmd / PowerShell" неактивна, останавливает автообновление
     if (!document.getElementById("cmdReport").classList.contains("active")) {
       stop();
       return;
     }
     const selectedDate = document.getElementById("cmdDateSelect").value;
     if (!selectedDate) return;
-	fetch('/get-terminal-report', { method: 'GET', credentials: "same-origin" })
+    fetch('/get-terminal-report', {
+        method: 'GET',
+        credentials: "same-origin"
+      })
 
       .then((response) => response.json())
       .then((data) => {
@@ -4059,11 +4259,17 @@ const CmdAutoUpdater = (function() {
             const doneCell = row.cells[1];
             if (doneCell) {
               doneCell.innerHTML = clientData.Answer ?
-			  `<span class="done">✓ - ` + clientData.Answer + `</span>` :
-			  `<span class="pending">—</span>`;
+                `<span class="done">✓ - ` + clientData.Answer + `</span>` :
+                `<span class="pending">—</span>`;
             }
           }
         });
+
+        // Пересортировка, если активна сортировка по столбцу "Выполнено"
+        const cmdSort = getReportSortState('cmd');
+        if (cmdSort.field === 'done') {
+          applyReportSort('cmd');
+        }
       })
       .catch((error) => console.error('Ошибка обновления колонки "Выполнено":', error));
   }
@@ -4092,10 +4298,11 @@ const CmdAutoUpdater = (function() {
 
 
 
+
 // МОДАЛЬНОЕ ОКНО "О проекте"
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Получаем элементы один раз при загрузке
+  // Получает элементы один раз при загрузке
   const aboutProjectBtn = document.getElementById("aboutProject");
   const aboutModal = document.getElementById("aboutProjectModal");
   const aboutCloseBtn = document.getElementById("aboutCloseButton");
@@ -4107,7 +4314,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const btnOwaspUpdate = document.getElementById("owaspCRSUpdateBtn");
   const btnOwaspRollback = document.getElementById("owaspCRSRollbackBtn");
   const defaultOwaspRollbackTip = (btnOwaspRollback?.dataset?.tooltip);
-  
+
   // Элементы FiReMQ
   const elFiCurrent = document.getElementById("firemqCurrentVersion");
   const elFiNew = document.getElementById("firemqNewVersion");
@@ -4115,29 +4322,31 @@ document.addEventListener("DOMContentLoaded", function() {
   const btnFiRollback = document.getElementById("firemqRollbackBtn");
   const defaultFiRollbackTip = (btnFiRollback?.dataset?.tooltip);
 
-	// Если до перезагрузки был установлен reopenAbout — открываем модалку снова
-    if (sessionStorage.getItem("reopenAbout") === "1") {
-        sessionStorage.removeItem("reopenAbout");
-        // Немного задержим, чтобы DOM точно успел построиться
-        setTimeout(() => {
-            showAboutModal();
-        }, 200);
-    }
-	
-  // Устанавливаем текущий год
+  // Если до перезагрузки был установлен reopenAbout — открывает модалку снова
+  if (sessionStorage.getItem("reopenAbout") === "1") {
+    sessionStorage.removeItem("reopenAbout");
+    // Немного задержим, чтобы DOM точно успел построиться
+    setTimeout(() => {
+      showAboutModal();
+    }, 200);
+  }
+
+  // Устанавливает текущий год
   if (currentYearSpan) {
     currentYearSpan.textContent = new Date().getFullYear();
   }
 
-	// Обновление OWASP CRS
-  // Небольшой компаратор версий вида x.y.z (числовые части); если не удаётся — считаем равными
+  // Обновление OWASP CRS
+  // Небольшой компаратор версий вида x.y.z (числовые части); если не удаётся — считает равными
   function compareVersions(a, b) {
     if (!a || !b) return 0;
     const toNums = v => String(v).split(".").map(p => parseInt((p.match(/\d+/)?.[0]) ?? "0", 10));
-    const A = toNums(a), B = toNums(b);
+    const A = toNums(a),
+      B = toNums(b);
     const len = Math.max(A.length, B.length);
     for (let i = 0; i < len; i++) {
-      const x = A[i] ?? 0, y = B[i] ?? 0;
+      const x = A[i] ?? 0,
+        y = B[i] ?? 0;
       if (x > y) return 1;
       if (x < y) return -1;
     }
@@ -4157,74 +4366,76 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
       const resp = await fetch("/check-OWASP-CRS", {
         method: "GET",
-        headers: { "Accept": "application/json" },
+        headers: {
+          "Accept": "application/json"
+        },
         cache: "no-store",
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
-    const current = data?.CurrentVersion ?? "—";
-    const latest = data?.NewVersion ?? "—";
-    const backupVersion = data?.BackupVersion ?? null;
+      const current = data?.CurrentVersion ?? "—";
+      const latest = data?.NewVersion ?? "—";
+      const backupVersion = data?.BackupVersion ?? null;
 
-    elOwaspCurrent.textContent = current;
-    elOwaspNew.textContent = latest;
+      elOwaspCurrent.textContent = current;
+      elOwaspNew.textContent = latest;
 
-    const canUpdate = compareVersions(latest, current) > 0;
-    setUpdateEnabled(canUpdate);
+      const canUpdate = compareVersions(latest, current) > 0;
+      setUpdateEnabled(canUpdate);
 
-    // Без PUSH, если бэкапа нет — просто дефолтный текст
-    if (btnOwaspRollback) {
-      if (typeof backupVersion === "string" && backupVersion.trim() !== "") {
-        btnOwaspRollback.dataset.tooltip =
-          `Откатывает правила к предыдущей (ранее установленной) версии ${backupVersion}? ` +
-          `Это может понадобиться в случае серьёзных изменений новых правил, которые могут привести к некорректной работе FiReMQ.`;
-      } else {
-        btnOwaspRollback.dataset.tooltip = defaultOwaspRollbackTip;
+      // Без PUSH, если бэкапа нет — просто дефолтный текст
+      if (btnOwaspRollback) {
+        if (typeof backupVersion === "string" && backupVersion.trim() !== "") {
+          btnOwaspRollback.dataset.tooltip =
+            `Откатывает правила к предыдущей (ранее установленной) версии ${backupVersion}? ` +
+            `Это может понадобиться в случае серьёзных изменений новых правил, которые могут привести к некорректной работе FiReMQ.`;
+        } else {
+          btnOwaspRollback.dataset.tooltip = defaultOwaspRollbackTip;
+        }
       }
-    }
-  } catch (e) {
-    elOwaspCurrent.textContent = "—";
-    elOwaspNew.textContent = "—";
-    setUpdateEnabled(false);
-    if (btnOwaspRollback) btnOwaspRollback.dataset.tooltip = defaultOwaspRollbackTip;
+    } catch (e) {
+      elOwaspCurrent.textContent = "—";
+      elOwaspNew.textContent = "—";
+      setUpdateEnabled(false);
+      if (btnOwaspRollback) btnOwaspRollback.dataset.tooltip = defaultOwaspRollbackTip;
 
-    // PUSH только для сбоев запроса/сети/JSON, не связанных с отсутствия бэкапа
-    showPush(`Не удалось проверить OWASP CRS: ${e.message}`, "#ff4d4d");
+      // PUSH только для сбоев запроса/сети/JSON, не связанных с отсутствия бэкапа
+      showPush(`Не удалось проверить OWASP CRS: ${e.message}`, "#ff4d4d");
+    }
   }
-}
 
   async function handleUpdateOWASP() {
     if (!btnOwaspUpdate || !btnOwaspRollback) return;
     btnOwaspUpdate.disabled = true;
     btnOwaspRollback.disabled = true;
     try {
-        const resp = await apiPostJson("/update-OWASP-CRS", {});
-        
-        // Сначала пробуем прочитать как текст
-        const text = await resp.text();
-        let data = {};
-        try {
-            data = JSON.parse(text);
-        } catch {
-            // Если не JSON, используем текст как сообщение об ошибке
-            if (!resp.ok) {
-                throw new Error(text || `Ошибка HTTP ${resp.status}`);
-            }
-        }
+      const resp = await apiPostJson("/update-OWASP-CRS", {});
 
+      // Сначала пробует прочитать как текст
+      const text = await resp.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Если не JSON, использует текст как сообщение об ошибке
         if (!resp.ok) {
-            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+          throw new Error(text || `Ошибка HTTP ${resp.status}`);
         }
+      }
 
-		  const answer = data?.UpdateAnswer;
-		  if (answer === "Успех") {
-			showPush(`Правила OWASP CRS обновлены до версии ${data?.Version ?? ""}`, "#4CAF50"); // Зелёный
-		  } else if (answer === "Обновление не требуется") {
-			showPush("Обновление не требуется.", "#ff4081"); // Розовый
-		  } else {
-			throw new Error(data?.Description);
-		  }
+      if (!resp.ok) {
+        throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+      }
+
+      const answer = data?.UpdateAnswer;
+      if (answer === "Успех") {
+        showPush(`Правила OWASP CRS обновлены до версии ${data?.Version ?? ""}`, "#4CAF50"); // Зелёный
+      } else if (answer === "Обновление не требуется") {
+        showPush("Обновление не требуется.", "#ff4081"); // Розовый
+      } else {
+        throw new Error(data?.Description);
+      }
     } catch (e) {
       showPush(e.message, "#ff4d4d"); // Красный
     } finally {
@@ -4238,281 +4449,291 @@ document.addEventListener("DOMContentLoaded", function() {
     btnOwaspUpdate.disabled = true;
     btnOwaspRollback.disabled = true;
     try {
-        const resp = await apiPostJson("/rollback-backup-OWASP-CRS", {});
-        
-        // Сначала пробуем прочитать как текст
-        const text = await resp.text();
-        let data = {};
-        try {
-            data = JSON.parse(text);
-        } catch {
-            // Если не JSON, используем текст как сообщение об ошибке
-            if (!resp.ok) {
-                throw new Error(text || `Ошибка HTTP ${resp.status}`);
-            }
-        }
+      const resp = await apiPostJson("/rollback-backup-OWASP-CRS", {});
 
+      // Сначала пробует прочитать как текст
+      const text = await resp.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Если не JSON, использует текст как сообщение об ошибке
         if (!resp.ok) {
-            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+          throw new Error(text || `Ошибка HTTP ${resp.status}`);
         }
-
-        if (data?.RollbackAnswer === "Успех") {
-            showPush(`Откат выполнен. Текущая версия: ${data?.RollbackVersion ?? "неизвестно"}`, "#2196F3"); // Голубой
-        } else if (data?.Description?.includes("Не требуется")) {
-            showPush(data?.Description, "#ff4081"); // Розовый
-        } else {
-            throw new Error(data?.Description);
-        }
-    } catch (e) {
-        showPush(e.message, "#ff4d4d"); // Красный
-    } finally {
-        await refreshOWASPCRSStatus();
-        btnOwaspRollback.disabled = false; 
-    }
-  }
-
-
-	// Обновление FiReMQ
-	function setFiUpdateEnabled(enabled) {
-	  if (btnFiUpdate) btnFiUpdate.disabled = !enabled;
-	}
-
-	async function refreshFiReMQStatus() {
-	  if (!elFiCurrent || !elFiNew) return;
-	  elFiCurrent.textContent = "…";
-	  elFiNew.textContent = "…";
-	  setFiUpdateEnabled(false);
-
-	  try {
-		const resp = await fetch("/check-FiReMQ", {
-		  method: "GET",
-		  headers: { "Accept": "application/json" },
-		  cache: "no-store",
-		});
-		const data = await resp.json().catch(() => ({}));
-
-		if (!resp.ok) {
-		  // Если сервер всё же прислал JSON с текущей версией — покажем её
-		  if (data && data.CurrentVersion) {
-			elFiCurrent.textContent = data.CurrentVersion;
-			elFiNew.textContent = "—";
-		  }
-		  const errMsg = data?.error || data?.Description || `HTTP ${resp.status}`;
-		  throw new Error(errMsg);
-		}
-
-		// Служебный заголовок от сервера "X-FiReMQ-Repo-State", сообщает состояние релиза в репозитории относительно текущей версии:
-		//   ok    — релиз равен текущей или новее
-		//   older — релиз в репозитории старее
-		//   none  — релизов или подходящих ассетов нет вовсе
-		const repoState = resp.headers.get("X-FiReMQ-Repo-State");
-		
-		const current = data?.CurrentVersion ?? "—";
-		const latest = data?.NewVersion ?? null;
-		const backup = data?.BackupVersion ?? null;
-
-		elFiCurrent.textContent = current;
-
-		if (latest && String(latest).trim()) {
-			// Пришла равная или более новая версия
-			elFiNew.textContent = latest;
-			
-			 // Преобразование "дд.мм.гг" в "гг.мм.дд" для корректного сравнения
-            const toSortable = (v) => {
-                const parts = String(v).split('.');
-                // Если это дата из 3 частей, меняет порядок на Год.Месяц.День
-                if (parts.length === 3) {
-                    return `${parts[2]}.${parts[1]}.${parts[0]}`;
-                }
-                return v;
-            };
-			
-			// Сравнение нормализованных версий
-            setFiUpdateEnabled(compareVersions(toSortable(latest), toSortable(current)) > 0);
-
-		} else {
-			// Нет новой версии для показа (старее или релизов нет)
-			elFiNew.textContent = "—";
-			setFiUpdateEnabled(false);
-
-			// Розовый PUSH — только когда репозиторий старее
-			if (repoState === "older") {
-				showPush(`В репозитории доступна более старая версия, чем установлена (${current}).`, "#ff4081");
-			}
-		}
-
-    // Динамический tooltip с версией из бэкапа (если есть); иначе — дефолт
-    if (btnFiRollback) {
-      if (backup && String(backup).trim()) {
-        btnFiRollback.dataset.tooltip =
-          `Откатывает сервер FiReMQ к предыдущей (ранее установленной) версии ${backup}? ` +
-          `Это может понадобиться в случае, если после обновления FiReMQ возникли проблемы.`;
-      } else {
-        btnFiRollback.dataset.tooltip = defaultFiRollbackTip;
       }
-    }
-  } catch (e) {
-    elFiCurrent.textContent = "—";
-    elFiNew.textContent = "—";
-    setFiUpdateEnabled(false);
-    if (btnFiRollback) btnFiRollback.dataset.tooltip = defaultFiRollbackTip;
 
-    // Ошибка запроса/сети — показываем PUSH
-    showPush(`Не удалось проверить FiReMQ: ${e.message}`, "#ff4d4d"); // Красный
+      if (!resp.ok) {
+        throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+      }
+
+      if (data?.RollbackAnswer === "Успех") {
+        showPush(`Откат выполнен. Текущая версия: ${data?.RollbackVersion ?? "неизвестно"}`, "#2196F3"); // Голубой
+      } else if (data?.Description?.includes("Не требуется")) {
+        showPush(data?.Description, "#ff4081"); // Розовый
+      } else {
+        throw new Error(data?.Description);
+      }
+    } catch (e) {
+      showPush(e.message, "#ff4d4d"); // Красный
+    } finally {
+      await refreshOWASPCRSStatus();
+      btnOwaspRollback.disabled = false;
+    }
   }
-}
+
+
+  // Обновление FiReMQ
+  function setFiUpdateEnabled(enabled) {
+    if (btnFiUpdate) btnFiUpdate.disabled = !enabled;
+  }
+
+  async function refreshFiReMQStatus() {
+    if (!elFiCurrent || !elFiNew) return;
+    elFiCurrent.textContent = "…";
+    elFiNew.textContent = "…";
+    setFiUpdateEnabled(false);
+
+    try {
+      const resp = await fetch("/check-FiReMQ", {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        },
+        cache: "no-store",
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        // Если сервер всё же прислал JSON с текущей версией — покажет её
+        if (data && data.CurrentVersion) {
+          elFiCurrent.textContent = data.CurrentVersion;
+          elFiNew.textContent = "—";
+        }
+        const errMsg = data?.error || data?.Description || `HTTP ${resp.status}`;
+        throw new Error(errMsg);
+      }
+
+      // Служебный заголовок от сервера "X-FiReMQ-Repo-State", сообщает состояние релиза в репозитории относительно текущей версии:
+      //   ok    — релиз равен текущей или новее
+      //   older — релиз в репозитории старее
+      //   none  — релизов или подходящих ассетов нет вовсе
+      const repoState = resp.headers.get("X-FiReMQ-Repo-State");
+
+      const current = data?.CurrentVersion ?? "—";
+      const latest = data?.NewVersion ?? null;
+      const backup = data?.BackupVersion ?? null;
+
+      elFiCurrent.textContent = current;
+
+      if (latest && String(latest).trim()) {
+        // Пришла равная или более новая версия
+        elFiNew.textContent = latest;
+
+        // Преобразование "дд.мм.гг" в "гг.мм.дд" для корректного сравнения
+        const toSortable = (v) => {
+          const parts = String(v).split('.');
+          // Если это дата из 3 частей, меняет порядок на Год.Месяц.День
+          if (parts.length === 3) {
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+          }
+          return v;
+        };
+
+        // Сравнение нормализованных версий
+        setFiUpdateEnabled(compareVersions(toSortable(latest), toSortable(current)) > 0);
+
+      } else {
+        // Нет новой версии для показа (старее или релизов нет)
+        elFiNew.textContent = "—";
+        setFiUpdateEnabled(false);
+
+        // Розовый PUSH — только когда репозиторий старее
+        if (repoState === "older") {
+          showPush(`В репозитории доступна более старая версия, чем установлена (${current}).`, "#ff4081");
+        }
+      }
+
+      // Динамический tooltip с версией из бэкапа (если есть); иначе — дефолт
+      if (btnFiRollback) {
+        if (backup && String(backup).trim()) {
+          btnFiRollback.dataset.tooltip =
+            `Откатывает сервер FiReMQ к предыдущей (ранее установленной) версии ${backup}? ` +
+            `Это может понадобиться в случае, если после обновления FiReMQ возникли проблемы.`;
+        } else {
+          btnFiRollback.dataset.tooltip = defaultFiRollbackTip;
+        }
+      }
+    } catch (e) {
+      elFiCurrent.textContent = "—";
+      elFiNew.textContent = "—";
+      setFiUpdateEnabled(false);
+      if (btnFiRollback) btnFiRollback.dataset.tooltip = defaultFiRollbackTip;
+
+      // Ошибка запроса/сети — показывает PUSH
+      showPush(`Не удалось проверить FiReMQ: ${e.message}`, "#ff4d4d"); // Красный
+    }
+  }
 
   async function handleUpdateFiReMQ() {
     if (!btnFiUpdate || !btnFiRollback) return;
     btnFiUpdate.disabled = true;
     btnFiRollback.disabled = true;
-	
-	// Флаг для предотвращения PUSH о старой версии в репозитории при ошибке прав
-	let skipRefreshPush = false;
+
+    // Флаг для предотвращения PUSH о старой версии в репозитории при ошибке прав
+    let skipRefreshPush = false;
 
     try {
-        const resp = await apiPostJson("/update-FiReMQ", {});
-        
-        // Сначала пробуем прочитать как текст
-        const text = await resp.text();
-        let data = {};
-        try {
-            data = JSON.parse(text);
-        } catch {
-            // Если не JSON, используем текст как сообщение об ошибке
-            if (!resp.ok) {
-                throw new Error(text || `Ошибка HTTP ${resp.status}`);
-            }
+      const resp = await apiPostJson("/update-FiReMQ", {});
+
+      // Сначала пробует прочитать как текст
+      const text = await resp.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Если не JSON, использует текст как сообщение об ошибке
+        if (!resp.ok) {
+          throw new Error(text || `Ошибка HTTP ${resp.status}`);
         }
+      }
 
-        if (resp.ok) {
-		  // Успех: сервер запланирует shutdown через ~1 сек
-		  const targetVer = data?.latest || data?.Version || elFiNew.textContent || "";
-		  showPush(`FiReMQ обновляется до версии ${targetVer}. Сервер перезапустится автоматически.`, "#4CAF50"); // Зелёный
-		  
-		  // <-- Новое: автоперезагрузка страницы через 5,5 сек и повтор открытия About
-		setTimeout(() => {
-			sessionStorage.setItem("reopenAbout", "1");
-			location.reload();
-		}, 5500);
-		} else if (data?.Description?.toLowerCase().includes("обновление не требуется")) {
-		showPush("Обновление не требуется.", "#ff4081"); // Розовый
-		} else {
-			skipRefreshPush = true;
-			throw new Error(data?.Description || text || "Неизвестная ошибка");
-		}
-	  } catch (e) {
-		showPush(e.message, "#ff4d4d"); // Красный
-		} finally {
-			// Обновляем статус без показа PUSH о старой версии при ошибке прав
-			if (!skipRefreshPush) {
-				try { await refreshFiReMQStatus(); } catch {}
-			} else {
-				// Только обновляем UI без PUSH
-				try {
-					const resp = await fetch("/check-FiReMQ", {
-						method: "GET",
-						headers: { "Accept": "application/json" },
-						cache: "no-store",
-					});
-					if (resp.ok) {
-						const data = await resp.json();
-						if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
-						if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
-					}
-				} catch {}
-			}
-			btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
-		}
-	}
+      if (resp.ok) {
+        // Успех: сервер запланирует shutdown через ~1 сек
+        const targetVer = data?.latest || data?.Version || elFiNew.textContent || "";
+        showPush(`FiReMQ обновляется до версии ${targetVer}. Сервер перезапустится автоматически.`, "#4CAF50"); // Зелёный
 
-async function handleRollbackFiReMQ() {
+        // <-- Новое: автоперезагрузка страницы через 5,5 сек и повтор открытия About
+        setTimeout(() => {
+          sessionStorage.setItem("reopenAbout", "1");
+          location.reload();
+        }, 5500);
+      } else if (data?.Description?.toLowerCase().includes("обновление не требуется")) {
+        showPush("Обновление не требуется.", "#ff4081"); // Розовый
+      } else {
+        skipRefreshPush = true;
+        throw new Error(data?.Description || text || "Неизвестная ошибка");
+      }
+    } catch (e) {
+      showPush(e.message, "#ff4d4d"); // Красный
+    } finally {
+      // Обновляет статус без показа PUSH о старой версии при ошибке прав
+      if (!skipRefreshPush) {
+        try {
+          await refreshFiReMQStatus();
+        } catch {}
+      } else {
+        // Только обновляет UI без PUSH
+        try {
+          const resp = await fetch("/check-FiReMQ", {
+            method: "GET",
+            headers: {
+              "Accept": "application/json"
+            },
+            cache: "no-store",
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
+            if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
+          }
+        } catch {}
+      }
+      btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
+    }
+  }
+
+  async function handleRollbackFiReMQ() {
     if (!btnFiUpdate || !btnFiRollback) return;
     btnFiUpdate.disabled = true;
     btnFiRollback.disabled = true;
-    
+
     // Флаг для предотвращения PUSH о старой версии в репозитории при ошибке прав
     let skipRefreshPush = false;
-    
+
     try {
-        const resp = await apiPostJson("/rollback-backup-FiReMQ", {});
-        
-        // Сначала пробуем прочитать как текст
-        const text = await resp.text();
-        let data = {};
-        try {
-            data = JSON.parse(text);
-        } catch {
-            // Если не JSON, используем текст как сообщение об ошибке
-            if (!resp.ok) {
-                skipRefreshPush = true;
-                throw new Error(text || `Ошибка HTTP ${resp.status}`);
-            }
-        }
+      const resp = await apiPostJson("/rollback-backup-FiReMQ", {});
 
+      // Сначала пробует прочитать как текст
+      const text = await resp.text();
+      let data = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Если не JSON, использует текст как сообщение об ошибке
         if (!resp.ok) {
-            skipRefreshPush = true;
-            throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+          skipRefreshPush = true;
+          throw new Error(text || `Ошибка HTTP ${resp.status}`);
         }
+      }
 
-		if (data?.ok === true || (data?.RollbackAnswer === "Успех")) {
-		  // После ответа сервер завершится и ServerUpdater восстановит предыдущий релиз
-		  showPush(data?.message, "#2196F3"); // Голубой
-		  
-		  // <-- Новое: автоперезагрузка страницы через 5,5 сек
-		setTimeout(() => {
-			sessionStorage.setItem("reopenAbout", "1");
-			location.reload();
-		}, 5500);
-		} else if (data?.RollbackAnswer === "Не требуется") {
-		// Просто информируем пользователя
-		showPush(data?.message, "#ff4081"); // Розовый
-		} else {
-			throw new Error(data?.Description);
-		}
-	  } catch (e) {
-		showPush(e.message, "#ff4d4d"); // Красный
-		} finally {
-			// Обновляем статус без показа PUSH о старой версии при ошибке прав
-			if (!skipRefreshPush) {
-				try { await refreshFiReMQStatus(); } catch {}
-			} else {
-				// Только обновляем UI без PUSH
-				try {
-					const resp = await fetch("/check-FiReMQ", {
-						method: "GET",
-						headers: { "Accept": "application/json" },
-						cache: "no-store",
-					});
-					if (resp.ok) {
-						const data = await resp.json();
-						if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
-						if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
-					}
-				} catch {}
-			}
-			btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
-		}
-	}
+      if (!resp.ok) {
+        skipRefreshPush = true;
+        throw new Error(data?.Description || text || `Ошибка HTTP ${resp.status}`);
+      }
+
+      if (data?.ok === true || (data?.RollbackAnswer === "Успех")) {
+        // После ответа сервер завершится и ServerUpdater восстановит предыдущий релиз
+        showPush(data?.message, "#2196F3"); // Голубой
+
+        // <-- Новое: автоперезагрузка страницы через 5,5 сек
+        setTimeout(() => {
+          sessionStorage.setItem("reopenAbout", "1");
+          location.reload();
+        }, 5500);
+      } else if (data?.RollbackAnswer === "Не требуется") {
+        // Просто информирует пользователя
+        showPush(data?.message, "#ff4081"); // Розовый
+      } else {
+        throw new Error(data?.Description);
+      }
+    } catch (e) {
+      showPush(e.message, "#ff4d4d"); // Красный
+    } finally {
+      // Обновляет статус без показа PUSH о старой версии при ошибке прав
+      if (!skipRefreshPush) {
+        try {
+          await refreshFiReMQStatus();
+        } catch {}
+      } else {
+        // Только обновляет UI без PUSH
+        try {
+          const resp = await fetch("/check-FiReMQ", {
+            method: "GET",
+            headers: {
+              "Accept": "application/json"
+            },
+            cache: "no-store",
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            if (elFiCurrent) elFiCurrent.textContent = data?.CurrentVersion ?? "—";
+            if (elFiNew) elFiNew.textContent = data?.NewVersion ?? "—";
+          }
+        } catch {}
+      }
+      btnFiRollback.disabled = false; // Состояние "Обновить" установит refresh
+    }
+  }
 
   // Функция показа модального окна
   function showAboutModal() {
     aboutModal.style.display = "flex";
-    aboutCloseBtn.focus(); // Устанавливаем фокус на кнопку "Закрыть"
-    // При открытии сразу проверяем версии OWASP CRS
+    aboutCloseBtn.focus(); // Устанавливает фокус на кнопку "Закрыть"
+    // При открытии сразу проверяет версии OWASP CRS
     refreshOWASPCRSStatus();
-	refreshFiReMQStatus();
+    refreshFiReMQStatus();
   }
 
-	// Подписки на клики по кнопкам FiReMQ
-	if (btnFiUpdate) {
-	  btnFiUpdate.addEventListener("click", handleUpdateFiReMQ);
-	}
-	if (btnFiRollback) {
-	  btnFiRollback.addEventListener("click", handleRollbackFiReMQ);
-	}
+  // Подписки на клики по кнопкам FiReMQ
+  if (btnFiUpdate) {
+    btnFiUpdate.addEventListener("click", handleUpdateFiReMQ);
+  }
+  if (btnFiRollback) {
+    btnFiRollback.addEventListener("click", handleRollbackFiReMQ);
+  }
 
-  // Делаем функцию закрытия доступной глобально
+  // Делает функцию закрытия доступной глобально
   window.closeAboutModal = function() {
     aboutModal.style.display = "none";
   };
@@ -4542,6 +4763,7 @@ async function handleRollbackFiReMQ() {
 
 
 
+
 // МОДАЛЬНОЕ ОКНО ПОЛНОЕ УДАЛЕНИЕ FiReAgent
 
 // Вспомогательный нормализатор статусов
@@ -4551,7 +4773,12 @@ function isSuccessStatus(status) {
 }
 
 // Рендер чипа клиента
-function createClientChip(id, { pending = false, removable = false, onRemove = null, removeTitle = null } = {}) {
+function createClientChip(id, {
+  pending = false,
+  removable = false,
+  onRemove = null,
+  removeTitle = null
+} = {}) {
   const chip = document.createElement("span");
   chip.className = "client-id-chip" + (pending ? " pending" : "");
   chip.setAttribute("data-id", id);
@@ -4584,7 +4811,10 @@ async function loadPendingUninstallList() {
   pendingList.innerHTML = '<div class="list-empty">Загрузка...</div>';
 
   try {
-    const resp = await fetch("/uninstall-pending", { method: "GET", credentials: "same-origin" });
+    const resp = await fetch("/uninstall-pending", {
+      method: "GET",
+      credentials: "same-origin"
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const ids = await resp.json();
 
@@ -4613,7 +4843,9 @@ async function cancelPendingUninstall(clientId, btnEl, chipEl) {
   try {
     btnEl.disabled = true;
 
-    const resp = await apiPostJson("/uninstall-cancel", { client_id: clientId });
+    const resp = await apiPostJson("/uninstall-cancel", {
+      client_id: clientId
+    });
     const contentType = resp.headers.get("content-type") || "";
     let ok = resp.ok;
     let message = "";
@@ -4651,17 +4883,17 @@ async function cancelPendingUninstall(clientId, btnEl, chipEl) {
 
 // Удаление ID из нижнего списка + снятие галочки
 function removeSelectedFromUninstallList(clientId, _btnEl, chipEl) {
-  // Удаляем чип из модалки
+  // Удаляет чип из модалки
   if (chipEl && chipEl.parentNode) {
     chipEl.parentNode.removeChild(chipEl);
   }
 
-  // Снимаем чекбокс в DOM (если есть)
+  // Снимает чекбокс в DOM (если есть)
   const key = `checkbox_${clientId}`;
   const checkbox = document.getElementById(key);
   if (checkbox) checkbox.checked = false;
 
-  // Обновляем состояние чекбоксов
+  // Обновляет состояние чекбоксов
   try {
     if (typeof checkboxStates !== "undefined") {
       delete checkboxStates[key];
@@ -4680,12 +4912,12 @@ function removeSelectedFromUninstallList(clientId, _btnEl, chipEl) {
     updateClientActionButtons();
   }
 
-  // Если ничего не выбрано — блокируем "Удалить"
+  // Если ничего не выбрано — блокирует "Удалить"
   const btn = document.getElementById("confirmUninstallButton");
   if (btn) {
-    const state = (typeof checkboxStates !== "undefined")
-      ? checkboxStates
-      : (JSON.parse(sessionStorage.getItem("checkboxStates") || "{}"));
+    const state = (typeof checkboxStates !== "undefined") ?
+      checkboxStates :
+      (JSON.parse(sessionStorage.getItem("checkboxStates") || "{}"));
     const anyChecked = Object.keys(state).some((k) => state[k] === true);
     if (!anyChecked) btn.disabled = true;
   }
@@ -4694,16 +4926,16 @@ function removeSelectedFromUninstallList(clientId, _btnEl, chipEl) {
 // Показ модального окна удаления FiReAgent
 async function showUninstallFiReAgentModal() {
   // Берём состояние чекбоксов из глобальной переменной, либо из sessionStorage
-  const state = (typeof checkboxStates !== "undefined")
-    ? checkboxStates
-    : (JSON.parse(sessionStorage.getItem("checkboxStates")) || {});
+  const state = (typeof checkboxStates !== "undefined") ?
+    checkboxStates :
+    (JSON.parse(sessionStorage.getItem("checkboxStates")) || {});
 
   const checkedClients = Object.keys(state)
     .filter((key) => state[key] === true)
     .map((key) => key.replace("checkbox_", ""));
 
   if (checkedClients.length === 0) {
-	showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
+    showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
     return;
   }
 
@@ -4721,22 +4953,22 @@ async function showUninstallFiReAgentModal() {
     pendingList.innerHTML = '<div class="list-empty">Загрузка...</div>';
   }
 
-// Заполняем чипы текущего выбора
-checkedClients.forEach((id) => {
-  const chip = createClientChip(id, {
-    pending: false,
-    removable: true,
-    onRemove: removeSelectedFromUninstallList,
-    removeTitle: "Убрать из отправки",
+  // Заполняет чипы текущего выбора
+  checkedClients.forEach((id) => {
+    const chip = createClientChip(id, {
+      pending: false,
+      removable: true,
+      onRemove: removeSelectedFromUninstallList,
+      removeTitle: "Убрать из отправки",
+    });
+    listBox.appendChild(chip);
   });
-  listBox.appendChild(chip);
-});
 
-  // Открываем модалку
+  // Открывает модалку
   modal.style.display = "flex";
   setTimeout(() => input.focus(), 50);
 
-  // Подгружаем оффлайн-очередь
+  // Подгружает оффлайн-очередь
   loadPendingUninstallList();
 }
 
@@ -4747,7 +4979,7 @@ function closeUninstallFiReAgentModal() {
 }
 
 // Активация кнопки по фразе "Удаляем!"
-document.getElementById("uninstallConfirmationInput")?.addEventListener("input", function (e) {
+document.getElementById("uninstallConfirmationInput")?.addEventListener("input", function(e) {
   const btn = document.getElementById("confirmUninstallButton");
   const val = e.target.value.trim().toLowerCase();
   btn.disabled = val !== "удаляем!";
@@ -4755,68 +4987,68 @@ document.getElementById("uninstallConfirmationInput")?.addEventListener("input",
 
 // Подтверждение и отправка запроса на удаление FiReAgent
 async function confirmUninstallFiReAgent() {
-    const checkedClients = Object.keys(checkboxStates)
-        .filter((key) => checkboxStates[key] === true)
-        .map((key) => key.replace("checkbox_", ""));
+  const checkedClients = Object.keys(checkboxStates)
+    .filter((key) => checkboxStates[key] === true)
+    .map((key) => key.replace("checkbox_", ""));
 
-    if (checkedClients.length === 0) {
-        showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
-        return;
+  if (checkedClients.length === 0) {
+    showPush("Нет выбранных клиентов для отправки команды удаления FiReAgent.", "#ff4d4d"); // Красный
+    return;
+  }
+
+  try {
+    const response = await apiPostJson("/uninstall-fireagent", checkedClients);
+    const contentType = response.headers.get("content-type") || "";
+    let message = "";
+    let category = "unknown";
+
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      message = (data.message || "").trim();
+      category = statusCategory(data.status);
+    } else {
+      message = (await response.text()).trim();
     }
 
-    try {
-        const response = await apiPostJson("/uninstall-fireagent", checkedClients);
-        const contentType = response.headers.get("content-type") || "";
-        let message = "";
-        let category = "unknown";
-
-        if (contentType.includes("application/json")) {
-            const data = await response.json();
-            message = (data.message || "").trim();
-            category = statusCategory(data.status);
-        } else {
-            message = (await response.text()).trim();
-        }
-
-        if (!response.ok) {
-            category = "error";
-        }
-
-        if (!message) {
-            message = category === "error" ? `Ошибка ${response.status}` : "Готово";
-        }
-
-        // Цвет PUSH: зелёный — успех, розовый — предупреждение, красный — ошибка
-        let pushColor = "#4CAF50"; // Зелёный
-        if (category === "warning") pushColor = "#ff4081"; // Розовый
-        if (category === "error") pushColor = "#ff4d4d"; // Красный
-
-        // При ошибке прав доступа (403) не закрываем модальное окно
-        if (response.status === 403) {
-            showPush(message, pushColor);
-            return;
-        }
-
-        // Чистим состояния чекбоксов для success и warning
-        if (category !== "error") {
-            checkedClients.forEach((clientId) => {
-                const key = `checkbox_${clientId}`;
-                delete checkboxStates[key];
-                sessionStorage.removeItem(key);
-            });
-            sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
-        }
-
-        sessionStorage.setItem("pushMessage", message);
-        sessionStorage.setItem("pushColor", pushColor);
-
-        closeUninstallFiReAgentModal();
-        location.reload();
-
-    } catch (err) {
-        // При сетевых ошибках показываем PUSH, но не закрываем модальное окно
-        showPush(`Ошибка: ${err.message}`, "#ff4d4d"); // Красный
+    if (!response.ok) {
+      category = "error";
     }
+
+    if (!message) {
+      message = category === "error" ? `Ошибка ${response.status}` : "Готово";
+    }
+
+    // Цвет PUSH: зелёный — успех, розовый — предупреждение, красный — ошибка
+    let pushColor = "#4CAF50"; // Зелёный
+    if (category === "warning") pushColor = "#ff4081"; // Розовый
+    if (category === "error") pushColor = "#ff4d4d"; // Красный
+
+    // При ошибке прав доступа (403) не закрывает модальное окно
+    if (response.status === 403) {
+      showPush(message, pushColor);
+      return;
+    }
+
+    // Чистим состояния чекбоксов для success и warning
+    if (category !== "error") {
+      checkedClients.forEach((clientId) => {
+        const key = `checkbox_${clientId}`;
+        delete checkboxStates[key];
+        sessionStorage.removeItem(key);
+      });
+      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+    }
+
+    sessionStorage.setItem("pushMessage", message);
+    sessionStorage.setItem("pushColor", pushColor);
+
+    closeUninstallFiReAgentModal();
+    location.reload();
+
+  } catch (err) {
+    // При сетевых ошибках показывает PUSH, но не закрывает модальное окно
+    showPush(`Ошибка: ${err.message}`, "#ff4d4d"); // Красный
+  }
 }
 
 // Категории статуса
@@ -4833,7 +5065,7 @@ document.getElementById("closeUninstallFiReAgentModal")?.addEventListener("click
 document.getElementById("confirmUninstallButton")?.addEventListener("click", confirmUninstallFiReAgent);
 
 // Enter внутри модального окна — выполнить, если подтверждение корректно
-document.getElementById("uninstallFiReAgentModal")?.addEventListener("keydown", function (event) {
+document.getElementById("uninstallFiReAgentModal")?.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
     const input = document.getElementById("uninstallConfirmationInput");
     if (input.value.trim().toLowerCase() === "удаляем!") {

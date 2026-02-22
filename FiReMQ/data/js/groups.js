@@ -1,6 +1,6 @@
 // ДИНАМИЧЕСКИЕ ГРУППЫ И ПОДГРУППЫ
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
   loadGroups(); // Загрузка групп и подгрупп при загрузке страницы
   fetchAuthName(); // Установка имени авторизованного пользователя (после успешной авторизации) при загрузке страницы
 });
@@ -21,7 +21,7 @@ function toggleSubgroups(element) {
   }
 }
 
-// Сбрасываем выделение выбранной группы/подгруппы
+// Сбрасывает выделение выбранной группы/подгруппы
 function clearSelectedGroupStyles() {
   document
     .querySelectorAll(".group-item.selected, .subgroup-item.selected")
@@ -131,7 +131,7 @@ function restoreGroupsState() {
         loadClients(selGroup);
       }
     } else {
-      // Группа не найдена (удалили/переименовали) — откроем "Все клиенты"
+      // Группа не найдена (удалили/переименовали) — откроет "Все клиенты"
       const all = document.getElementById("all-clients-group");
       if (all) {
         clearSelectedGroupStyles();
@@ -153,34 +153,34 @@ function loadGroups() {
     })
     .then((data) => {
       const groupsContainer = document.getElementById("groupsContainer");
-      groupsContainer.innerHTML = ""; // Очищаем текущее содержимое контейнера групп
+      groupsContainer.innerHTML = ""; // Очищает текущее содержимое контейнера групп
 
-      // Отделяем "Новые клиенты" и сортируем группы
+      // Отделяет "Новые клиенты" и сортирует группы
       const groups = Object.keys(data);
       const subgroupsMap = data;
       const newClientsGroup = groups.includes("Новые клиенты") ? "Новые клиенты" : null;
 
-      // Убираем "Новые клиенты" из списка для сортировки
+      // Убирает "Новые клиенты" из списка для сортировки
       if (newClientsGroup) {
         groups.splice(groups.indexOf(newClientsGroup), 1);
       }
 
-      // Сортируем оставшиеся группы
+      // Сортирует оставшиеся группы
       const sortedGroups = groups.sort((a, b) => a.localeCompare(b, "ru"));
 
-      // Добавляем "Новые клиенты" на второе место
+      // Добавляет "Новые клиенты" на второе место
       if (newClientsGroup) {
-        sortedGroups.unshift(newClientsGroup); // Вставляем в начало отсортированного списка
+        sortedGroups.unshift(newClientsGroup); // Вставляет в начало отсортированного списка
       }
 
-      // Создаём элементы для каждой группы
+      // Создаёт элементы для каждой группы
       sortedGroups.forEach((group) => {
         const groupElement = createGroupElement(group, subgroupsMap[group]);
         groupsContainer.appendChild(groupElement);
       });
-	  
-	  restoreGroupsState(); // Восстанавливаем развороты и выбор после рендера
-	  
+
+      restoreGroupsState(); // Восстанавливает развороты и выбор после рендера
+
     })
     .catch((error) => {
       console.error("Ошибка при загрузке групп:", error);
@@ -192,29 +192,29 @@ function createGroupElement(group, subgroups) {
   const groupElement = document.createElement("div");
   groupElement.className = "group-item";
 
-groupElement.addEventListener("click", () => {
-  hideContextMenu(); // Закрывает меню
+  groupElement.addEventListener("click", () => {
+    hideContextMenu(); // Закрывает меню
 
-  // Сохраняем выбор
-  saveSelection(group, null);
+    // Сохраняет выбор
+    saveSelection(group, null);
 
-  loadClients(group);
+    loadClients(group);
 
-  // Выделяем выбранную группу
-  clearSelectedGroupStyles();
-  groupElement.classList.add("selected");
-});
+    // Выделяет выбранную группу
+    clearSelectedGroupStyles();
+    groupElement.classList.add("selected");
+  });
 
-  // Создаем стрелку для разворачивания
+  // Создаёт стрелку для разворачивания
   const expandIcon = document.createElement("span");
   expandIcon.className = "expand-icon";
   expandIcon.textContent = "▶";
   expandIcon.onclick = (e) => {
-    e.stopPropagation(); // Останавливаем всплытие события клика
+    e.stopPropagation(); // Останавливает всплытие события клика
     toggleSubgroups(expandIcon);
   };
 
-  // Добавляем название группы
+  // Добавляет название группы
   const groupName = document.createElement("span");
   groupName.className = "group-name";
   groupName.textContent = group;
@@ -223,34 +223,34 @@ groupElement.addEventListener("click", () => {
   const subgroupsContainer = document.createElement("div");
   subgroupsContainer.className = "subgroups hidden";
 
-  // Сортируем подгруппы перед созданием элементов
+  // Сортирует подгруппы перед созданием элементов
   const sortedSubgroups = subgroups.sort((a, b) => a.localeCompare(b, "ru"));
 
-  // Создаем подгруппы
+  // Создаёт подгруппы
   sortedSubgroups.forEach((subgroup) => {
     const subgroupElement = document.createElement("div");
     subgroupElement.className = "subgroup-item";
     subgroupElement.textContent = subgroup; // Название подгруппы
-	
-	subgroupElement.addEventListener("click", (e) => {
-	  e.stopPropagation();// Останавливает всплытие события клика
-	  hideContextMenu(); // Закрывает меню
 
-	  // Сохраняем выбор
-	  saveSelection(group, subgroup);
+    subgroupElement.addEventListener("click", (e) => {
+      e.stopPropagation(); // Останавливает всплытие события клика
+      hideContextMenu(); // Закрывает меню
 
-	  loadClients(group, subgroup);
+      // Сохраняет выбор
+      saveSelection(group, subgroup);
 
-	  // Выделяем и подгруппу, и её родительскую группу
-	  clearSelectedGroupStyles();
-	  subgroupElement.classList.add("selected");
-	  groupElement.classList.add("selected");
-	});
-		
+      loadClients(group, subgroup);
+
+      // Выделяет и подгруппу, и её родительскую группу
+      clearSelectedGroupStyles();
+      subgroupElement.classList.add("selected");
+      groupElement.classList.add("selected");
+    });
+
     subgroupsContainer.appendChild(subgroupElement);
   });
 
-  // Собираем элементы группы
+  // Собирает элементы группы
   groupElement.appendChild(expandIcon);
   groupElement.appendChild(groupName);
   if (sortedSubgroups.length > 0) {
@@ -265,16 +265,16 @@ document.addEventListener("DOMContentLoaded", function() {
   const allClientsGroup = document.getElementById("all-clients-group");
   if (allClientsGroup) {
     allClientsGroup.addEventListener("click", function() {
-	  hideContextMenu(); // Закрывает меню
+      hideContextMenu(); // Закрывает меню
 
-	  // Сохраняем выбор "Все клиенты"
-	  saveSelection(ALL_CLIENTS_KEY);
+      // Сохраняет выбор "Все клиенты"
+      saveSelection(ALL_CLIENTS_KEY);
 
-	  loadClients(); // Вызов функции без параметров
+      loadClients(); // Вызов функции без параметров
 
-	  // Выделяем "Все клиенты"
-	  clearSelectedGroupStyles();
-	  allClientsGroup.classList.add("selected");
-	});
+      // Выделяет "Все клиенты"
+      clearSelectedGroupStyles();
+      allClientsGroup.classList.add("selected");
+    });
   }
 });

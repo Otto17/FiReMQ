@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -87,11 +88,139 @@ type clientSendQueue struct {
 
 var quicSendQueues sync.Map // key: clientID -> *clientSendQueue
 
+// quicAnswerMutexes Мьютексы для сериализации обновлений одной QUIC-записи при массовых ответах клиентов
+var quicAnswerMutexes sync.Map // key: Date_Of_Creation -> *sync.Mutex
+
 // Интервал между отправками запросов одному клиенту
 const quicQueueInterval = 20 * time.Second
 
 // Срок жизни одноразового, индивидуального токена
-const TokenTTL = 10 * time.Second
+const TokenTTL = 180 * time.Second
+
+// transferAggregator агрегатор логов об успешных передачах файлов по QUIC
+type transferAggregator struct {
+	mu     sync.Mutex
+	groups map[string]*ftGroup // key: dateOfCreation
+}
+
+// ftGroup группа передач для одного запроса
+type ftGroup struct {
+	fileName string
+	fileSize uint64
+	count    int
+	timer    *time.Timer
+	gen      int // Поколение для корректной обработки одновременных таймеров
+}
+
+var fileTransferAgg = &transferAggregator{
+	groups: make(map[string]*ftGroup),
+}
+
+// quicTransferSemaphore ограничивает количество одновременных передач файлов для снижения пиковой нагрузки на CPU
+var quicTransferSemaphore = make(chan struct{}, 90) // Максимум 90 одновременных передач по QUIC
+
+// recordTransfer регистрирует успешную передачу файла и агрегирует лог (60 секунд без новых передач → запись в лог)
+func (a *transferAggregator) recordTransfer(dateOfCreation, fileName string, fileSize uint64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	g, exists := a.groups[dateOfCreation]
+	if !exists {
+		g = &ftGroup{fileName: fileName, fileSize: fileSize}
+		a.groups[dateOfCreation] = g
+	}
+	g.count++
+	g.gen++
+	currentGen := g.gen
+
+	// Сбрасывает таймер: 60 секунд без новых передач → запись в лог
+	if g.timer != nil {
+		g.timer.Stop()
+	}
+
+	doc := dateOfCreation
+	g.timer = time.AfterFunc(60*time.Second, func() {
+		a.mu.Lock()
+		grp, ok := a.groups[doc]
+		if !ok || grp.gen != currentGen {
+			a.mu.Unlock()
+			return // Группа изменена или удалена — этот таймер устарел
+		}
+		count := grp.count
+		fn := grp.fileName
+		size := grp.fileSize
+		delete(a.groups, doc)
+		a.mu.Unlock()
+
+		// Корректное склонение слова "клиент" в дательном падеже
+		word := "клиентам"
+		if count%10 == 1 && count%100 != 11 {
+			word = "клиенту"
+		}
+		logging.LogSystem("QUIC: Файл %s передан %d %s (%d байт)", fn, count, word, size)
+	})
+}
+
+// tokenExpiryAgg агрегатор логов об истечении QUIC-токенов
+type tokenExpiryAggregator struct {
+	mu     sync.Mutex
+	groups map[string]*teGroup // key: dateOfCreation
+}
+
+// teGroup группа истекших токенов для одного запроса
+type teGroup struct {
+	clients []string
+	timer   *time.Timer
+	gen     int
+}
+
+var tokenExpiryAgg = &tokenExpiryAggregator{
+	groups: make(map[string]*teGroup),
+}
+
+// recordExpiry регистрирует истечение токена и агрегирует лог (5 секунд без новых истечений → запись в лог)
+func (a *tokenExpiryAggregator) recordExpiry(dateOfCreation, clientID string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	g, exists := a.groups[dateOfCreation]
+	if !exists {
+		g = &teGroup{}
+		a.groups[dateOfCreation] = g
+	}
+	g.clients = append(g.clients, clientID)
+	g.gen++
+	currentGen := g.gen
+
+	if g.timer != nil {
+		g.timer.Stop()
+	}
+
+	doc := dateOfCreation
+	g.timer = time.AfterFunc(5*time.Second, func() {
+		a.mu.Lock()
+		grp, ok := a.groups[doc]
+		if !ok || grp.gen != currentGen {
+			a.mu.Unlock()
+			return
+		}
+		clients := grp.clients
+		delete(a.groups, doc)
+		a.mu.Unlock()
+
+		if len(clients) == 1 {
+			logging.LogSystem("QUIC: Срок действия токена истек для %s (будет переотправлен)", clients[0])
+		} else {
+			logging.LogSystem("QUIC: Срок действия токена истек для %d клиентов: [%s] (будут переотправлены)", len(clients), strings.Join(clients, ", "))
+		}
+	})
+}
+
+// getQUICAnswerMutex Возвращает мьютекс для конкретной QUIC-записи по дате создания
+func getQUICAnswerMutex(dateOfCreation string) *sync.Mutex {
+	val, _ := quicAnswerMutexes.LoadOrStore(dateOfCreation, &sync.Mutex{})
+	return val.(*sync.Mutex)
+}
 
 // StartQUICServer запускает и держит QUIC-сервер до отмены ctx
 func StartQUICServer(ctx context.Context) {
@@ -184,7 +313,6 @@ func handleQUICConnection(conn *quic.Conn) {
 		logging.LogError("QUIC: Ошибка при чтении смещения: %v", err)
 		return
 	}
-	logging.LogSystem("QUIC: Получено смещение resumeFrom=%d для mqttID=%s", resumeFrom, mqttID)
 
 	// Проверка токена
 	if !validateQUICToken(token, mqttID) {
@@ -201,8 +329,9 @@ func handleQUICConnection(conn *quic.Conn) {
 		return
 	}
 
-	// Получение имени файла
+	// Получение имени файла и даты создания запроса
 	fileName := sess.FileName
+	dateOfCreation := sess.DateOfCreation
 	if strings.TrimSpace(fileName) == "" {
 		_ = sendProtoError(stream, ErrEmptyFileName, "В сессии нет имени файла")
 		return
@@ -251,12 +380,15 @@ func handleQUICConnection(conn *quic.Conn) {
 		return
 	}
 
+	// Ожидание свободного слота для передачи (ограничение параллелизма)
+	quicTransferSemaphore <- struct{}{}
+	defer func() { <-quicTransferSemaphore }()
+
 	// Перемещение к указанному смещению
 	if _, err := file.Seek(int64(resumeFrom), 0); err != nil {
 		logging.LogError("QUIC: Ошибка при установке смещения: %v", err)
 		return
 	}
-	logging.LogSystem("QUIC: Отправка файла: %s, начиная с %d байт", fileName, resumeFrom)
 
 	// Определение размера буфера
 	bufSize := getBufferSize(fileSize, resumeFrom)
@@ -279,7 +411,7 @@ func handleQUICConnection(conn *quic.Conn) {
 		}
 		sent += uint64(n)
 	}
-	logging.LogSystem("QUIC: Файл %s отправлен полностью: %d байт", fileName, sent)
+	fileTransferAgg.recordTransfer(dateOfCreation, fileName, fileSize)
 	shouldDeleteSession = false // Ожидает подтверждение от клиента
 }
 
@@ -333,42 +465,57 @@ func checkAndResendQUIC(clientID string) {
 
 // HandleQUICAnswerMessage обрабатывает ответы клиентов и обновляет BadgerDB
 func HandleQUICAnswerMessage(clientID, dateOfCreation, answer, quicExecution, attempts, description string) {
+	// Сериализация обновлений одной записи через мьютекс для предотвращения конфликтов транзакций при массовых ответах
+	mu := getQUICAnswerMutex(dateOfCreation)
+	mu.Lock()
+	defer mu.Unlock()
+
 	dbKey := "FiReMQ_QUIC:" + dateOfCreation
-	err := db.DBInstance.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(dbKey))
-		if err != nil {
-			return err
+	const maxRetries = 5
+	for attempt := range maxRetries {
+		err := db.DBInstance.Update(func(txn *badger.Txn) error {
+			item, err := txn.Get([]byte(dbKey))
+			if err != nil {
+				return err
+			}
+			var record map[string]any
+			if err := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &record)
+			}); err != nil {
+				return err
+			}
+			clientMapping, ok := record["ClientID_QUIC"].(map[string]any)
+			if !ok {
+				return nil
+			}
+			clientEntry, ok := clientMapping[clientID].(map[string]any)
+			if !ok {
+				clientEntry = make(map[string]any)
+			}
+			clientEntry["Answer"] = answer
+			if strings.TrimSpace(quicExecution) != "" {
+				clientEntry["QUIC_Execution"] = quicExecution
+			}
+			clientEntry["Attempts"] = attempts
+			clientEntry["Description"] = description
+			clientMapping[clientID] = clientEntry
+			record["ClientID_QUIC"] = clientMapping
+			updatedBytes, err := json.Marshal(record)
+			if err != nil {
+				return err
+			}
+			return txn.Set([]byte(dbKey), updatedBytes)
+		})
+		if err == nil {
+			break
 		}
-		var record map[string]any
-		if err := item.Value(func(val []byte) error {
-			return json.Unmarshal(val, &record)
-		}); err != nil {
-			return err
+		// Ретрай при конфликте транзакций BadgerDB
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 30 * time.Millisecond)
+			continue
 		}
-		clientMapping, ok := record["ClientID_QUIC"].(map[string]any)
-		if !ok {
-			return nil
-		}
-		clientEntry, ok := clientMapping[clientID].(map[string]any)
-		if !ok {
-			clientEntry = make(map[string]any)
-		}
-		clientEntry["Answer"] = answer
-		if strings.TrimSpace(quicExecution) != "" {
-			clientEntry["QUIC_Execution"] = quicExecution
-		}
-		clientEntry["Attempts"] = attempts
-		clientEntry["Description"] = description
-		clientMapping[clientID] = clientEntry
-		record["ClientID_QUIC"] = clientMapping
-		updatedBytes, err := json.Marshal(record)
-		if err != nil {
-			return err
-		}
-		return txn.Set([]byte(dbKey), updatedBytes)
-	})
-	if err != nil {
 		logging.LogError("QUIC: Ошибка обновления QUIC-ответа для клиента %s: %v", clientID, err)
+		break
 	}
 
 	sessionMutex.Lock()
@@ -405,13 +552,13 @@ func (m *quicAccessManager) open(why string) {
 	}
 
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.isOpen {
 		// Уже открыт — просто отменит возможное отложенное закрытие
 		m.cancelCloseTimerLocked()
-		m.mu.Unlock()
 		return
 	}
-	m.mu.Unlock()
 
 	udpAddr, err := net.ResolveUDPAddr("udp", m.addr)
 	if err != nil {
@@ -425,19 +572,20 @@ func (m *quicAccessManager) open(why string) {
 		return
 	}
 
-	listener, err := quic.Listen(udpConn, m.tlsConfig, &quic.Config{})
+	listener, err := quic.Listen(udpConn, m.tlsConfig, &quic.Config{
+		MaxIdleTimeout:  120 * time.Second, // Таймаут бездействия (для передачи больших файлов)
+		KeepAlivePeriod: 15 * time.Second,  // PING-фреймы для поддержания соединения
+	})
 	if err != nil {
 		logging.LogError("QUIC: Не удалось запустить listener: %v", err)
 		udpConn.Close()
 		return
 	}
 
-	m.mu.Lock()
 	m.udpConn = udpConn
 	m.listener = listener
 	m.isOpen = true
-	m.cancelCloseTimerLocked() // На всякий случай
-	m.mu.Unlock()
+	m.cancelCloseTimerLocked()
 
 	logging.LogSystem("QUIC: QUIC-сервер запущен на %s (доступ разрешён: %s)", m.addr, why)
 	m.acceptWG.Add(1)
@@ -744,7 +892,7 @@ func generateQUICTokenForFile(mqttID, filePath, dateOfCreation string) string {
 			}
 			sessionMutex.Unlock()
 			if expired {
-				logging.LogSystem("QUIC: Срок действия токена истек для %s", client)
+				tokenExpiryAgg.recordExpiry(snap.DateOfCreation, client)
 				// Отмечат флаг для будущей отправки
 				if snap.DateOfCreation != "" {
 					_ = setResendRequestedFor(client, snap.DateOfCreation)
@@ -839,98 +987,124 @@ func hasReadyQUICTasks() (bool, error) {
 
 // SetResendRequestedFor выставляет флаг ResendRequested[clientID]=true для конкретной записи (если Answer пуст)
 func setResendRequestedFor(clientID, dateOfCreation string) bool {
+	// Сериализация через тот же мьютекс, что и HandleQUICAnswerMessage, для предотвращения конфликтов
+	mu := getQUICAnswerMutex(dateOfCreation)
+	mu.Lock()
+	defer mu.Unlock()
+
 	dbKey := "FiReMQ_QUIC:" + dateOfCreation
 	var changed bool
-	err := db.DBInstance.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(dbKey))
-		if err != nil {
-			return nil
-		}
-		var record map[string]any
-		if err := item.Value(func(val []byte) error {
-			return json.Unmarshal(val, &record)
-		}); err != nil {
-			return nil
-		}
-		mapping, ok := record["ClientID_QUIC"].(map[string]any)
-		if !ok {
-			return nil
-		}
-		ce, _ := mapping[clientID].(map[string]any)
-		if ce == nil {
-			return nil
-		}
-		if ans, _ := ce["Answer"].(string); strings.TrimSpace(ans) != "" {
-			return nil
-		}
-		rr, _ := record["ResendRequested"].(map[string]any)
-		if rr == nil {
-			rr = make(map[string]any)
-		}
-		if rrb, _ := rr[clientID].(bool); !rrb {
-			rr[clientID] = true
-			record["ResendRequested"] = rr
-			newBytes, err := json.Marshal(record)
+	const maxRetries = 5
+	for attempt := range maxRetries {
+		changed = false
+		err := db.DBInstance.Update(func(txn *badger.Txn) error {
+			item, err := txn.Get([]byte(dbKey))
 			if err != nil {
 				return nil
 			}
-			if err := txn.Set([]byte(dbKey), newBytes); err != nil {
-				return err
+			var record map[string]any
+			if err := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &record)
+			}); err != nil {
+				return nil
 			}
-			changed = true
+			mapping, ok := record["ClientID_QUIC"].(map[string]any)
+			if !ok {
+				return nil
+			}
+			ce, _ := mapping[clientID].(map[string]any)
+			if ce == nil {
+				return nil
+			}
+			if ans, _ := ce["Answer"].(string); strings.TrimSpace(ans) != "" {
+				return nil
+			}
+			rr, _ := record["ResendRequested"].(map[string]any)
+			if rr == nil {
+				rr = make(map[string]any)
+			}
+			if rrb, _ := rr[clientID].(bool); !rrb {
+				rr[clientID] = true
+				record["ResendRequested"] = rr
+				newBytes, err := json.Marshal(record)
+				if err != nil {
+					return nil
+				}
+				if err := txn.Set([]byte(dbKey), newBytes); err != nil {
+					return err
+				}
+				changed = true
+			}
+			return nil
+		})
+		if err == nil {
+			return changed
 		}
-		return nil
-	})
-	if err != nil {
+		// Ретрай при конфликте транзакций BadgerDB
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 20 * time.Millisecond)
+			continue
+		}
 		logging.LogError("QUIC: Ошибка установки повторного запроса для клиента %s (%s): %v", clientID, dateOfCreation, err)
+		return changed
 	}
 	return changed
 }
 
 // MarkQUICResendOnOffline — при переходе клиента в офлайн, отмечает ResendRequested для всех его незавершённых задач
 func markQUICResendOnOffline(clientID string) {
-	err := db.DBInstance.Update(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.Prefix = []byte("FiReMQ_QUIC:")
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			var record map[string]any
-			if err := item.Value(func(val []byte) error {
-				return json.Unmarshal(val, &record)
-			}); err != nil {
-				continue
+	const maxRetries = 3
+	for attempt := range maxRetries {
+		err := db.DBInstance.Update(func(txn *badger.Txn) error {
+			opts := badger.DefaultIteratorOptions
+			opts.Prefix = []byte("FiReMQ_QUIC:")
+			it := txn.NewIterator(opts)
+			defer it.Close()
+			for it.Rewind(); it.Valid(); it.Next() {
+				item := it.Item()
+				var record map[string]any
+				if err := item.Value(func(val []byte) error {
+					return json.Unmarshal(val, &record)
+				}); err != nil {
+					continue
+				}
+				mapping, ok := record["ClientID_QUIC"].(map[string]any)
+				if !ok {
+					continue
+				}
+				ce, _ := mapping[clientID].(map[string]any)
+				if ce == nil {
+					continue
+				}
+				if ans, _ := ce["Answer"].(string); strings.TrimSpace(ans) != "" {
+					continue
+				}
+				rr, _ := record["ResendRequested"].(map[string]any)
+				if rr == nil {
+					rr = make(map[string]any)
+				}
+				rr[clientID] = true
+				record["ResendRequested"] = rr
+				newBytes, err := json.Marshal(record)
+				if err != nil {
+					continue
+				}
+				if err := txn.Set(item.KeyCopy(nil), newBytes); err != nil {
+					return err
+				}
 			}
-			mapping, ok := record["ClientID_QUIC"].(map[string]any)
-			if !ok {
-				continue
-			}
-			ce, _ := mapping[clientID].(map[string]any)
-			if ce == nil {
-				continue
-			}
-			if ans, _ := ce["Answer"].(string); strings.TrimSpace(ans) != "" {
-				continue
-			}
-			rr, _ := record["ResendRequested"].(map[string]any)
-			if rr == nil {
-				rr = make(map[string]any)
-			}
-			rr[clientID] = true
-			record["ResendRequested"] = rr
-			newBytes, err := json.Marshal(record)
-			if err != nil {
-				continue
-			}
-			if err := txn.Set(item.KeyCopy(nil), newBytes); err != nil {
-				return err
-			}
+			return nil
+		})
+		if err == nil {
+			return
 		}
-		return nil
-	})
-	if err != nil {
+		// Ретрай при конфликте транзакций BadgerDB
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 20 * time.Millisecond)
+			continue
+		}
 		logging.LogError("QUIC: Ошибка отметки повторного запроса при оффлайне для %s: %v", clientID, err)
+		return
 	}
 }
 
@@ -971,6 +1145,25 @@ func parseQUICDate(s string) time.Time {
 
 // PrepareNextQUICMessage подготавливает следующие к отправке записи (начиная с самой старой)
 func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok bool) {
+	const maxRetries = 3
+	for attempt := range maxRetries {
+		t, p, o, err := prepareNextQUICMessageOnce(clientID)
+		if err == nil {
+			return t, p, o
+		}
+		// Повтор при конфликте транзакций BadgerDB
+		if errors.Is(err, badger.ErrConflict) && attempt < maxRetries-1 {
+			time.Sleep(time.Duration(attempt+1) * 30 * time.Millisecond)
+			continue
+		}
+		logging.LogError("QUIC: Ошибка подготовки сообщения для %s: %v", clientID, err)
+		return "", nil, false
+	}
+	return "", nil, false
+}
+
+// prepareNextQUICMessageOnce выполняет одну попытку подготовки сообщения
+func prepareNextQUICMessageOnce(clientID string) (topic string, payload []byte, ok bool, retErr error) {
 	var (
 		chosenKey    []byte
 		chosenRecord map[string]any
@@ -1006,7 +1199,7 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 			if strings.TrimSpace(ans) != "" {
 				continue
 			}
-			// eligible: (ещё не отправляли) ИЛИ (стоит флаг ResendRequested)
+			// eligible: (ещё не отправлялся) ИЛИ (стоит флаг ResendRequested)
 			alreadySent := false
 			if sentForAny, ok := record["SentFor"].([]any); ok {
 				for _, v := range sentForAny {
@@ -1040,7 +1233,7 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 			return nil
 		}
 
-		// Готовим payload с новым токеном
+		// Готовит payload с новым токеном
 		payloadStr, okk := chosenRecord["QUIC_Command"].(string)
 		if !okk || payloadStr == "" {
 			return nil
@@ -1055,7 +1248,7 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 			return err
 		}
 
-		// Обновим SentFor
+		// Обновляет SentFor
 		var sentFor []string
 		if s, ok := chosenRecord["SentFor"]; ok {
 			if arr, ok := s.([]any); ok {
@@ -1099,10 +1292,13 @@ func prepareNextQUICMessage(clientID string) (topic string, payload []byte, ok b
 		outTopic = "Client/" + clientID + "/ModuleQUIC"
 		return nil
 	})
-	if err != nil || !choose {
-		return "", nil, false
+	if err != nil {
+		return "", nil, false, err
 	}
-	return outTopic, outPayload, true
+	if !choose {
+		return "", nil, false, nil
+	}
+	return outTopic, outPayload, true, nil
 }
 
 // StartQUICQueueForClient производит запуск очереди для клиента

@@ -8,7 +8,8 @@ table {
   overflow: hidden;
 }
 
-th, td {
+th,
+td {
   padding: 9px;
   text-align: center;
   font-size: 14px;
@@ -21,7 +22,7 @@ th {
   font-weight: bold;
 }
 
-/* Уменьшаем отступы только в ячейке со статусом */
+/* Уменьшает отступы только в ячейке со статусом */
 td[data-field="status"] {
   padding: 6px; /* Установка меньших отступов */
 }
@@ -36,7 +37,7 @@ td[data-field="name"] {
   width: 24px;
   height: 24px;
   display: block; /* Чтобы изображение занимало всю ширину ячейки */
-  margin: auto; /* Центрируем изображение, если нужно */
+  margin: auto; /* Центрирует изображение, если нужно */
   vertical-align: middle; /* Выровнять по центру по вертикали */
 }
 
@@ -113,26 +114,26 @@ table tr:hover {
 
 /* Стили для иконок в контекстном меню */
 .context-menu-icon {
-width: 16px; /* Подберите размер по своему усмотрению */
-height: 16px;
-vertical-align: middle; /* Выравнивание по середине строки */
-margin-right: 8px; /* Отступ справа от иконки до текста */
-margin-left: -4px; /* Отступ от левого края до иконки */
+  width: 16px; /* Подберите размер по своему усмотрению */
+  height: 16px;
+  vertical-align: middle; /* Выравнивание по середине строки */
+  margin-right: 8px; /* Отступ справа от иконки до текста */
+  margin-left: -4px; /* Отступ от левого края до иконки */
 }
 
 /* Иконка и текст находятся в одной строке */
 .context-menu-item {
-display: flex;
-align-items: center; /* Выравнивание по центру по вертикали */
+  display: flex;
+  align-items: center; /* Выравнивание по центру по вертикали */
 }
 
 .context-menu-item span {
-flex-grow: 1; /* Текст занимает оставшееся пространство */
+  flex-grow: 1; /* Текст занимает оставшееся пространство */
 }
 
 /* Постоянное выделение строки при открытом контекстном меню */
 tr.selected-context {
-background-color: #777777 !important;
+  background-color: #777777 !important;
 }
 
 /* Стили стрелок сортировки */
@@ -143,7 +144,7 @@ background-color: #777777 !important;
 }
 
 .sort-indicator.active {
-  visibility: visible; /* Показываем стрелку на активной сортировке */
+  visibility: visible; /* Показывает стрелку на активной сортировке */
 }
 
 /* Меню и клиенты */
@@ -165,48 +166,48 @@ background-color: #777777 !important;
 
 /* Запрет выделения текста в заголовках колонок клиентской таблицы */
 .clients table th {
-    user-select: none;         /* стандарт */
-    -webkit-user-select: none; /* Safari/Chrome */
-    -moz-user-select: none;    /* Firefox */
-    -ms-user-select: none;     /* старый IE/Edge */
-    cursor: pointer;           /* визуально показать, что это кликабельно */
+  user-select: none; /* стандарт */
+  -webkit-user-select: none; /* Safari/Chrome */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* старый IE/Edge */
+  cursor: pointer; /* визуально показать, что это кликабельно */
 }
 
 /* Стили валидации для полей переименования клиентов */
 .clients .validation-tooltip {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    left: 0;
-    background: rgba(217, 83, 79, 0.95);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    white-space: nowrap;
-    z-index: 1100;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(5px);
-    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-    pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  background: rgba(217, 83, 79, 0.95);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(5px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  pointer-events: none;
 }
 
 .clients .validation-tooltip.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .clients .validation-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 16px;
-    border: 6px solid transparent;
-    border-top-color: rgba(217, 83, 79, 0.95);
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 16px;
+  border: 6px solid transparent;
+  border-top-color: rgba(217, 83, 79, 0.95);
 }
 
 /* Позиционирование для ячейки с именем */
 td[data-field="name"] {
-    position: relative;
+  position: relative;
 }

@@ -80,11 +80,11 @@
 
 /* Постоянное выделение выбранных группы/подгруппы */
 .group-item.selected {
-  background-color: #777;            /* как при :hover у группы */
-  border-left: 5px solid #2196f3;    /* как при :hover у группы */
+  background-color: #777; /* как при :hover у группы */
+  border-left: 5px solid #2196f3; /* как при :hover у группы */
 }
 
 .subgroup-item.selected {
-  background-color: #444;            /* как при :hover у подгруппы */
-  border-left: 5px solid #ff4081;    /* как при :hover у подгруппы */
+  background-color: #444; /* как при :hover у подгруппы */
+  border-left: 5px solid #ff4081; /* как при :hover у подгруппы */
 }

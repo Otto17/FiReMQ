@@ -60,8 +60,6 @@ func GetTopicData() {
 			}
 
 			if err := json.Unmarshal(payload, &test); err == nil && test.Answer != "" && test.Date_Of_Creation != "" {
-				// Это сообщение ответа, вызывает внешний обработчик
-				logging.LogSystem("ModuleCommand: Получен ответ от клиента %s в топике %s", clientID, topic)
 				if HandleAnswerMessage != nil {
 					HandleAnswerMessage(clientID, payload)
 				}
@@ -80,7 +78,6 @@ func GetTopicData() {
 			}
 
 			if err := json.Unmarshal(payload, &resp); err == nil && resp.Date_Of_Creation != "" && resp.Answer != "" {
-				logging.LogSystem("ModuleQUIC: Получен ответ от клиента %s в топике %s", clientID, topic)
 				if HandleQUICAnswerMessage != nil {
 					HandleQUICAnswerMessage(clientID, resp.Date_Of_Creation, resp.Answer, resp.QUIC_Execution, resp.Attempts, resp.Description)
 				}

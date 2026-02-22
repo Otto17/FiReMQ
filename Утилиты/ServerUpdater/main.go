@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	version = "28.01.26" // Текущая версия ServerUpdater в формате "дд.мм.гг"
+	version = "22.02.26" // Текущая версия ServerUpdater в формате "дд.мм.гг"
 
 	backupTimestampLayout = "02.01.06(в_15.04.05)" // Формат метки времени для резервной копии "дд.мм.гг(в_ЧЧ.ММ.СС)""
 	backupPatternPrefix   = "bak_"                 // Префикс
