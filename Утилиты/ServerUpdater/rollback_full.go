@@ -61,7 +61,7 @@ func resolveBackupDir(exeDir string) string {
 	return bdir
 }
 
-// findLatestBackupInDir ищет самый свежий бэкап в каталоге dir по шаблону имени
+// findLatestBackupInDir ищет самый свежий бэкап в директории dir по шаблону имени
 func findLatestBackupInDir(dir string) (string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -219,18 +219,33 @@ func RunRollback() error {
 	}
 	exeFull := filepath.Join(exeDir, exeName())
 
+	// Гарантирует запуск FiReMQ, если он был остановлен при ошибке отката
+	mustStartFiReMQ := false // false пока FiReMQ не остановлен
+	defer func() {
+		if mustStartFiReMQ {
+			log.Printf("Запуск FiReMQ после ошибки отката...")
+			if sErr := startFiReMQ(exeFull); sErr != nil {
+				log.Printf("КРИТИЧЕСКАЯ ОШИБКА: не удалось запустить FiReMQ: %v", sErr)
+			}
+		}
+	}()
+
 	// Ищет самый свежий бэкап в директории Path_Backup
 	backupDir := resolveBackupDir(exeDir)
 	if latestNew, _ := findLatestBackupInDir(backupDir); latestNew != "" {
 		log.Printf("Откат (manifestBackup.json): %s", latestNew)
 		if err := waitFiReMQExit(exeFull); err != nil {
-			return err
+			return err // FiReMQ не остановлен — defer не будет запускать его
 		}
+
+		mustStartFiReMQ = true // FiReMQ остановлен — нужно гарантировать запуск
 
 		if err := restoreFromManifestBackup(latestNew); err != nil {
 			return fmt.Errorf("ошибка восстановления из бэкапа: %w", err)
+			// defer запустит FiReMQ
 		}
 
+		mustStartFiReMQ = false // FiReMQ будет запущен ниже
 		return startFiReMQ(exeFull)
 	}
 

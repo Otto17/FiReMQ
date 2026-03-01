@@ -69,12 +69,12 @@ type htmlUpdateWriter struct {
 func ServerUpdaterLogging() {
 	rawLogOutput = os.Stderr // Всегда оставляет stderr
 
-	// Определяет путь к HTML логу используя ту же логику каталогов что и для ServerUpdater.log
+	// Определяет путь к HTML логу используя ту же логику директорий что и для ServerUpdater.log
 	logDir, htmlPath := detectHTMLLogPath()
 
 	if err := ensureLogDir(logDir); err != nil {
 		// Не фатально: пусть хотя бы stderr работает
-		log.Printf("ПРЕДУПРЕЖДЕНИЕ: не удалось подготовить каталог логов %s: %v (лог только в stderr)", logDir, err)
+		log.Printf("ПРЕДУПРЕЖДЕНИЕ: не удалось подготовить директорию логов %s: %v (лог только в stderr)", logDir, err)
 		return
 	}
 
@@ -153,10 +153,10 @@ func detectHTMLLogPath() (dir, full string) {
 	return dir, filepath.Join(dir, htmlLogFileName)
 }
 
-// ensureLogDir создаёт каталог логов если его нет
+// ensureLogDir создаёт директорию логов если её нет
 func ensureLogDir(dir string) error {
 	if dir == "" {
-		return fmt.Errorf("пустой каталог логов")
+		return fmt.Errorf("пустая директория логов")
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err

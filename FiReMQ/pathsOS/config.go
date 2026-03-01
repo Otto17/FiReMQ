@@ -173,7 +173,7 @@ func entries() []configEntry {
 
 		{"Path_Backup", "Путь до директории с бэкапами FiReMQ", &Path_Backup, backupDir},
 		{"DB_Backup_Interval", "Интервал создания полных бэкапов БД в часах (0 - отключено)", &DB_Backup_Interval, "12"},
-		{"DB_Backup_Retention_Count", "Количество хранимых бэкапов БД (при достижении лимита, новый бэкап заменяет самый старый)", &DB_Backup_Retention_Count, "15"},
+		{"DB_Backup_Retention_Count", "Количество хранимых бэкапов БД (при достижении лимита, новый бэкап заменяет самый старый)", &DB_Backup_Retention_Count, "60"},
 		{"Path_Logs", "Путь до директории с логами (для обновления FiReMQ)", &Path_Logs, logsDir},
 		{"Logs_Retention_Days", "Период хранения логов в HTML, в днях (0 — отключить автоматическую очистку)", &Logs_Retention_Days, "365"},
 		{"Logs_Min_Count_Per_Type", "Минимальное количество логов КАЖДОГО ТИПА, которое всегда должно оставаться в HTML (0 — без ограничения)", &Logs_Min_Count_Per_Type, "500"},

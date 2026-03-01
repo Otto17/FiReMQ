@@ -21,13 +21,21 @@ const (
 	ActDelete Action = "delete"
 )
 
-// FileItem описывает файл или директорию для обновления
+// FileItem описывает файл для обновления (бинарники, ресурсы и т.д.)
 type FileItem struct {
 	Src     string // Путь внутри архива относительно FiReMQ/
 	DestRel string // Относительный путь к директории EXE_DIR
 	Dest    string // Опциональный абсолютный путь с поддержкой макросов
 	Action  Action
-	IsDir   bool // true = это директория, обновить всё её содержимое
+}
+
+// DirectoryItem описывает директорию для обновления или удаления
+type DirectoryItem struct {
+	Key     string // Имя ключа в server.conf для определения пути
+	Src     string // Путь внутри архива относительно FiReMQ/
+	Dest    string // Опциональный абсолютный путь с поддержкой макросов
+	Action  Action
+	IsDir   bool // Для совместимости с TOML (всегда обрабатывается как true для [[directory]])
 	Replace bool // true = удалить старое содержимое директории перед копированием
 }
 
@@ -44,6 +52,7 @@ type Manifest struct {
 	Version    string
 	MinUpdater string
 	Files      []FileItem
+	Directory  []DirectoryItem
 	Configs    []ConfigItem
 }
 

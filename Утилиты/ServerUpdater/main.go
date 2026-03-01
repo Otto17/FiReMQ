@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	version = "22.02.26" // Текущая версия ServerUpdater в формате "дд.мм.гг"
+	version = "01.03.26" // Текущая версия ServerUpdater в формате "дд.мм.гг"
 
 	backupTimestampLayout = "02.01.06(в_15.04.05)" // Формат метки времени для резервной копии "дд.мм.гг(в_ЧЧ.ММ.СС)""
 	backupPatternPrefix   = "bak_"                 // Префикс
@@ -116,6 +116,20 @@ func RunApplyFromZip(archPath, currentVersion, pidStr string) error {
 
 // runApplySingleArchive обновление из одного архива
 func runApplySingleArchive(dir, archPath, currentVersion, pidStr string) error {
+	// Полный путь к основному исполняемому файлу
+	exeFull := filepath.Join(dir, exeName())
+
+	// Гарантирует запуск FiReMQ
+	mustStartFiReMQ := true
+	defer func() {
+		if mustStartFiReMQ {
+			log.Printf("Запуск FiReMQ после ошибки обновления...")
+			if sErr := startFiReMQ(exeFull); sErr != nil {
+				log.Printf("КРИТИЧЕСКАЯ ОШИБКА: не удалось запустить FiReMQ: %v", sErr)
+			}
+		}
+	}()
+
 	arch, err := OpenArchive(archPath)
 	if err != nil {
 		return fmt.Errorf("архив не найден или не открывается: %s (%v)", archPath, err)
@@ -147,9 +161,6 @@ func runApplySingleArchive(dir, archPath, currentVersion, pidStr string) error {
 		return err
 	}
 	dumpPlan(ops)
-
-	// Полный путь к основному исполняемому файлу
-	exeFull := filepath.Join(dir, exeName())
 
 	// Ждёт полного завершения FiReMQ по PID
 	if pidStr != "" {
@@ -212,6 +223,7 @@ func runApplySingleArchive(dir, archPath, currentVersion, pidStr string) error {
 	}
 
 	// Запускает FiReMQ (на Linux предварительно устанавливаются права +x и владелец)
+	mustStartFiReMQ = false // FiReMQ будет запущен ниже
 	startErr := startFiReMQ(exeFull)
 
 	return startErr
@@ -220,6 +232,17 @@ func runApplySingleArchive(dir, archPath, currentVersion, pidStr string) error {
 // runApplyChainFromManifest применяет цепочку обновлений из update_chain.json (FiReMQ перезапускается только один раз - после установки последнего обновления)
 func runApplyChainFromManifest(dir, manifestPath, currentVersion, pidStr string) error {
 	exeFull := filepath.Join(dir, exeName())
+
+	// Гарантирует запуск FiReMQ
+	mustStartFiReMQ := true
+	defer func() {
+		if mustStartFiReMQ {
+			log.Printf("Запуск FiReMQ после ошибки обновления...")
+			if sErr := startFiReMQ(exeFull); sErr != nil {
+				log.Printf("КРИТИЧЕСКАЯ ОШИБКА: не удалось запустить FiReMQ: %v", sErr)
+			}
+		}
+	}()
 
 	// Чтение манифеста цепочки
 	data, err := os.ReadFile(manifestPath)
@@ -234,6 +257,7 @@ func runApplyChainFromManifest(dir, manifestPath, currentVersion, pidStr string)
 
 	if len(chain.Items) == 0 {
 		log.Printf("Цепочка обновлений пуста. Запуск FiReMQ без изменений.")
+		mustStartFiReMQ = false // FiReMQ будет запущен ниже
 		return startFiReMQ(exeFull)
 	}
 
@@ -342,9 +366,10 @@ func runApplyChainFromManifest(dir, manifestPath, currentVersion, pidStr string)
 		}
 	}
 
-	// Запускает FiReMQ один раз после окончания всей цепочки
-	return startFiReMQ(exeFull)
-}
+		// Запускает FiReMQ один раз после окончания всей цепочки
+		mustStartFiReMQ = false // FiReMQ будет запущен ниже
+		return startFiReMQ(exeFull)
+	}
 
 // exeDir возвращает абсолютный путь к директории, где расположен апдейтер
 func exeDir() (string, error) {

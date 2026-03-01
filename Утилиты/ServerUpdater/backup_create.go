@@ -190,7 +190,7 @@ func CreateFullBackup(exeDir, currentVersion string, conf map[string]string, ser
 				if werr != nil {
 					return nil
 				}
-				// Проверяет, что не включает сам каталог бэкапа или его подкаталоги
+				// Проверяет, что не включает саму директорию бэкапа или его поддиректории
 				if d.IsDir() && (samePath(path, backupDir) || isPathWithin(path, backupDir)) {
 					return filepath.SkipDir
 				}

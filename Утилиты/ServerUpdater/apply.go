@@ -100,13 +100,13 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 	var ops []PlanOp
 	needReplaceExe := false
 
-	// files
+	// [files]
 	for _, it := range man.Files {
 		var dest string
 		if it.Dest != "" {
 			dest = expandMacros(it.Dest, exeDir, configDir)
 		} else {
-			// Относительный путь, если Dest не указан, считается от каталога "EXE_DIR"
+			// Относительный путь, если Dest не указан, считается от директория "EXE_DIR"
 			dest = filepath.Join(exeDir, filepath.FromSlash(it.DestRel))
 		}
 		dest = filepath.Clean(dest)
@@ -116,22 +116,64 @@ func buildPlan(man *Manifest, exeDir string, conf map[string]string, serverConfP
 			Action:   it.Action,
 			SrcInZip: strings.TrimPrefix(path.Clean(it.Src), "/"),
 			DestAbs:  dest,
-			IsDir:    it.IsDir,
-			Replace:  it.Replace,
 		}
 
 		// Определяет, нужно ли заменять главный бинарный файл FiReMQ
-		if !it.IsDir && strings.EqualFold(filepath.Clean(dest), filepath.Join(exeDir, exeName())) {
+		if strings.EqualFold(filepath.Clean(dest), filepath.Join(exeDir, exeName())) {
 			if it.Action == ActUpdate {
 				needReplaceExe = true
 			}
 		}
-		// Убрана блокировка обновления самого апдейтера, теперь это обрабатывается в applyPlan
 
 		ops = append(ops, op)
 	}
 
-	// config
+	// [directory]
+	for _, it := range man.Directory {
+		var dest string
+
+		// Приоритет: Key > Dest
+		if it.Key != "" {
+			if v, ok := conf[it.Key]; ok && strings.TrimSpace(v) != "" {
+				dest = strings.TrimSpace(v)
+				if !filepath.IsAbs(dest) {
+					dest = filepath.Join(exeDir, dest)
+				}
+			}
+		}
+
+		// Если ключ не найден или пуст — использует Dest с поддержкой макросов
+		if dest == "" && it.Dest != "" {
+			dest = expandMacros(it.Dest, exeDir, configDir)
+			if !filepath.IsAbs(dest) {
+				dest = filepath.Join(exeDir, dest)
+			}
+		}
+
+		if dest == "" {
+			if it.Action == ActDelete {
+				log.Printf("directory[%s]: ключ не найден и путь не задан — удалять нечего, пропуск", it.Key)
+				continue
+			}
+			return nil, needReplaceExe, fmt.Errorf("directory[%s]: не удалось определить путь назначения", it.Key)
+		}
+
+		dest = filepath.Clean(dest)
+
+		op := PlanOp{
+			Section:  "directory",
+			Action:   it.Action,
+			SrcInZip: strings.TrimPrefix(path.Clean(it.Src), "/"),
+			DestAbs:  dest,
+			ConfKey:  it.Key,
+			IsDir:    true, // Всегда true для секции [[directory]]
+			Replace:  it.Replace,
+		}
+
+		ops = append(ops, op)
+	}
+
+	// [config]
 	for _, it := range man.Configs {
 		var dest string
 		// Проверяет, существует ли путь в текущем "server.conf"
@@ -198,9 +240,9 @@ func dumpPlan(ops []PlanOp) {
 		dirMark := ""
 		if op.IsDir {
 			if op.Replace {
-				dirMark = " [КАТАЛОГ, ЗАМЕНА]"
+				dirMark = " [ДИРЕКТОРИЯ, ЗАМЕНА]"
 			} else {
-				dirMark = " [КАТАЛОГ]"
+				dirMark = " [ДИРЕКТОРИЯ]"
 			}
 		}
 
@@ -224,11 +266,13 @@ func ruAction(a Action) string {
 	}
 }
 
-// ruSection возвращает Русское описание раздела (files/config)
+// ruSection возвращает Русское описание раздела (files / directory / config)
 func ruSection(s string) string {
 	switch strings.ToLower(s) {
 	case "files":
 		return "файлы"
+	case "directory":
+		return "директория"
 	case "config":
 		return "конфиг"
 	default:
@@ -240,7 +284,7 @@ func ruSection(s string) string {
 func extractFromArchiveToTemp(a *Archive, srcInZip, tempDest string) (os.FileMode, error) {
 	srcInZip = strings.ReplaceAll(srcInZip, "\\", "/")
 	srcInZip = path.Clean(strings.TrimPrefix(srcInZip, "/"))
-	// Ищет файл внутри подкаталога /firemq/ (без учета регистра)
+	// Ищет файл внутри директории /firemq/ (без учета регистра)
 	wantSuffix := "firemq/" + strings.ToLower(srcInZip)
 
 	f, err := os.Open(a.Path)
@@ -311,16 +355,16 @@ func extractDirFromArchive(a *Archive, srcDirInZip, destDir string, replace bool
 	// Если нужна полная замена — удаляет существующую директорию
 	if replace {
 		if _, err := os.Stat(destDir); err == nil {
-			log.Printf("  Удаление существующего каталога для замены: %s", destDir)
+			log.Printf("  Удаление существующей директории для замены: %s", destDir)
 			if err := os.RemoveAll(destDir); err != nil {
-				return 0, fmt.Errorf("не удалось удалить каталог %s: %w", destDir, err)
+				return 0, fmt.Errorf("не удалось удалить директорию %s: %w", destDir, err)
 			}
 		}
 	}
 
 	// Создаёт целевую директорию
 	if err := ensureDirAllAndSetOwner(destDir, 0755); err != nil {
-		return 0, fmt.Errorf("не удалось создать каталог %s: %w", destDir, err)
+		return 0, fmt.Errorf("не удалось создать директорию %s: %w", destDir, err)
 	}
 
 	// Открывает архив и извлекает файлы
@@ -412,7 +456,7 @@ func extractDirFromArchive(a *Archive, srcDirInZip, destDir string, replace bool
 	}
 
 	if count == 0 {
-		return 0, fmt.Errorf("каталог %s пуст или не найден в архиве", srcDirInZip)
+		return 0, fmt.Errorf("директория %s пуста или не найдена в архиве", srcDirInZip)
 	}
 
 	return count, nil
@@ -448,7 +492,7 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 				continue
 			}
 
-			// Проверяет, существует ли путь и что это - файл или каталог
+			// Проверяет, существует ли путь и что это - файл или директория
 			info, err := os.Stat(op.DestAbs)
 			if err != nil {
 				if os.IsNotExist(err) {
@@ -460,12 +504,12 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 			}
 
 			if info.IsDir() {
-				// Удаляет каталог со всем содержимым
+				// Удаляет директорию со всем содержимым
 				if err := os.RemoveAll(op.DestAbs); err != nil {
 					return stats, fmt.Errorf("delete dir %s: %w", op.DestAbs, err)
 				}
 				stats.Deleted++
-				log.Printf("УДАЛЕНИЕ КАТАЛОГА: %s (со всем содержимым)", op.DestAbs)
+				log.Printf("УДАЛЕНИЕ ДИРЕКТОРИИ: %s (со всем содержимым)", op.DestAbs)
 			} else {
 				// Удаляет файл
 				if err := os.Remove(op.DestAbs); err != nil {
@@ -482,11 +526,11 @@ func applyPlan(a *Archive, ops []PlanOp) (ApplyStats, error) {
 				if op.Replace {
 					replaceMark = " (полная замена)"
 				}
-				log.Printf("ОБНОВЛЕНИЕ КАТАЛОГА: %s%s", op.DestAbs, replaceMark)
+				log.Printf("ОБНОВЛЕНИЕ ДИРЕКТОРИИ: %s%s", op.DestAbs, replaceMark)
 
 				count, err := extractDirFromArchive(a, op.SrcInZip, op.DestAbs, op.Replace)
 				if err != nil {
-					return stats, fmt.Errorf("ошибка обновления каталога %s: %w", op.DestAbs, err)
+					return stats, fmt.Errorf("ошибка обновления директории %s: %w", op.DestAbs, err)
 				}
 
 				log.Printf("  Извлечено файлов: %d", count)

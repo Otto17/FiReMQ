@@ -3,6 +3,36 @@
 let currentClientID = null;
 let selectedContextRow = null;
 
+// Обновляет заголовок "Группы" с количеством клиентов в выбранной группе/подгруппе
+function updateGroupsHeader(isSubgroup) {
+  const header = document.getElementById("groupsHeader");
+  if (!header) return;
+
+  // Считает количество клиентов прямо из отрисованной таблицы
+  const tbody = document.querySelector(".clients table tbody");
+  if (tbody && tbody.rows.length > 0) {
+    const label = isSubgroup ? "В подгруппе" : "В группе";
+    header.textContent = `${label} (${tbody.rows.length})`;
+  } else {
+    header.textContent = "Группы";
+  }
+}
+
+// Обновляет заголовок "Клиенты" с подсчётом выделенных галочками
+function updateClientsHeader() {
+  const header = document.getElementById("clientsHeader");
+  if (!header) return;
+
+  // Подсчёт выделенных галочками клиентов (по всем группам)
+  const checkedCount = Object.values(checkboxStates).filter(v => v === true).length;
+
+  if (checkedCount > 0) {
+    header.textContent = `Клиенты (выделено: ${checkedCount})`;
+  } else {
+    header.textContent = "Клиенты";
+  }
+}
+
 // Проверяет, есть ли хотя бы один чекбокс со значением true в "sessionStorage"
 function hasCheckedClients() {
   return Object.values(checkboxStates).some((state) => state === true);
@@ -225,15 +255,11 @@ document.addEventListener("DOMContentLoaded", function() {
   let hoveredClientID = null;
 
   // Отслеживание клиента, над которым находится курсор
-  document.addEventListener("mousemove", function(event) {
+  document.addEventListener("mouseover", function(event) {
     // Определяет строку таблицы под курсором
     const clientRow = event.target.closest("tr[data-id]");
-    if (clientRow) {
-      hoveredClientID = clientRow.getAttribute("data-id"); // Сохраняет ID клиента
-    } else {
-      hoveredClientID = null; // Если не над клиентом, сбрасывает
-    }
-  });
+    hoveredClientID = clientRow ? clientRow.getAttribute("data-id") : null;
+});
 
   // Обработчик нажатия горячих клавиш
   document.addEventListener("keydown", function(event) {
@@ -290,7 +316,9 @@ let sortDirections = {
   timestamp: true,
 };
 
-// Функция для сортировки таблицы по заданному полю
+// Кэшированный коллатор для сортировки строк
+const ruCollator = new Intl.Collator("ru");
+
 // Функция для сортировки таблицы по заданному полю
 function sortTable(field, forceDirectionChange = true) {
   const table = document.querySelector(".clients table");
@@ -307,39 +335,52 @@ function sortTable(field, forceDirectionChange = true) {
   const tbody = table.tBodies[0];
   const rows = Array.from(tbody.rows);
 
+  // Извлекает значения из DOM один раз
+  const cache = new Map();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    let val;
+    if (field === "status") {
+      const s = row.querySelector(`[data-field="${field}"] .status-text`)?.textContent || "";
+      val = s === "Off" ? 1 : 0;
+    } else if (field === "timestamp") {
+      val = parseDate(row.querySelector(`[data-field="${field}"]`)?.textContent || "");
+    } else {
+      val = (row.querySelector(`[data-field="${field}"]`)?.textContent || "").trim();
+    }
+    cache.set(row, val);
+  }
+
+  // Сортировка по кэшированным значениям (без обращений к DOM)
   rows.sort((a, b) => {
-    let valA, valB;
+    const valA = cache.get(a);
+    const valB = cache.get(b);
 
     if (field === "status") {
-      // "On" выше "Off" при isAsc = true
-      const sA = a.querySelector(`[data-field="${field}"] .status-text`)?.textContent || "";
-      const sB = b.querySelector(`[data-field="${field}"] .status-text`)?.textContent || "";
-      const offA = sA === "Off" ? 1 : 0;
-      const offB = sB === "Off" ? 1 : 0;
-      return dir * (offA - offB);
+      return dir * (valA - valB);
     } else if (field === "timestamp") {
-      const tA = parseDate(a.querySelector(`[data-field="${field}"]`)?.textContent || "");
-      const tB = parseDate(b.querySelector(`[data-field="${field}"]`)?.textContent || "");
       // null (если не распарсилось) отправляет вниз при возрастании
-      if (!tA && !tB) return 0;
-      if (!tA) return dir * 1;
-      if (!tB) return dir * -1;
-      return dir * (tA - tB);
+      if (!valA && !valB) return 0;
+      if (!valA) return dir;
+      if (!valB) return -dir;
+      return dir * (valA - valB);
     } else {
-      // Строки
-      valA = (a.querySelector(`[data-field="${field}"]`)?.textContent || "").trim();
-      valB = (b.querySelector(`[data-field="${field}"]`)?.textContent || "").trim();
-      return dir * valA.localeCompare(valB, "ru");
+      return dir * ruCollator.compare(valA, valB);
     }
   });
 
-  rows.forEach((row) => tbody.appendChild(row));
+  // Пакетная перестановка строк через DocumentFragment
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < rows.length; i++) {
+    fragment.appendChild(rows[i]);
+  }
+  tbody.appendChild(fragment);
 
   // Сохраняет текущее (уже применённое) состояние
   localStorage.setItem("sortField", field);
   localStorage.setItem("sortDirection", String(isAsc));
 
-  // Обновляет индикатор именно по текущему направлению
+  // Обновляет индикатор по текущему направлению
   updateSortIndicator(field, isAsc);
 }
 
@@ -417,7 +458,9 @@ function toggleAllCheckboxes() {
     checkbox.checked = allChecked;
     checkboxStates[checkbox.id] = allChecked; // Обновляет состояния в глобальном объекте
   });
+  
   sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет в sessionStorage
+  updateClientsHeader();	// Обновляет заголовок с подсчётом клиентов
 }
 
 // Снять все '✓'
@@ -441,58 +484,15 @@ function takeOffAll() {
   // Сбрасывает флаг allChecked, так как все галочки сняты
   allChecked = false;
 
+  // Обновляет заголовок с подсчётом клиентов
+  updateClientsHeader();
+
   // Обновляет состояние кнопок "Установка ПО" и "Выполнить cmd / PowerShell"
   if (typeof updateClientActionButtons === "function") {
     updateClientActionButtons();
   }
 }
 
-// Функция выделения при клике в любом месте на ячейке с чекбоксом
-function setupCheckboxCells() {
-  const checkboxCells = document.querySelectorAll("td input[type='checkbox'][id^='checkbox_']");
-
-  checkboxCells.forEach((checkbox) => {
-    // Получает родительскую ячейку <td>
-    const cell = checkbox.parentElement;
-
-    cell.addEventListener("click", (event) => {
-      // Проверяет, что клик был не на самом чекбоксе
-      if (event.target !== checkbox) {
-        checkbox.checked = !checkbox.checked; // Переключает состояние чекбокса
-        checkboxStates[checkbox.id] = checkbox.checked; // Обновляет состояния
-        sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет в sessionStorage
-
-        if (typeof updateClientActionButtons === "function") {
-          // Проверяет наличие функции
-          updateClientActionButtons(); // Обновляет кнопку
-        }
-      }
-    });
-
-    // Обработчик для изменения состояния чекбокса
-    checkbox.addEventListener("change", () => {
-      checkboxStates[checkbox.id] = checkbox.checked;
-      sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates)); // Сохраняет изменения
-
-      if (typeof updateClientActionButtons === "function") {
-        // Проверяет наличие функции
-        updateClientActionButtons(); // Обновляет кнопку
-      }
-    });
-  });
-
-  // Настройка ячейки "Все"
-  const allCheckboxCell = document.querySelector("th[data-field='all']");
-  if (allCheckboxCell) {
-    allCheckboxCell.addEventListener("click", () => {
-      toggleAllCheckboxes();
-      if (typeof updateClientActionButtons === "function") {
-        // Проверяет наличие функции
-        updateClientActionButtons(); // Обновляет кнопку
-      }
-    });
-  }
-}
 
 
 
@@ -644,158 +644,304 @@ function informAidaClient() {
 
 // ДИНАМИЧЕСКИЕ КЛИЕНТЫ
 
-// Функция проверки браузера
-function isFirefoxBrowser() {
-  return navigator.userAgent.toLowerCase().includes("firefox");
+// Кэш определения браузера Firefox (вычисляется один раз)
+const isFirefox = navigator.userAgent.toLowerCase().includes("firefox");
+
+// Обновляет ячейки существующей строки данными клиента (без пересоздания DOM-узлов)
+function updateRowCells(row, client) {
+  const checkboxId = `checkbox_${client.ClientID}`;
+  const statusIcon = client.Status === "On" ? "../icon/PC_On.svg" : "../icon/PC_Off.svg";
+
+  row.setAttribute("data-id", client.ClientID);
+
+  // Статус
+  const statusTd = row.children[0];
+  const statusSpan = statusTd.children[0];
+  const statusImg = statusTd.children[1];
+  statusSpan.textContent = client.Status;
+  statusImg.src = statusIcon;
+  statusImg.alt = client.Status;
+
+  // Имя
+  const nameTd = row.children[1];
+  const nameDisplay = nameTd.children[0];
+  const nameInput = nameTd.children[1];
+  nameDisplay.id = "nameDisplay_" + client.ClientID;
+  nameDisplay.textContent = client.Name;
+  nameInput.id = "nameInput_" + client.ClientID;
+  nameInput.value = client.Name;
+  // Сброс состояния редактирования
+  nameDisplay.classList.remove("hidden");
+  nameInput.classList.add("hidden");
+  nameInput.style.display = "";
+
+  // IP, Серый IP, ID, Дата
+  row.children[2].textContent = client.IP;
+  row.children[3].textContent = client.LocalIP;
+  row.children[4].textContent = client.ClientID;
+  row.children[5].textContent = client.Timestamp;
+
+  // Чекбокс
+  const cb = row.children[6].children[0];
+  cb.name = checkboxId;
+  cb.id = checkboxId;
+  cb.checked = false;
+}
+
+// HTML-шаблон для создания новой строки клиента
+function createRowHTML(client) {
+  const checkboxId = `checkbox_${client.ClientID}`;
+  const statusIcon = client.Status === "On" ? "../icon/PC_On.svg" : "../icon/PC_Off.svg";
+  return `<tr data-id="${client.ClientID}">
+        <td data-field="status">
+            <span class="status-text hidden">${client.Status}</span>
+            <img class="status-image" src="${statusIcon}" alt="${client.Status}">
+        </td>
+        <td data-field="name">
+            <span id="nameDisplay_${client.ClientID}">${client.Name}</span>
+            <input id="nameInput_${client.ClientID}" type="text"
+                value="${client.Name}" class="name-input hidden">
+        </td>
+        <td data-field="ip">${client.IP}</td>
+        <td data-field="local_ip">${client.LocalIP}</td>
+        <td data-field="client_id">${client.ClientID}</td>
+        <td data-field="timestamp">${client.Timestamp}</td>
+        <td><input type="checkbox" name="${checkboxId}" id="${checkboxId}"></td>
+    </tr>`;
+}
+
+// Обновляет tbody: переиспользует существующие строки, добавляет недостающие, удаляет лишние
+function renderTbodyRows(tbody, data) {
+  const existingRows = tbody.rows;
+  const existingCount = existingRows.length;
+  const newCount = data.length;
+
+  // Переиспользует существующие строки (обновляет ячейки без пересоздания)
+  const reuseCount = Math.min(existingCount, newCount);
+  for (let i = 0; i < reuseCount; i++) {
+    updateRowCells(existingRows[i], data[i]);
+  }
+
+  if (newCount > existingCount) {
+    // Добавляет недостающие строки через DocumentFragment
+    const fragment = document.createDocumentFragment();
+    const temp = document.createElement("tbody");
+    temp.innerHTML = data.slice(existingCount).map(createRowHTML).join("");
+    while (temp.firstChild) {
+      fragment.appendChild(temp.firstChild);
+    }
+    tbody.appendChild(fragment);
+  } else if (newCount < existingCount) {
+    // Удаляет лишние строки с конца
+    for (let i = existingCount - 1; i >= newCount; i--) {
+      tbody.removeChild(existingRows[i]);
+    }
+  }
+}
+
+// Маппинг полей сортировки к ключам JSON-ответа
+const SORT_FIELD_TO_KEY = {
+  status: "Status",
+  name: "Name",
+  ip: "IP",
+  local_ip: "LocalIP",
+  client_id: "ClientID",
+  timestamp: "Timestamp",
+};
+
+// Сортирует массив клиентов на уровне данных (без обращений к DOM)
+function sortClientData(data, field, isAsc) {
+  const dir = isAsc ? 1 : -1;
+  data.sort((a, b) => {
+    if (field === "status") {
+      return dir * ((a.Status === "Off" ? 1 : 0) - (b.Status === "Off" ? 1 : 0));
+    }
+    if (field === "timestamp") {
+      const tA = parseDate(a.Timestamp || "");
+      const tB = parseDate(b.Timestamp || "");
+      if (!tA && !tB) return 0;
+      if (!tA) return dir;
+      if (!tB) return -dir;
+      return dir * (tA - tB);
+    }
+    const key = SORT_FIELD_TO_KEY[field] || "Name";
+    return dir * ruCollator.compare((a[key] || "").trim(), (b[key] || "").trim());
+  });
 }
 
 // Функция загрузки клиентов после выбора группы или подгруппы
-function loadClients(group, subgroup) {
-  // Сохраняет текущие состояния чекбоксов
-  saveCheckboxStates();
+// (таблица, заголовок и обработчики создаются один раз, при переключении заменяется только содержимое tbody,
+//  данные сортируются на уровне массива — без DOM-перестановок)
+const loadClients = (() => {
+  let abortCtrl = null;
+  let tableEl = null; // Персистентный элемент таблицы (создаётся один раз)
+  let tbodyEl = null; // Персистентный элемент tbody (создаётся один раз)
 
-  let url = "/get-clients-by-group";
-  if (group) {
-    url += "?group=" + encodeURIComponent(group);
-    if (subgroup) {
-      url += "&subgroup=" + encodeURIComponent(subgroup);
+  return function(group, subgroup) {
+    // Сохраняет текущие состояния чекбоксов
+    saveCheckboxStates();
+
+    // Отменяет предыдущий незавершённый запрос
+    if (abortCtrl) abortCtrl.abort();
+    abortCtrl = new AbortController();
+
+    let url = "/get-clients-by-group";
+    if (group) {
+      url += "?group=" + encodeURIComponent(group);
+      if (subgroup) {
+        url += "&subgroup=" + encodeURIComponent(subgroup);
+      }
     }
-  }
-  fetch(url)
-    .then((response) => response.json())
-    .then((data) => {
-      const clientsContainer = document.getElementById("clientsContainer");
-      clientsContainer.innerHTML = ""; // Очищает текущее содержимое контейнера клиентов
 
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const tbody = document.createElement("tbody");
+    fetch(url, {
+        signal: abortCtrl.signal
+      })
+      .then((response) => response.json())
+      .then((data) => {
+        // Сбрасывает ссылку на старую строку контекстного меню (предотвращает утечку памяти)
+        selectedContextRow = null;
 
-      // Применяет стили таблицы в зависимости от браузера
-      if (isFirefoxBrowser()) {
-        table.style.borderSpacing = "0";
-        table.style.borderCollapse = ""; // Убирает, чтобы не конфликтовало
-      } else {
-        table.style.borderCollapse = "collapse";
-        table.style.borderSpacing = ""; // Убирает, чтобы не конфликтовало
-      }
+        const clientsContainer = document.getElementById("clientsContainer");
 
-      // Создаёт заголовок таблицы
-      const headerRow = document.createElement("tr");
-      const headers = [{
-          field: "status",
-          text: "Статус",
-          sortable: true,
-        },
-        {
-          field: "name",
-          text: "Имя",
-          sortable: true,
-        },
-        {
-          field: "ip",
-          text: "IP",
-          sortable: true,
-        },
-        {
-          field: "local_ip",
-          text: "Серый IP",
-          sortable: true,
-        },
-        {
-          field: "client_id",
-          text: "ID Клиента",
-          sortable: true,
-        },
-        {
-          field: "timestamp",
-          text: "От",
-          sortable: true,
-        },
-        {
-          field: "all",
-          text: "Все",
-          sortable: false,
-        },
-      ];
+        // Создаёт таблицу, заголовок и обработчики только при первом вызове
+        // (или если таблица была удалена из DOM внешним кодом)
+        if (!tableEl || !tableEl.parentNode) {
+          tableEl = document.createElement("table");
+          const thead = document.createElement("thead");
+          tbodyEl = document.createElement("tbody");
 
-      headers.forEach((header) => {
-        const th = document.createElement("th");
-        th.textContent = header.text;
-        if (header.sortable) {
-          th.onclick = () => sortTable(header.field);
-          th.innerHTML += `<span id="sortIndicator_${header.field}" class="sort-indicator"></span>`;
+          // Применяет стили таблицы в зависимости от браузера
+          if (isFirefox) {
+            tableEl.style.borderSpacing = "0";
+          } else {
+            tableEl.style.borderCollapse = "collapse";
+          }
+
+          // Создаёт заголовок таблицы (один раз)
+          const headerRow = document.createElement("tr");
+          const headers = [{
+              field: "status",
+              text: "Статус",
+              sortable: true
+            },
+            {
+              field: "name",
+              text: "Имя",
+              sortable: true
+            },
+            {
+              field: "ip",
+              text: "IP",
+              sortable: true
+            },
+            {
+              field: "local_ip",
+              text: "Серый IP",
+              sortable: true
+            },
+            {
+              field: "client_id",
+              text: "ID Клиента",
+              sortable: true
+            },
+            {
+              field: "timestamp",
+              text: "От",
+              sortable: true
+            },
+            {
+              field: "all",
+              text: "Все",
+              sortable: false
+            },
+          ];
+
+          headers.forEach((header) => {
+            const th = document.createElement("th");
+            th.textContent = header.text;
+            if (header.sortable) {
+              th.onclick = () => sortTable(header.field);
+              th.innerHTML += `<span id="sortIndicator_${header.field}" class="sort-indicator"></span>`;
+            }
+            if (header.field === "all") {
+              th.setAttribute("data-field", "all");
+            }
+            headerRow.appendChild(th);
+          });
+
+          thead.appendChild(headerRow);
+          tableEl.appendChild(thead);
+
+          // Делегирование контекстного меню на tbody (один раз)
+          tbodyEl.addEventListener("contextmenu", (event) => {
+            const row = event.target.closest("tr[data-id]");
+            if (row) showContextMenu(event, row.dataset.id);
+          });
+
+          // Делегирование кликов по ячейкам с чекбоксами (один раз)
+          tbodyEl.addEventListener("click", (event) => {
+            if (event.target.tagName === "INPUT") return;
+            const cell = event.target.closest("td");
+            if (!cell) return;
+            const checkbox = cell.querySelector("input[type='checkbox'][id^='checkbox_']");
+            if (!checkbox) return;
+            checkbox.checked = !checkbox.checked;
+            checkboxStates[checkbox.id] = checkbox.checked;
+            sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+            updateClientsHeader();
+            if (typeof updateClientActionButtons === "function") updateClientActionButtons();
+          });
+
+          // Делегирование изменений чекбоксов (один раз)
+          tbodyEl.addEventListener("change", (event) => {
+            if (event.target.type === "checkbox" && event.target.id.startsWith("checkbox_")) {
+              checkboxStates[event.target.id] = event.target.checked;
+              sessionStorage.setItem("checkboxStates", JSON.stringify(checkboxStates));
+              updateClientsHeader();
+              if (typeof updateClientActionButtons === "function") updateClientActionButtons();
+            }
+          });
+
+          tableEl.appendChild(tbodyEl);
+
+          // Настройка ячейки "Все" (один раз)
+          const allCheckboxCell = thead.querySelector("th[data-field='all']");
+          if (allCheckboxCell) {
+            allCheckboxCell.addEventListener("click", () => {
+              toggleAllCheckboxes();
+              if (typeof updateClientActionButtons === "function") updateClientActionButtons();
+            });
+          }
+
+          clientsContainer.appendChild(tableEl);
         }
-        if (header.field === "all") {
-          th.setAttribute("data-field", "all");
-        }
-        headerRow.appendChild(th);
+
+        // Определяет текущее направление сортировки из localStorage
+        const savedField = localStorage.getItem("sortField") || "name";
+        const savedDirStr = localStorage.getItem("sortDirection");
+        const isAsc = savedDirStr !== null ? (savedDirStr === "true") : true;
+        sortDirections[savedField] = isAsc;
+
+        // Сортирует данные на уровне массива (без обращений к DOM)
+        sortClientData(data, savedField, isAsc);
+
+        // Обновляет содержимое tbody, переиспользуя существующие строки где возможно
+        renderTbodyRows(tbodyEl, data);
+
+        // Восстанавливает состояния чекбоксов
+        restoreCheckboxStates();
+
+        // Обновляет заголовки с подсчётом клиентов
+		updateGroupsHeader(!!subgroup);
+        updateClientsHeader();
+
+        // Обновляет индикатор сортировки (данные уже отсортированы на уровне массива)
+        updateSortIndicator(savedField, isAsc);
+      })
+      .catch((error) => {
+        // Отменённый запрос — не ошибка, просто игнорируется
+        if (error.name === "AbortError") return;
+        console.error("Ошибка при загрузке данных:", error);
       });
-
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-
-      // Создаёт строки таблицы для каждого клиента
-      data.forEach((client) => {
-        const checkboxId = `checkbox_${client.ClientID}`;
-        const newRow = document.createElement("tr");
-
-        // Добавляет data-id в строку для каждого клиента
-        newRow.setAttribute("data-id", client.ClientID);
-        newRow.innerHTML = `
-			<td data-field="status">
-			  <span class="status-text hidden">${client.Status}</span>
-			  <img class="status-image" src="${client.Status === "On" ? "../icon/PC_On.svg" : "../icon/PC_Off.svg"}" alt="${client.Status}">
-			</td>
-			<td data-field="name">
-			  <span id="nameDisplay_${client.ClientID}">${client.Name}</span>
-			  <input id="nameInput_${client.ClientID}" type="text"
-			  value="${client.Name}" class="name-input hidden">
-			</td>
-			<td data-field="ip">${client.IP}</td>
-			<td data-field="local_ip">${client.LocalIP}</td>
-			<td data-field="client_id">${client.ClientID}</td>
-			<td data-field="timestamp">${client.Timestamp}</td>
-			<td>
-			  <input type="checkbox" name="${checkboxId}" id="${checkboxId}">
-			</td>
-			`;
-
-        // Привязка контекстного меню к строке клиента
-        newRow.addEventListener("contextmenu", (event) => showContextMenu(event, client.ClientID));
-
-        tbody.appendChild(newRow);
-      });
-
-      table.appendChild(tbody);
-      clientsContainer.appendChild(table);
-
-      // Настройка ячеек с чекбоксами после загрузки клиентов
-      setupCheckboxCells();
-
-      // Восстанавливает состояния чекбоксов
-      restoreCheckboxStates();
-
-      // Добавляет обработчик для сохранения состояния при изменении чекбокса
-      const checkboxes = document.querySelectorAll("input[type='checkbox'][id^='checkbox_']");
-      checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener("change", saveCheckboxStates);
-      });
-
-      // Восстанавливает состояние сортировки из localStorage (без переключения)
-      const savedField = localStorage.getItem("sortField");
-      const savedDirectionStr = localStorage.getItem("sortDirection");
-
-      if (savedField !== null && savedDirectionStr !== null) {
-        sortDirections[savedField] = (savedDirectionStr === "true"); // true = ▲
-        sortTable(savedField, false); // Применяет без инверсии
-      } else {
-        // По умолчанию: сортировка по имени по возрастанию (▲), без инверсии
-        sortDirections["name"] = true;
-        sortTable("name", false);
-      }
-    })
-    .catch((error) => {
-      console.error("Ошибка при загрузке данных:", error);
-    });
-}
+  };
+})();
