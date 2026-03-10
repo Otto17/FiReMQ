@@ -276,25 +276,15 @@ func checkAndResendCommands(clientID string) {
 	startCmdQueueForClient(clientID)
 }
 
-// HandleAnswerMessage Обрабатывает ответ клиента, обновляя соответствующую запись в БД
-func HandleAnswerMessage(clientID string, payload []byte) {
-	var ansMsg struct {
-		Date_Of_Creation string `json:"Date_Of_Creation"`
-		Answer           string `json:"Answer"`
-	}
-
-	if err := json.Unmarshal(payload, &ansMsg); err != nil {
-		logging.LogError("CMD/PowerShell: Ошибка парсинга ответа от клиента %s: %v", clientID, err)
-		return
-	}
-
+// HandleAnswerMessage Обрабатывает ответ клиента и обновляет соответствующую запись в БД (с обратной связью: успех/ошибка, время выполнения, описание)
+func HandleAnswerMessage(clientID, dateOfCreation, answer, cmdExecution, description string) {
 	// Сериализация обновлений одной записи через мьютекс для предотвращения конфликтов транзакций при массовых ответах
-	mu := getCmdAnswerMutex(ansMsg.Date_Of_Creation)
+	mu := getCmdAnswerMutex(dateOfCreation)
 	mu.Lock()
 	defer mu.Unlock()
 
 	// Формирует ключ по Date_Of_Creation (ключ: "FiReMQ_Command:<Date_Of_Creation>")
-	dbKey := "FiReMQ_Command:" + ansMsg.Date_Of_Creation
+	dbKey := "FiReMQ_Command:" + dateOfCreation
 	const maxRetries = 5
 	for attempt := range maxRetries {
 		err := db.DBInstance.Update(func(txn *badger.Txn) error {
@@ -330,7 +320,11 @@ func HandleAnswerMessage(clientID string, payload []byte) {
 				return nil
 			}
 
-			clientEntry["Answer"] = ansMsg.Answer
+			clientEntry["Answer"] = answer
+			if strings.TrimSpace(cmdExecution) != "" {
+				clientEntry["Cmd_Execution"] = cmdExecution
+			}
+			clientEntry["Description"] = description
 			mapping[clientID] = clientEntry
 			record["ClientID_Command"] = mapping
 			newBytes, err := json.Marshal(record)

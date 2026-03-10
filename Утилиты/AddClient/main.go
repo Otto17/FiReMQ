@@ -19,7 +19,7 @@ import (
 	"github.com/dgraph-io/badger/v4"
 )
 
-const version = "26.11.25" // Текущая версия AddClient в формате "дд.мм.гг"
+const version = "09.03.26" // Текущая версия AddClient в формате "дд.мм.гг"
 
 var (
 	DBInstance *badger.DB // Объект, предоставляет доступ к базе данных

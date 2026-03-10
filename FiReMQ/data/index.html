@@ -224,39 +224,71 @@
     </div>
   </div>
 
-  <!-- Модальное окно MQTT авторизация -->
-  <div id="mqttAuthModal" class="modal-window">
-    <div class="modal-window-content mqtt-auth-content">
-      <span class="close-mqtt" id="closeMqttAuthModal">&times;</span>
-      <h2>MQTT Авторизация</h2>
-      <form id="mqttAuthForm" onsubmit="return false;">
-        <!-- Поле только для чтения с username из приоритета 0 -->
-        <span>Текущий логин:</span>
-        <input type="text" id="currentMqttUsername" name="currentMqttUsername" readonly>
-        <span>Новые данные:</span>
-        <div class="input-validation-wrapper">
-          <input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
-          <span class="validation-tooltip"></span>
+<!-- Модальное окно MQTT Авторизация -->
+<div id="mqttAuthModal" class="modal-window">
+  <div class="modal-window-content mqtt-auth-content">
+    <span class="close-mqtt" id="closeMqttAuthModal">&times;</span>
+    <h2>MQTT Авторизация</h2>
+    <form id="mqttAuthForm" onsubmit="return false;">
+      <!-- Поле только для чтения с username из приоритета 0 -->
+      <span>Текущий логин:</span>
+      <input type="text" id="currentMqttUsername" name="currentMqttUsername" readonly>
+      <span>Новые данные:</span>
+      <div class="input-validation-wrapper">
+        <input type="text" id="mqttUsername" name="mqttUsername" placeholder="Новый логин (до 32)" maxlength="32" autocomplete="off">
+        <span class="validation-tooltip"></span>
+      </div>
+      <!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
+      <div class="input-validation-wrapper">
+        <div class="mqtt-password-input-container">
+          <input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
+          <button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
+            <img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
+          </button>
         </div>
-        <!-- Контейнер для ввода пароля с кнопкой показа/скрытия -->
-        <div class="input-validation-wrapper">
-          <div class="mqtt-password-input-container">
-            <input type="password" id="mqttPassword" name="mqttPassword" placeholder="Новый пароль (до 64)" maxlength="64" autocomplete="off">
-            <button type="button" class="mqtt-toggle-password" id="toggleMqttPasswordButton">
-              <img id="mqttPasswordIcon" src="../icon/Hide_Passwd.svg" alt="Показать пароль">
-            </button>
-          </div>
-          <span class="validation-tooltip"></span>
-        </div>
+        <span class="validation-tooltip"></span>
+      </div>
+      <!-- Контейнер для кнопок "Сохранить" и "Статус" -->
+      <div class="mqtt-buttons-row">
         <button type="button" id="saveMqttAuth" class="mqtt-save-buttonModal">Сохранить</button>
-        <!-- Новый блок для управления резервным аккаунтом -->
-        <div class="reserve-account-container">
-          <span id="reserveAccountStatus">Резервный аккаунт: <span id="reserveAccountState">Выключен</span></span>
-          <button type="button" id="toggleReserveAccount" class="reserve-button">Включить</button>
-        </div>
-      </form>
+        <button type="button" id="showMqttStatusBtn" class="mqtt-status-buttonModal">Статус</button>
+      </div>
+      <!-- Блок для управления резервным аккаунтом -->
+      <div class="reserve-account-container">
+        <span id="reserveAccountStatus">Резервный аккаунт: <span id="reserveAccountState">Выключен</span></span>
+        <button type="button" id="toggleReserveAccount" class="reserve-button">Включить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Модальное окно Статус смены MQTT логина/пароля -->
+<div id="mqttAuthStatusModal" class="modal-window mqtt-status-overlay">
+  <div class="modal-window-content mqtt-status-content">
+    <span class="close-mqtt-status" id="closeMqttStatusModal">&times;</span>
+    <h2>Статус смены MQTT логина/пароля</h2>
+    <!-- Информационная панель со статистикой -->
+    <div id="mqttStatusInfo" class="mqtt-status-info">
+      <span id="mqttStatusCreatedAt"></span>
+      <span id="mqttStatusUsername"></span>
+      <div class="mqtt-status-stats">
+        <span class="stat-item stat-total" data-filter="all" title="Показать всех">Всего: <strong id="statTotal">0</strong></span>
+        <span class="stat-item stat-pending" data-filter="pending" title="Показать ожидающих">Ожидают: <strong id="statPending">0</strong></span>
+        <span class="stat-item stat-success" data-filter="success" title="Показать успешных">Успешно: <strong id="statSuccess">0</strong></span>
+        <span class="stat-item stat-error" data-filter="error" title="Показать с ошибками">Ошибки: <strong id="statError">0</strong></span>
+      </div>
+    </div>
+    <!-- Контейнер для списка клиентов -->
+    <div id="mqttStatusClientsList" class="mqtt-status-clients-list">
+      <div class="mqtt-status-empty">Рассылка не запущена</div>
+    </div>
+    <!-- Кнопки управления -->
+    <div class="mqtt-status-actions">
+      <button type="button" id="mqttResendErrorsBtn" class="mqtt-action-btn mqtt-resend-btn" disabled>Повторить для ошибок</button>
+      <button type="button" id="mqttClearSessionBtn" class="mqtt-action-btn mqtt-clear-btn">Очистить сессию</button>
     </div>
   </div>
+</div>
 
   <!-- Модальное окно для выполнения команды -->
   <div id="executeCommandModal" class="command-modal">
@@ -781,6 +813,21 @@
     </div>
   </div>
 
+  <!-- Модальное окно просмотра вывода результатов CMD/PowerShell -->
+  <div id="terminalOutputModal" class="modal-window z-index-high-termina">
+    <div class="modal-window-content terminal-details">
+      <span class="close" id="closeTerminalOutputModal">&times;</span>
+      <h2>Результат выполнения CMD/PowerShell</h2>
+      <div class="terminal-output-content" id="terminalOutputContent" tabindex="0">
+        <pre id="terminalOutputText"></pre>
+      </div>
+		<div class="terminal-modal-buttons">
+			<button class="terminal-btn-copy" id="copyTerminalOutputBtn">Скопировать всё</button>
+			<button class="terminal-btn-close" id="closeTerminalOutputModalBtn">Закрыть</button>
+		</div>
+    </div>
+  </div>
+
   <!-- Модальное окно подтверждения удаления запроса из модального окна для отчётов -->
   <div id="confirmDeleteRequestModal" class="modal-window">
     <div class="modal-window-content delete-client">
@@ -790,7 +837,6 @@
       <button class="save-buttonModal" id="confirmDeleteReportButton">Удалить</button>
     </div>
   </div>
-
 
   <!-- Модальное окно "О проекте" -->
   <div id="aboutProjectModal" class="about-modal-window">

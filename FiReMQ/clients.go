@@ -126,7 +126,8 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 			go checkAndResendCommands(clientID) // Для команд CMD/PowerShell
 			go checkAndResendQUIC(clientID)     // Для установки ПО (QUIC)
 		}
-		go schedulePendingUninstall(clientID) // Для самоудаления "FiReAgent"
+		go schedulePendingUninstall(clientID)           // Для самоудаления "FiReAgent"
+		go mqtt_server.CheckAndResendMQTTAuth(clientID) // Для рассылки новых логина/пароля MQTT авторизации
 	}
 
 	return err
@@ -397,7 +398,8 @@ func updateClientStatus() {
 			go checkAndResendCommands(clientID) // cmd/PowerShell
 			go checkAndResendQUIC(clientID)     // QUIC
 		}
-		go schedulePendingUninstall(clientID) // Планирует проверку самоудаления
+		go schedulePendingUninstall(clientID)           // Планирует проверку самоудаления
+		go mqtt_server.CheckAndResendMQTTAuth(clientID) // Для рассылки новых логина/пароля MQTT авторизации
 	}
 
 	for _, clientID := range newlyOfflineIDs {
@@ -657,12 +659,73 @@ func fullyRemoveClientAndData(clientIDs []string, authInfo *AuthInfo) error {
 	if err := removeClientIDsFromCommandRecords(clientIDs); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов CMD/PowerShell: %v", err)
 	}
+
 	if err := removeClientIDsFromQUICRecords(clientIDs, authInfo); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов Установки ПО: %v", err)
 	}
+
+	// Удаляет клиентов из активной сессии смены MQTT авторизации (если есть)
+	mqtt_server.RemoveClientsFromMQTTAuthSession(clientIDs)
 
 	// Очищает runtime-состояния (очереди, сессии)
 	cleanupClientsRuntimeState(clientIDs)
 
 	return nil
+}
+
+// updateClientNameInRecords обновляет имя клиента (поле "ClientName") для модального окна "Отчёт" в WEB админке
+func updateClientNameInRecords(clientID, newName, dbPrefix, mappingField string) error {
+	return db.DBInstance.Update(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte(dbPrefix)
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			key := item.KeyCopy(nil)
+
+			var record map[string]any
+			if err := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &record)
+			}); err != nil {
+				continue
+			}
+
+			mapping, ok := record[mappingField].(map[string]any)
+			if !ok || len(mapping) == 0 {
+				continue
+			}
+
+			clientEntryRaw, exists := mapping[clientID]
+			if !exists {
+				continue
+			}
+
+			clientEntry, ok := clientEntryRaw.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			// Если имя уже актуальное — пропускает запись
+			currentName, _ := clientEntry["ClientName"].(string)
+			if currentName == newName {
+				continue
+			}
+
+			// Обновляет имя клиента в записи
+			clientEntry["ClientName"] = newName
+			mapping[clientID] = clientEntry
+			record[mappingField] = mapping
+
+			newBytes, err := json.Marshal(record)
+			if err != nil {
+				return err
+			}
+			if err := txn.Set(key, newBytes); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

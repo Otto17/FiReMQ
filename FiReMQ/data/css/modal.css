@@ -172,7 +172,7 @@ input[type="text"]::placeholder {
 
 /* Кнопка удаления (деактивирована) */
 .save-buttonModal:disabled {
-  background-color: #444; /* Серый цвет для неактивной кнопки */
+  background-color: #444;
   cursor: not-allowed;
 }
 
@@ -891,8 +891,8 @@ input[type="text"]::placeholder {
 /* МОДАЛЬНОЕ ОКНО MQTT АВТОРИЗАЦИЯ */
 
 #mqttAuthModal .modal-window-content.mqtt-auth-content {
-  width: 450px; /* Увеличивает ширину модального окна */
-  background-color: #2a2a2a; /* Цвет фона */
+  width: 450px; /* Ширина модального окна */
+  background-color: #2a2a2a;
   padding: 20px;
   border-radius: 8px;
   text-align: center;
@@ -937,8 +937,8 @@ input[type="text"]::placeholder {
 }
 
 #mqttAuthForm input[type="text"]:read-only {
-  background-color: #2a2a2a; /* Тёмный фон для поля только для чтения */
-  color: #888; /* Серый цвет текста */
+  background-color: #2a2a2a; /* Тёмный фон для поля, только для чтения */
+  color: #888;
 }
 
 #mqttAuthForm input[type="text"]::placeholder,
@@ -950,7 +950,7 @@ input[type="text"]::placeholder {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 10px; /* Расстояние между полем ввода и кнопкой */
+  gap: 10px;
 }
 
 #mqttAuthForm .mqtt-password-input-container input[type="password"] {
@@ -980,9 +980,8 @@ input[type="text"]::placeholder {
   color: white;
   padding: 10px 20px;
   font-size: 16px;
-  border-radius: 6px; /* Скругление углов поля ввода */
+  border-radius: 6px;
   cursor: pointer;
-  margin-top: 20px;
   transition: background-color 0.3s ease;
 }
 
@@ -992,6 +991,7 @@ input[type="text"]::placeholder {
 
 #saveMqttAuth.confirm-mode {
   background-color: #d9534f; /* Красный цвет */
+  font-size: 14px;
 }
 
 #saveMqttAuth.confirm-mode:hover {
@@ -1028,7 +1028,7 @@ input[type="text"]::placeholder {
 }
 
 #toggleReserveAccount {
-  padding: 10px 40px; /* Увеличивает ширину кнопки */
+  padding: 10px 40px;
   border: none;
   border-radius: 6px;
   font-size: 16px;
@@ -1063,6 +1063,356 @@ input[type="text"]::placeholder {
 
 #mqttAuthForm .input-validation-wrapper input[type="text"] {
   width: calc(100% - 20px);
+}
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО СТАТУС MQTT ЛОГИНА/ПАРОЛЯ */
+
+/* Контейнер для кнопок "Сохранить" и "Статус" */
+.mqtt-buttons-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.mqtt-buttons-row .mqtt-save-buttonModal,
+.mqtt-buttons-row .mqtt-status-buttonModal {
+  flex: 1; /* Обе кнопки занимают равное пространство (50%) */
+}
+
+.mqtt-status-buttonModal {
+  background-color: #df7910; /* Тёмно-Янтарный цвет */
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.mqtt-status-buttonModal:hover {
+  background-color: #c56a0a;
+}
+
+/* Оверлей для окна статуса (поверх основного окна MQTT) */
+.mqtt-status-overlay {
+  z-index: 1100; /* Выше основного модального окна */
+}
+
+#mqttAuthStatusModal .modal-window-content.mqtt-status-content {
+  width: 700px;
+  max-width: 90vw;
+  max-height: 80vh;
+  background-color: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  color: #e0e0e0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+#mqttAuthStatusModal .close-mqtt-status {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+#mqttAuthStatusModal .close-mqtt-status:hover {
+  color: white;
+}
+
+#mqttAuthStatusModal h2 {
+  margin: 8px 0 18px;
+  font-size: 22px;
+  text-align: center;
+}
+
+/* Информационная панель */
+.mqtt-status-info {
+  background-color: #3e3e3e;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+}
+
+.mqtt-status-info > span {
+  display: block;
+  font-size: 14px;
+  color: #b0b0b0;
+  margin-bottom: 5px;
+}
+
+.mqtt-status-info > span:last-of-type {
+  margin-bottom: 10px;
+}
+
+.mqtt-status-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mqtt-status-stats .stat-item {
+  font-size: 14px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  background-color: #4a4a4a;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.mqtt-status-stats .stat-item:hover {
+  background-color: #555;
+  transform: translateY(-1px);
+}
+
+.mqtt-status-stats .stat-item.active {
+  box-shadow: 0 0 0 2px currentColor;
+  background-color: #505050;
+}
+
+.mqtt-status-stats .stat-item strong {
+  font-weight: bold;
+}
+
+.mqtt-status-stats .stat-total {
+  color: #81d4fa; /* Голубой */
+}
+
+.mqtt-status-stats .stat-total strong {
+  color: #81d4fa;
+}
+
+.mqtt-status-stats .stat-pending {
+  color: #ffb74d; /* Оранжевый */
+}
+
+.mqtt-status-stats .stat-pending strong {
+  color: #ffb74d;
+}
+
+.mqtt-status-stats .stat-success {
+  color: #81c784; /* Зелёный */
+}
+
+.mqtt-status-stats .stat-success strong {
+  color: #81c784;
+}
+
+.mqtt-status-stats .stat-error {
+  color: #e57373; /* Красный */
+}
+
+.mqtt-status-stats .stat-error strong {
+  color: #e57373;
+}
+
+/* Список клиентов */
+.mqtt-status-clients-list {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #353535;
+  border-radius: 6px;
+  padding: 10px;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.mqtt-status-empty {
+  text-align: center;
+  color: #888;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+/* Элемент клиента в списке */
+.mqtt-client-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background-color: #424242;
+  border-radius: 5px;
+  border-left: 4px solid #555;
+  transition: background-color 0.2s ease;
+  min-height: 50px;
+}
+
+.mqtt-client-item:last-child {
+  margin-bottom: 0;
+}
+
+.mqtt-client-item:hover {
+  background-color: #4a4a4a;
+}
+
+.mqtt-client-item.status-pending {
+  border-left-color: #ffb74d; /* Оранжевый */
+}
+
+.mqtt-client-item.status-success {
+  border-left-color: #81c784; /* Зелёный */
+}
+
+.mqtt-client-item.status-error {
+  border-left-color: #e57373; /* Красный */
+}
+
+.mqtt-client-info {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 45%;
+  text-align: center;
+}
+
+.mqtt-client-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mqtt-client-id {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mqtt-client-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  max-width: 45%;
+}
+
+.mqtt-status-badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.mqtt-status-badge.pending {
+  background-color: rgba(255, 183, 77, 0.2);
+  color: #ffb74d;
+}
+
+.mqtt-status-badge.success {
+  background-color: rgba(129, 199, 132, 0.2);
+  color: #81c784;
+}
+
+.mqtt-status-badge.error {
+  background-color: rgba(229, 115, 115, 0.2);
+  color: #e57373;
+}
+
+.mqtt-client-time {
+  font-size: 11px;
+  color: #777;
+  margin-top: 4px;
+}
+
+.mqtt-client-error-msg {
+  font-size: 11px;
+  color: #e57373;
+  margin-top: 2px;
+  max-width: 250px;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Кнопки управления */
+.mqtt-status-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.mqtt-action-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+.mqtt-resend-btn {
+  background-color: #ff7043;
+  color: white;
+}
+
+.mqtt-resend-btn:hover:not(:disabled) {
+  background-color: #f4511e;
+}
+
+.mqtt-resend-btn:disabled {
+  background-color: #4a4a4a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.mqtt-clear-btn {
+  background-color: #5c6bc0;
+  color: white;
+}
+
+.mqtt-clear-btn:hover {
+  background-color: #3f51b5;
+}
+
+.mqtt-clear-btn:disabled {
+  background-color: #4a4a4a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.mqtt-clear-btn.confirm-mode {
+  background-color: #ef5350; /* Красный для подтверждения */
+}
+
+.mqtt-clear-btn.confirm-mode:hover {
+  background-color: #e53935;
+}
+
+/* Скроллбар для списка клиентов */
+.mqtt-status-clients-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mqtt-status-clients-list::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.mqtt-status-clients-list::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+.mqtt-status-clients-list::-webkit-scrollbar-thumb:hover {
+  background-color: #666;
 }
 
 
@@ -1353,7 +1703,7 @@ input[type="text"]::placeholder {
   height: 34px;
   display: inline-block;
   margin-left: 3%;
-  vertical-align: top; /* чтобы легло ровно рядом с типом терминала */
+  vertical-align: top;
   padding: 7px;
 }
 
@@ -2151,7 +2501,7 @@ input[type="text"]::placeholder {
 
 .cmd-fieldset-fixed.expanded #cmdDetails {
   max-height: 185px;
-  overflow-y: auto; /* вертикальный скролл при переполнении */
+  overflow-y: auto; /* Вертикальный скролл при переполнении */
 }
 
 .install-fieldset-fixed.expanded #installDetails {
@@ -2167,7 +2517,7 @@ input[type="text"]::placeholder {
   overflow: hidden;
   transition: max-height 0.3s ease-out;
   padding: 0 15px;
-  will-change: max-height; /* сглаживает анимацию */
+  will-change: max-height;
 }
 
 #installDetails p,
@@ -2268,7 +2618,7 @@ input[type="text"]::placeholder {
 }
 
 .col-action {
-  width: 100px;
+  width: 105px;
 }
 
 .action-button {
@@ -2277,7 +2627,7 @@ input[type="text"]::placeholder {
   color: #e0e0e0;
   cursor: pointer;
   font-size: 16px;
-  margin: 0 5px;
+  margin: 0 2px;
 }
 
 .action-button.delete {
@@ -2285,6 +2635,10 @@ input[type="text"]::placeholder {
 }
 
 .action-button.restart {
+  color: #fff900;
+}
+
+.action-button.view {
   color: #00e5ff;
 }
 
@@ -2399,6 +2753,131 @@ input[type="text"]::placeholder {
 /* Курсор для сортируемых заголовков таблицы отчётов */
 .clients-table-header thead th[id^="reportSortTh_"] {
   cursor: pointer;
+}
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ CMD/PowerShell */
+/* Заголовок */
+.terminal-details h2 {
+  margin: 12px 0 18px;
+  font-size: 22px;
+  text-align: center;
+  color: #e0e0e0;
+}
+
+/* CMD (изумрудный зелёный) */
+.term-cmd-prompt { color: #5EC962; font-weight: 700; }
+
+/* PowerShell (небесно-голубой) */
+.term-ps-prompt { color: #4CC9F0; font-weight: 700; }
+
+/* Команды CMD: dir, ping, echo и т.д. (золотистый) */
+.term-cmd-command { color: #E5C07B; font-weight: 700; }
+
+/* Команды PowerShell: Get-*, Set-*, Invoke-* и т.д. (васильковый) */
+.term-ps-command { color: #7AA2F7; font-weight: 700; }
+
+/* Ключи и параметры: /t, /b, -Command, -File (фиолетовый) */
+.term-switch { color: #C678DD; }
+
+/* Числа: 0, 1, 255, -42, 3.14 (оранжевый) */
+.term-number { color: #6690d1; }
+
+/* Строки в кавычках: "текст", 'текст' (мягкий зелёный) */
+.term-string { color: #98C379; }
+
+/* Операторы: |, >, <, &, &&, || (коралловый) */
+.term-op { color: #E06C75; }
+
+/* Пути к файлам и папкам: C:\Windows\... (бирюзовый) */
+.term-path { color: #56B6C2; }
+
+/* Строки с ошибками (красный, применяется ко всей строке) */
+.term-error { color: #F44747; }
+
+/* Строки с предупреждениями (насыщенный жёлтый, применяется ко всей строке) */
+.term-warn { color: #DBAB09; }
+
+.terminal-details {
+background-color: #1e1e1e;
+color: #d4d4d4;
+width: 80%;
+height: 80%;
+max-width: 1000px;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+}
+
+.terminal-output-content {
+flex: 1;
+padding: 12px;
+overflow-y: auto;
+border: 1px solid #444;
+margin-bottom: 20px;
+background-color: #252526;
+font-family: "Consolas", "Courier New", monospace;
+font-size: 14px;
+line-height: 0.9;
+text-align: left;
+}
+
+#terminalOutputText {
+margin: 0;
+white-space: pre-wrap;
+word-wrap: break-word;
+}
+
+.z-index-high-termina {
+z-index: 1001;
+}
+
+/* Фокус для области вывода терминала */
+.terminal-output-content:focus {
+outline: 1px solid #4a90e2;
+outline-offset: 0;
+}
+
+/* Контейнер кнопок модального окна терминала */
+.terminal-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+/* Кнопка "Скопировать" */
+.terminal-btn-copy {
+  padding: 10px 25px;
+  font-size: 14px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.terminal-btn-copy:hover {
+  background-color: #388E3C;
+}
+
+/* Кнопка "Закрыть" */
+.terminal-btn-close {
+  padding: 10px 25px;
+  font-size: 14px;
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.terminal-btn-close:hover {
+  background-color: #b71c1c;
 }
 
 

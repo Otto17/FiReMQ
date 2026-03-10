@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"strings"
 
-	"FiReMQ/db"         // Локальный пакет с БД BadgerDB
-	"FiReMQ/logging"    // Локальный пакет с логированием в HTML файл
-	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
+	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
+	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
+	"FiReMQ/protection"  // Локальный пакет с функциями базовой защиты
 
 	"github.com/dgraph-io/badger/v4"
 )
@@ -151,6 +152,21 @@ func SetNameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if nameChanged {
+		// Обновляет имя клиента во всех записях cmd/PowerShell
+		if err := updateClientNameInRecords(clientID, name, "FiReMQ_Command:", "ClientID_Command"); err != nil {
+			logging.LogError("Клиенты: Ошибка обновления имени клиента '%s' в отчёте CMD/PowerShell: %v", clientID, err)
+		}
+
+		// Обновляет имя клиента во всех записях Установки ПО (QUIC)
+		if err := updateClientNameInRecords(clientID, name, "FiReMQ_QUIC:", "ClientID_QUIC"); err != nil {
+			logging.LogError("Клиенты: Ошибка обновления имени клиента '%s' в отчёте Установки ПО: %v", clientID, err)
+		}
+
+		// Обновляет имя клиента в активной сессии смены MQTT авторизации
+		if err := mqtt_server.UpdateClientNameInMqttAuth(clientID, name); err != nil {
+			logging.LogError("Клиенты: Ошибка обновления имени клиента '%s' в сессии MQTT авторизации: %v", clientID, err)
+		}
+
 		logging.LogAction("Клиенты: Админ \"%s\" (с именем: %s) изменил имя клиента с '%s' на '%s'", authInfo.Login, authInfo.Name, clientID, name)
 		w.Write([]byte("Имя клиента обновлено"))
 	} else {

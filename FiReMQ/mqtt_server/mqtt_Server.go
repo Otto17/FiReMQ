@@ -21,7 +21,7 @@ import (
 // Инъекция реализаций из пакета "main"
 var (
 	SaveClientInfo          func(status, name, ip, localIP, clientID string) error
-	HandleAnswerMessage     func(clientID string, payload []byte)
+	HandleAnswerMessage     func(clientID, dateOfCreation, answer, cmdExecution, description string)
 	HandleQUICAnswerMessage func(clientID, dateOfCreation, answer, quicExecution, attempts, description string)
 )
 

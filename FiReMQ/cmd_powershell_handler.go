@@ -123,10 +123,12 @@ func GetCommandsHandler(w http.ResponseWriter, r *http.Request) {
 			for clientID, clientData := range clientMapping {
 				clientDataMap := make(map[string]any)
 
-				// Копирует существующие данные клиента
+				// Копирует существующие данные клиента, но исключает поле Description (оно загружается отдельно другим запросом)
 				if existingData, ok := clientData.(map[string]any); ok {
 					for k, v := range existingData {
-						clientDataMap[k] = v
+						if k != "Description" { // Исключает большой текст описания
+							clientDataMap[k] = v
+						}
 					}
 				}
 
@@ -539,9 +541,21 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			// Очистка Answer, только если реальная отправка
-			if ans, _ := clientEntry["Answer"].(string); ans != "" {
+			// Очистка Answer и связанных полей, только если реальная отправка
+			cleared := false
+			if s, _ := clientEntry["Answer"].(string); s != "" {
 				clientEntry["Answer"] = ""
+				cleared = true
+			}
+			if s, _ := clientEntry["Cmd_Execution"].(string); s != "" {
+				clientEntry["Cmd_Execution"] = ""
+				cleared = true
+			}
+			if s, _ := clientEntry["Description"].(string); s != "" {
+				clientEntry["Description"] = ""
+				cleared = true
+			}
+			if cleared {
 				mapping[req.ClientID] = clientEntry
 				record["ClientID_Command"] = mapping
 				processed = true
@@ -602,12 +616,18 @@ func ResendCommandHandler(w http.ResponseWriter, r *http.Request) {
 				logging.LogAction("CMD/PowerShell: Админ \"%s\" (с именем: %s) установил флаг повторной отправки запроса '%s' для оффлайн клиента с ID '%s'", authInfo.Login, authInfo.Name, req.Date_Of_Creation, req.ClientID)
 				processed = true
 
-				// Очистка Answer, только при первом выставлении флага
-				if ans, _ := clientEntry["Answer"].(string); ans != "" {
+				// Очистка Answer и связанных полей, только при первом выставлении флага
+				if s, _ := clientEntry["Answer"].(string); s != "" {
 					clientEntry["Answer"] = ""
-					mapping[req.ClientID] = clientEntry
-					record["ClientID_Command"] = mapping
 				}
+				if s, _ := clientEntry["Cmd_Execution"].(string); s != "" {
+					clientEntry["Cmd_Execution"] = ""
+				}
+				if s, _ := clientEntry["Description"].(string); s != "" {
+					clientEntry["Description"] = ""
+				}
+				mapping[req.ClientID] = clientEntry
+				record["ClientID_Command"] = mapping
 			}
 		}
 
@@ -771,21 +791,19 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Формирует карту для ClientID_Command: id -> { "ClientName": <client name>, "Answer": "" }
+	// Формирует карту для ClientID_Command: id -> { "ClientName", "Answer", "Cmd_Execution", "Description" }
 	clientMapping := map[string]any{}
 	for _, cid := range cmdReq.ClientIDs {
 		name, err := getClientName(cid)
 		if err != nil {
 			logging.LogError("CMD/PowerShell: Ошибка получения имени для клиента %s: %v", cid, err)
-			clientMapping[cid] = map[string]string{
-				"ClientName": "",
-				"Answer":     "",
-			}
-		} else {
-			clientMapping[cid] = map[string]string{
-				"ClientName": name,
-				"Answer":     "",
-			}
+			name = ""
+		}
+		clientMapping[cid] = map[string]string{
+			"ClientName":    name,
+			"Answer":        "",
+			"Cmd_Execution": "",
+			"Description":   "",
 		}
 	}
 
@@ -917,5 +935,111 @@ func SendCommandHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"status":  "Успех",
 		"message": "Команда сохранена и отправлена онлайн клиентам",
+	})
+}
+
+// GetTerminalClientInfoHandler возвращает детальную информацию по одному клиенту по его ID и дате
+func GetTerminalClientInfoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Только GET запросы поддерживаются", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Получение информации об авторизованном админе
+	authInfo, errs := getAuthInfoFromRequest(r)
+	if errs != nil {
+		http.Error(w, "Ошибка авторизации", http.StatusUnauthorized)
+		return
+	}
+
+	var req struct {
+		Date_Of_Creation string `json:"Date_Of_Creation" form:"date_of_creation"`
+		ClientID         string `json:"client_id" form:"client_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		req.Date_Of_Creation = r.URL.Query().Get("date_of_creation")
+		req.ClientID = r.URL.Query().Get("client_id")
+	}
+
+	if req.ClientID == "" || req.Date_Of_Creation == "" {
+		http.Error(w, "Отсутствуют параметры: date_of_creation и client_id", http.StatusBadRequest)
+		return
+	}
+
+	currentAdmin, erro := GetAdminByLogin(authInfo.Login)
+	if erro != nil {
+		http.Error(w, "Ошибка получения данных текущего админа", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentAdmin.Perm_TerminalCommands {
+		http.Error(w, "У вас нет прав на просмотр отчётов cmd/PowerShell", http.StatusForbidden)
+		return
+	}
+
+	// Проверяет права на получение отчета по конкретной группе клиента
+	clientGroup, erro := GetClientGroup(req.ClientID)
+	if erro != nil {
+		http.Error(w, "Клиент не найден или группа недоступна", http.StatusNotFound)
+		return
+	}
+	if !CanTerminalCommandInGroup(currentAdmin, clientGroup) {
+		http.Error(w, "Нет доступа к этой группе клиентов", http.StatusForbidden)
+		return
+	}
+
+	// Загружает запись по дате создания
+	var record map[string]any
+	err := db.DBInstance.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte("FiReMQ_Command:")
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			var itemRecord map[string]any
+			err := item.Value(func(val []byte) error {
+				return json.Unmarshal(val, &itemRecord)
+			})
+			if err != nil {
+				continue
+			}
+			if itemRecord["Date_Of_Creation"] == req.Date_Of_Creation {
+				record = itemRecord
+				break
+			}
+		}
+		return nil
+	})
+
+	if err != nil || record == nil {
+		http.Error(w, "Запрос с указанными параметрами не найден", http.StatusNotFound)
+		return
+	}
+
+	mapping, ok := record["ClientID_Command"].(map[string]any)
+	if !ok {
+		http.Error(w, "Структура данных записи нарушена", http.StatusInternalServerError)
+		return
+	}
+
+	clientEntryRaw, exists := mapping[req.ClientID]
+	if !exists {
+		http.Error(w, "Клиент не найден в этом запросе", http.StatusNotFound)
+		return
+	}
+
+	clientEntry, ok := clientEntryRaw.(map[string]any)
+	if !ok {
+		http.Error(w, "Данные клиента некорректны", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "success",
+		"data":   clientEntry, // Возвращаем все поля (включая Description)
 	})
 }

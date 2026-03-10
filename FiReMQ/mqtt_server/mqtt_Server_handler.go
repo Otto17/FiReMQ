@@ -45,26 +45,28 @@ func GetTopicData() {
 			return
 		}
 
-		// Устанавливает жёсткое ограничение на размер сообщения для защиты от переполнения
-		if len(payload) > 1024 { // 1КБ максимум
-			logging.LogSecurity("MQTT от Info_Files: Сообщение от клиента %s (%d байт) превышает допустимый размер в 1024 байта. Добавление пользователя в БД отклонено!", clientID, len(payload))
-			return
-		}
-
-		// Обрабатывает ответы от команд, исполненных на клиенте
+		// Обрабатывает ответы от команд, исполненных на клиенте (с обратной связью: успех/ошибка, попытки, описание)
 		if strings.HasPrefix(topic, "Client/") && strings.Contains(topic, "/ModuleCommand") {
-			// Использует поля Answer и Date_Of_Creation для валидации формата ответа
-			var test struct {
+			//	log.Printf("[ОТЛАДКА CMD] topic=%s clientID=%s payload=%s", topic, clientID, string(payload)) // ДЛЯ ОТЛАДКИ
+			var resp struct {
 				Date_Of_Creation string `json:"Date_Of_Creation"`
 				Answer           string `json:"Answer"`
+				Cmd_Execution    string `json:"Cmd_Execution"`
+				Description      string `json:"Description"`
 			}
 
-			if err := json.Unmarshal(payload, &test); err == nil && test.Answer != "" && test.Date_Of_Creation != "" {
+			if err := json.Unmarshal(payload, &resp); err == nil && resp.Answer != "" && resp.Date_Of_Creation != "" {
 				if HandleAnswerMessage != nil {
-					HandleAnswerMessage(clientID, payload)
+					HandleAnswerMessage(clientID, resp.Date_Of_Creation, resp.Answer, resp.Cmd_Execution, resp.Description)
 				}
 				return
 			}
+		}
+
+		// Устанавливает жёсткое ограничение на размер сообщения для защиты от переполнения
+		if len(payload) > 1024 { // 1КБ максимум
+			logging.LogSecurity("MQTT Serv: Сообщение от клиента %s (%d байт) превышает допустимый размер в 1024 байта.", clientID, len(payload))
+			return
 		}
 
 		// Обрабатывает ответы о выполнении задач по установке ПО через QUIC
@@ -81,6 +83,17 @@ func GetTopicData() {
 				if HandleQUICAnswerMessage != nil {
 					HandleQUICAnswerMessage(clientID, resp.Date_Of_Creation, resp.Answer, resp.QUIC_Execution, resp.Attempts, resp.Description)
 				}
+			}
+			return
+		}
+
+		// Обрабатывает ответы о смене MQTT авторизации от клиентов
+		if strings.HasPrefix(topic, "Client/") && strings.HasSuffix(topic, "/UpdateMQTTAuth/Answer") {
+			// Извлекает clientID из топика: Client/<clientID>/UpdateMQTTAuth/Answer
+			parts := strings.Split(topic, "/")
+			if len(parts) >= 4 {
+				clientID := parts[1]
+				HandleMQTTAuthAnswer(clientID, payload)
 			}
 			return
 		}

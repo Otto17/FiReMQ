@@ -241,15 +241,19 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	protectedMux.HandleFunc("/update-install-programs-groups", UpdateInstallProgramsGroupsHandler)   // POST команда для изменения списка разрешённых групп для установки ПО через QUIC
 
 	// Маршруты MQTT сервера
-	protectedMux.HandleFunc("/get-accounts-mqtt", mqtt_server.GetAccountsHandler)     // GET команда для получения данных учетных записей
-	protectedMux.HandleFunc("/update-account-mqtt", mqtt_server.UpdateAccountHandler) // POST команда для обновления данных учетной записи
-	protectedMux.HandleFunc("/update-allow-mqtt", mqtt_server.UpdateAllowHandler)     // POST команда разрешает или запрещает подключение через учётную запись в конфиге "mqtt_config.json" с низким приоритетом "1"
+	protectedMux.HandleFunc("/get-accounts-mqtt", mqtt_server.GetAccountsHandler)        // GET команда для получения данных учетных записей
+	protectedMux.HandleFunc("/update-account-mqtt", mqtt_server.UpdateAccountHandler)    // POST команда для обновления данных учетной записи
+	protectedMux.HandleFunc("/update-allow-mqtt", mqtt_server.UpdateAllowHandler)        // POST команда разрешает или запрещает подключение через учётную запись в конфиге "mqtt_config.json" с низким приоритетом "1"
+	protectedMux.HandleFunc("/mqtt-auth-status", mqtt_server.GetMQTTAuthStatusHandler)   // GET команда для получения статуса смены MQTT авторизации клиентов
+	protectedMux.HandleFunc("/mqtt-auth-resend", mqtt_server.ResendMQTTAuthHandler)      // POST команда для повторной отправки запроса клиентам с ошибками смены пароля
+	protectedMux.HandleFunc("/mqtt-auth-clear", mqtt_server.ClearMQTTAuthSessionHandler) // POST команда для очистки сессии смены авторизации
 
 	// Маршрут для формирования и отправки команд в "cmd/PowerShell"
 	protectedMux.HandleFunc("/send-terminal-command", SendCommandHandler) // POST команда для отправки cmd или PowerShell команды
 
 	// Маршруты для отчёта по "cmd/PowerShell"
-	protectedMux.HandleFunc("/get-terminal-report", GetCommandsHandler)                             // GET команда для получения всех записей команд
+	protectedMux.HandleFunc("/get-terminal-report", GetCommandsHandler)                             // GET команда для получения списка записей (без полного вывода скриптов)
+	protectedMux.HandleFunc("/get-terminal-client-info", GetTerminalClientInfoHandler)              // GET команда с детальной информацией по клиенту (для открытия отдельного окна)
 	protectedMux.HandleFunc("/resend-terminal-report", ResendCommandHandler)                        // POST команда для повторной отправки команды конкретному клиенту
 	protectedMux.HandleFunc("/delete-by-date-terminal-report", DeleteCommandsByDateHandler)         // POST команда для удаления всех записей в БД по дате создания
 	protectedMux.HandleFunc("/delete-client-terminal-report", DeleteClientFromCommandByDateHandler) // POST команда для удаления конкретной записи ClientID из БД по дате создания
