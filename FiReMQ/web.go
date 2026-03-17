@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"FiReMQ/LinuxInfo"   // Локальный пакет с информацией о Linux сервере
 	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
 	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
 	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
@@ -291,6 +292,9 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	// Маршруты для просмотра и/или скачивания HTML лога сервера
 	protectedMux.HandleFunc("/getServer-log", protection.RateLimitMiddleware(rate.Every(1500*time.Millisecond), 1)(logging.HandleLogFileRequest)) // POST команда для создания одноразовой ссылки на просмотр или скачивание файла лога (1 запрос каждые 1,5 секунды = 40 запросов в минуту)
 	protectedMux.HandleFunc("/log-view/", logging.LogViewHandler)                                                                                 // GET команда от открытия страницы лога по одноразовой ссылке
+
+	// Маршрут для получения информации о Linux сервере
+	protectedMux.HandleFunc("/get-linux-info", LinuxInfo.LinuxInfoHandler) // POST команда для получения JSON информации о сервере Linux
 
 	/* * * * * * * * * * * * * * * * * * * * * */
 	// ДЛЯ ТЕСТА!!! Временный обход проверок Coraza WAF для тестирования запроса с пропуском CSRF

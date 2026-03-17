@@ -22,6 +22,7 @@ import (
 type ClientInfo struct {
 	Status    string
 	Name      string
+	Windows   string
 	IP        string
 	LocalIP   string
 	ClientID  string
@@ -347,6 +348,7 @@ func FetchClientsByGroupHandler(w http.ResponseWriter, r *http.Request) {
 					client := ClientInfo{
 						Status:    data["status"],
 						Name:      data["name"],
+						Windows:   data["windows"],
 						IP:        data["ip"],
 						LocalIP:   data["local_ip"],
 						ClientID:  data["client_id"],

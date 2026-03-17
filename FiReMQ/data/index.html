@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно перемещение клиента -->
+  <!-- Модальное окно "Перемещение клиента" -->
   <div id="moveClientModal" class="modal-window">
     <div class="modal-window-content move-client">
       <span class="close" id="closeMoveClientModal">&times;</span>
@@ -71,7 +71,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно массового перемещения клиентов -->
+  <!-- Модальное окно "Массовое перемещение клиентов" -->
   <div id="moveCheckClientsModal" class="modal-window">
     <div class="modal-window-content move-client">
       <span class="close" id="closeMoveCheckModal">&times;</span>
@@ -102,7 +102,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно учётные записи Админов -->
+  <!-- Модальное окно "Учётные записи Админов" -->
   <div id="accountsModal" class="modal-window">
     <div class="modal-window-content accounts-modal">
       <span class="close" id="closeAccountsModal">&times;</span>
@@ -224,7 +224,7 @@
     </div>
   </div>
 
-<!-- Модальное окно MQTT Авторизация -->
+<!-- Модальное окно "MQTT Авторизация" -->
 <div id="mqttAuthModal" class="modal-window">
   <div class="modal-window-content mqtt-auth-content">
     <span class="close-mqtt" id="closeMqttAuthModal">&times;</span>
@@ -262,7 +262,7 @@
   </div>
 </div>
 
-<!-- Модальное окно Статус смены MQTT логина/пароля -->
+<!-- Модальное окно "Статус смены MQTT логина/пароля" -->
 <div id="mqttAuthStatusModal" class="modal-window mqtt-status-overlay">
   <div class="modal-window-content mqtt-status-content">
     <span class="close-mqtt-status" id="closeMqttStatusModal">&times;</span>
@@ -290,7 +290,7 @@
   </div>
 </div>
 
-  <!-- Модальное окно для выполнения команды -->
+  <!-- Модальное окно "Выполнить команду" -->
   <div id="executeCommandModal" class="command-modal">
     <div class="command-modal-content">
       <span class="command-modal-close" id="closeExecuteCommandModal">&times;</span>
@@ -606,7 +606,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно для установки ПО -->
+  <!-- Модальное окно "Установка ПО" -->
   <div id="installProgramModal" class="install-modal">
     <div class="install-modal-content">
       <span class="install-modal-close" id="closeInstallProgramModal">×</span>
@@ -813,7 +813,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно просмотра вывода результатов CMD/PowerShell -->
+  <!-- Модальное окно "Результат выполнения CMD/PowerShell" -->
   <div id="terminalOutputModal" class="modal-window z-index-high-termina">
     <div class="modal-window-content terminal-details">
       <span class="close" id="closeTerminalOutputModal">&times;</span>
@@ -893,7 +893,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно полное удаление FiReAgent -->
+  <!-- Модальное окно "Полное удаление FiReAgent" -->
   <div id="uninstallFiReAgentModal" class="modal-window" role="dialog" aria-modal="true" aria-labelledby="uninstallTitle">
     <div class="modal-window-content uninstall-fireagent">
       <span class="close" id="closeUninstallFiReAgentModal" aria-label="Закрыть">&times;</span>
@@ -917,16 +917,28 @@
     </div>
   </div>
 
+<!-- Модальное окно "Статистика сервера" -->
+<div id="serverStatsModal" class="ss-modal">
+  <div class="ss-modal-content">
+    <span class="close" id="closeServerStatsModal" aria-label="Закрыть">&times;</span>
+    <h2 class="ss-title">Статистика сервера</h2>
+    <div id="serverStatsBody" class="ss-scroll-area">
+      <div class="ss-loading">Загрузка данных...</div>
+    </div>
+  </div>
+</div>
+
   <!-- Панель меню -->
   <div class="top-bar">
     <div class="dropdown">
       <button class="dropbtn" id="menuButton">Меню</button>
       <div class="dropdown-content" id="myDropdown">
-        <a id="logsLink" href="#" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a>
+        <a id="logsLink" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a>
         <a id="accountsMQTT" class="menu-item-with-icon removeFiReAgent-button"><img src="../icon/Mqtt.svg" alt="MQTT авторизация" class="menu-icon"><span>MQTT авторизация</span></a>
-        <a id="removeFiReAgent" href="#" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
+        <a id="removeFiReAgent" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
         <a id="accountsLink" class="menu-item-with-icon"><img src="../icon/AccountsAdmin.svg" alt="Учётные записи Админов" class="menu-icon"><span>Учётные записи Админов</span></a>
         <hr>
+		<a id="servStatic" class="menu-item-with-icon"><img src="../icon/ServStatistics.svg" alt="Статистика сервера" class="menu-icon"><span>Статистика сервера</span></a>
         <a id="aboutProject" class="menu-item-with-icon"><img src="../icon/O_Project.svg" alt="О проекте" class="menu-icon"><span>О проекте</span></a>
       </div>
       <button id="installProgramButton" class="installProgram-button" disabled>Установка ПО</button>

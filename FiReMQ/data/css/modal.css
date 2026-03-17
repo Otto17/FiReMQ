@@ -48,6 +48,9 @@ input.validation-error {
   border-top-color: rgba(217, 83, 79, 0.95);
 }
 
+
+
+
 /* МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ КЛИЕНТА */
 
 .modal-window {
@@ -192,7 +195,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО ДЛЯ "МАССОВОЕ ПЕРЕМЕЩЕНИЕ КЛИЕНТОВ" И "ПЕРЕМЕЩЕНИЕ КЛИЕНТА" В ДРУГУЮ ГРУППУ/ПОДГРУППУ */
+/* МОДАЛЬНЫЕ ОКНА ДЛЯ "Перемещение клиента" И "Массовое перемещение клиентов" В ДРУГУЮ ГРУППУ/ПОДГРУППУ */
 
 .modal-window-content.move-client {
   width: 370px;
@@ -276,7 +279,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО УЧЁТНЫЕ ЗАПИСИ АДМИНОВ */
+/* МОДАЛЬНОЕ ОКНО "Учётные записи Админов" */
 
 #accountsModal .modal-window-content {
   width: 70%;
@@ -678,7 +681,10 @@ input[type="text"]::placeholder {
   }
 }
 
-/* Модальное окно подтверждения изменения разрешения прав доступа */
+
+
+
+/* МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ ИЗМЕНЕНИЯ РАЗРЕШЕНИЯ ИЗ УЧЁТНЫХ ЗАПИСЕЙ АДМИНОВ */
 .modal-window-content.permission-confirm-modal {
   width: auto;
   max-width: 360px;
@@ -888,7 +894,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО MQTT АВТОРИЗАЦИЯ */
+/* МОДАЛЬНОЕ ОКНО "MQTT Авторизация" */
 
 #mqttAuthModal .modal-window-content.mqtt-auth-content {
   width: 450px; /* Ширина модального окна */
@@ -1068,7 +1074,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО СТАТУС MQTT ЛОГИНА/ПАРОЛЯ */
+/* МОДАЛЬНОЕ ОКНО "Статус смены MQTT логина/пароля" */
 
 /* Контейнер для кнопок "Сохранить" и "Статус" */
 .mqtt-buttons-row {
@@ -1418,7 +1424,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО ВЫПОЛНИТЬ КОМАНДУ */
+/* МОДАЛЬНОЕ ОКНО "Выполнить команду" */
 
 .command-modal {
   display: none;
@@ -1983,7 +1989,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО УСТАНОВКА ПО */
+/* МОДАЛЬНОЕ ОКНО "Установка ПО" */
 
 .install-modal {
   display: none;
@@ -2758,7 +2764,7 @@ input[type="text"]::placeholder {
 
 
 
-/* МОДАЛЬНОЕ ОКНО РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ CMD/PowerShell */
+/* МОДАЛЬНОЕ ОКНО "Результат выполнения CMD/PowerShell" */
 /* Заголовок */
 .terminal-details h2 {
   margin: 12px 0 18px;
@@ -3092,7 +3098,7 @@ outline-offset: 0;
 
 
 
-/* МОДАЛЬНОЕ ОКНО ПОЛНОЕ УДАЛЕНИЕ FiReAgent */
+/* МОДАЛЬНОЕ ОКНО "Полное удаление FiReAgent" */
 .modal-window-content.uninstall-fireagent {
   width: 630px;
   background-color: #2e2e2e;
@@ -3269,4 +3275,332 @@ outline-offset: 0;
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО "Статистика сервера" */
+
+.ss-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  justify-content: center;
+  align-items: center;
+}
+
+.ss-modal-content {
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  color: #e0e0e0;
+  position: relative;
+  width: 860px;
+  max-width: 92%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  border: 1px solid #3a3a3a;
+}
+
+.ss-modal-content .close {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 28px;
+  color: #888;
+  cursor: pointer;
+  z-index: 1;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.ss-modal-content .close:hover {
+  color: #fff;
+}
+
+/* Заголовок */
+.ss-title {
+  margin: 24px 0 18px;
+  font-size: 22px;
+  text-align: center;
+}
+
+/* Внутренняя прокручиваемая область */
+.ss-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 8px 8px;
+  padding: 0 16px 16px;
+  border-radius: 6px;
+  background: #232323;
+  border: 1px solid #333;
+}
+
+/* Кастомный скроллбар */
+.ss-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ss-scroll-area::-webkit-scrollbar-track {
+  background: #1e1e1e;
+  border-radius: 4px;
+}
+
+.ss-scroll-area::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.ss-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Состояния загрузки и ошибки */
+.ss-loading {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px;
+  color: #aaa;
+}
+
+.ss-unavailable {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px;
+  color: #ff6c00;
+}
+
+.ss-error {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 15px;
+  color: #f44336;
+}
+
+/* Секции */
+.ss-section {
+  margin-top: 14px;
+  background: #1f1f1f;
+  border: 1px solid #383838;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ss-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 9px 14px;
+  background: linear-gradient(135deg, #2a2a2a, #252525);
+  border-bottom: 1px solid #383838;
+  color: #8ab4f8;
+}
+
+/* Сетка ключ-значение */
+.ss-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  padding: 10px 14px;
+  align-items: baseline;
+}
+
+.ss-label {
+  color: #888;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ss-value {
+  color: #ddd;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+/* Карточки (диски, интерфейсы) */
+.ss-card {
+  margin: 8px 10px;
+  background: #272727;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ss-card-title {
+  font-weight: 600;
+  font-size: 13px;
+  padding: 7px 12px;
+  background: #2e2e2e;
+  border-bottom: 1px solid #3a3a3a;
+  color: #ccc;
+}
+
+.ss-card .ss-grid {
+  padding: 8px 12px;
+}
+
+/* Индикатор статуса (точка) */
+.ss-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Прогресс-бар */
+.ss-progress {
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  margin: 4px 12px 10px;
+  overflow: hidden;
+}
+
+.ss-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  min-width: 0;
+}
+
+/* Блок памяти (RAM/SWAP) */
+.ss-mem-block {
+  padding: 8px 14px 0;
+}
+
+.ss-mem-header {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 4px;
+}
+
+.ss-mem-header strong {
+  color: #e0e0e0;
+}
+
+/* Нагрузка */
+.ss-load-line {
+  font-size: 13px;
+  padding: 3px 14px;
+  color: #ccc;
+}
+
+.ss-load-divider {
+  border-top: 1px solid #333;
+  margin: 6px 14px;
+}
+
+.ss-status-line {
+  font-size: 13px;
+  padding: 3px 14px;
+}
+
+.ss-status-prefix {
+  color: #999;
+}
+
+/* Подзаголовок внутри секции */
+.ss-subsection-title {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px 4px;
+  color: #aaa;
+  border-top: 1px solid #333;
+}
+
+.ss-section .ss-subsection-title:first-child {
+  border-top: none;
+}
+
+/* Таблица каталогов */
+.ss-dir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.ss-dir-table th {
+  text-align: center;
+  padding: 6px 14px;
+  color: #888;
+  font-weight: 600;
+  border-bottom: 1px solid #3a3a3a;
+  white-space: nowrap;
+}
+
+.ss-dir-table td {
+  padding: 5px 14px;
+  border-bottom: 1px solid #2a2a2a;
+  color: #ccc;
+}
+
+.ss-dir-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ss-dir-table .ss-path {
+  color: #777;
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* Цвета температуры */
+.ss-temp-ok {
+  color: #4caf50;
+}
+.ss-temp-warm {
+  color: #ffc107;
+}
+.ss-temp-hot {
+  color: #ff9800;
+}
+.ss-temp-crit {
+  color: #f44336;
+}
+
+/* Цвета статуса нагрузки */
+.ss-load-ok {
+  color: #4caf50;
+}
+.ss-load-norm {
+  color: #ffc107;
+}
+.ss-load-high {
+  color: #ff9800;
+}
+.ss-load-crit {
+  color: #f44336;
+}
+
+/* Цвета прогресс-бара */
+.ss-prog-ok {
+  background: #4caf50;
+}
+.ss-prog-warn {
+  background: #ffc107;
+}
+.ss-prog-high {
+  background: #ff9800;
+}
+.ss-prog-crit {
+  background: #f44336;
+}
+
+/* Индикатор статуса сети */
+.ss-dot-up {
+  background: #4caf50;
+}
+.ss-dot-down {
+  background: #f44336;
 }

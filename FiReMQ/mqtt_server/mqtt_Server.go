@@ -20,7 +20,7 @@ import (
 
 // Инъекция реализаций из пакета "main"
 var (
-	SaveClientInfo          func(status, name, ip, localIP, clientID string) error
+	SaveClientInfo          func(status, name, ip, localIP, windowsVer, clientID string) error
 	HandleAnswerMessage     func(clientID, dateOfCreation, answer, cmdExecution, description string)
 	HandleQUICAnswerMessage func(clientID, dateOfCreation, answer, quicExecution, attempts, description string)
 )
@@ -31,6 +31,7 @@ var Server *mqtt.Server
 // ClientMessage структура для парсинга JSON из сообщений
 type ClientMessage struct {
 	LocalIP string `json:"LocalIP"`
+	Windows string `json:"Windows"`
 }
 
 // versionHook Хук для проверки версии MQTT

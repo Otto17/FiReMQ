@@ -100,17 +100,17 @@ func GetTopicData() {
 
 		// Обрабатывает сообщения о регистрации нового клиента
 		if topic == "Data/DB" {
-			localIP, err := ParseMessage(payload)
+			localIP, windowsVer, err := ParseMessage(payload)
 			if err != nil {
 				logging.LogError("Новый клиеет в БД: Ошибка парсинга JSON: %v", err)
 				return
 			}
 
-			// log.Printf("Клиент %s: clientIP='%s', localIP='%s'", clientID, clientIP, localIP) // ДЛЯ ОТЛАДКИ
+			// log.Printf("Клиент %s: clientIP='%s', localIP='%s', windows='%s'", clientID, clientIP, localIP, windowsVer) // ДЛЯ ОТЛАДКИ
 
 			// Вызывает внешнюю функцию сохранения, если она инжектирована
 			if SaveClientInfo != nil {
-				err = SaveClientInfo("On", "", clientIP, localIP, clientID)
+				err = SaveClientInfo("On", "", clientIP, localIP, windowsVer, clientID)
 			}
 			if err != nil {
 				logging.LogError("Новый клиеет в БД: Ошибка сохранения данных клиента: %v", err)
@@ -120,12 +120,12 @@ func GetTopicData() {
 	})
 }
 
-// ParseMessage парсит LocalIP из JSON-сообщения клиента
-func ParseMessage(payload []byte) (string, error) {
+// ParseMessage парсит LocalIP и версию Windows из JSON-сообщения клиента
+func ParseMessage(payload []byte) (string, string, error) {
 	var msg ClientMessage
 	err := json.Unmarshal(payload, &msg)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return msg.LocalIP, nil
+	return msg.LocalIP, msg.Windows, nil
 }

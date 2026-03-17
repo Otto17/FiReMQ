@@ -310,6 +310,7 @@ document.addEventListener("DOMContentLoaded", function() {
 let sortDirections = {
   status: true,
   name: true,
+  windows: true,
   ip: true,
   local_ip: true,
   client_id: true,
@@ -675,14 +676,17 @@ function updateRowCells(row, client) {
   nameInput.classList.add("hidden");
   nameInput.style.display = "";
 
+  // Windows
+  row.children[2].textContent = client.Windows;
+
   // IP, Серый IP, ID, Дата
-  row.children[2].textContent = client.IP;
-  row.children[3].textContent = client.LocalIP;
-  row.children[4].textContent = client.ClientID;
-  row.children[5].textContent = client.Timestamp;
+  row.children[3].textContent = client.IP;
+  row.children[4].textContent = client.LocalIP;
+  row.children[5].textContent = client.ClientID;
+  row.children[6].textContent = client.Timestamp;
 
   // Чекбокс
-  const cb = row.children[6].children[0];
+  const cb = row.children[7].children[0];
   cb.name = checkboxId;
   cb.id = checkboxId;
   cb.checked = false;
@@ -693,21 +697,22 @@ function createRowHTML(client) {
   const checkboxId = `checkbox_${client.ClientID}`;
   const statusIcon = client.Status === "On" ? "../icon/PC_On.svg" : "../icon/PC_Off.svg";
   return `<tr data-id="${client.ClientID}">
-        <td data-field="status">
-            <span class="status-text hidden">${client.Status}</span>
-            <img class="status-image" src="${statusIcon}" alt="${client.Status}">
-        </td>
-        <td data-field="name">
-            <span id="nameDisplay_${client.ClientID}">${client.Name}</span>
-            <input id="nameInput_${client.ClientID}" type="text"
-                value="${client.Name}" class="name-input hidden">
-        </td>
-        <td data-field="ip">${client.IP}</td>
-        <td data-field="local_ip">${client.LocalIP}</td>
-        <td data-field="client_id">${client.ClientID}</td>
-        <td data-field="timestamp">${client.Timestamp}</td>
-        <td><input type="checkbox" name="${checkboxId}" id="${checkboxId}"></td>
-    </tr>`;
+		<td data-field="status">
+			<span class="status-text hidden">${client.Status}</span>
+			<img class="status-image" src="${statusIcon}" alt="${client.Status}">
+		</td>
+		<td data-field="name">
+			<span id="nameDisplay_${client.ClientID}">${client.Name}</span>
+			<input id="nameInput_${client.ClientID}" type="text"
+				value="${client.Name}" class="name-input hidden">
+		</td>
+		<td data-field="windows">${client.Windows}</td>
+		<td data-field="ip">${client.IP}</td>
+		<td data-field="local_ip">${client.LocalIP}</td>
+		<td data-field="client_id">${client.ClientID}</td>
+		<td data-field="timestamp">${client.Timestamp}</td>
+		<td><input type="checkbox" name="${checkboxId}" id="${checkboxId}"></td>
+	</tr>`;
 }
 
 // Обновляет tbody: переиспользует существующие строки, добавляет недостающие, удаляет лишние
@@ -743,6 +748,7 @@ function renderTbodyRows(tbody, data) {
 const SORT_FIELD_TO_KEY = {
   status: "Status",
   name: "Name",
+  windows: "Windows",
   ip: "IP",
   local_ip: "LocalIP",
   client_id: "ClientID",
@@ -827,6 +833,11 @@ const loadClients = (() => {
             {
               field: "name",
               text: "Имя",
+              sortable: true
+            },
+			{
+              field: "windows",
+              text: "Win",
               sortable: true
             },
             {

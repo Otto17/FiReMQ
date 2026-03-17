@@ -40,7 +40,7 @@ func BackgroundStatusUpdate() {
 }
 
 // SaveClientInfo сохраняет информацию о клиенте в БД, не затирая существующее имя
-func SaveClientInfo(status, name, ip, localIP, clientID string) error {
+func SaveClientInfo(status, name, ip, localIP, windowsVer, clientID string) error {
 	var becameOnline bool // Флаг перехода клиента из оффлайн в онлайн
 
 	err := db.DBInstance.Update(func(txn *badger.Txn) error {
@@ -89,6 +89,11 @@ func SaveClientInfo(status, name, ip, localIP, clientID string) error {
 
 		if data["local_ip"] != localIP {
 			data["local_ip"] = localIP
+			changed = true
+		}
+
+		if data["windows"] != windowsVer {
+			data["windows"] = windowsVer
 			changed = true
 		}
 

@@ -3,23 +3,23 @@
 // Глобальный обработчик нажатия клавиш (для закрытия окна кнопкой "Esc")
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-	// Проверка окна просмотра вывода результатов CMD/PowerShell
-	const terminalOutputModal = document.getElementById("terminalOutputModal");
-	if (terminalOutputModal && terminalOutputModal.style.display === "flex") {
-	  closeTerminalOutputModal();
-	  event.stopPropagation();
-	  event.preventDefault();
-	  return;
-	}
+    // Проверка окна просмотра вывода результатов CMD/PowerShell
+    const terminalOutputModal = document.getElementById("terminalOutputModal");
+    if (terminalOutputModal && terminalOutputModal.style.display === "flex") {
+      closeTerminalOutputModal();
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
 
-	// Проверка окна статуса MQTT авторизации
-	const mqttStatusModal = document.getElementById("mqttAuthStatusModal");
-	if (mqttStatusModal && mqttStatusModal.style.display === "flex") {
-	  closeMqttAuthStatusModal();
-	  event.stopPropagation();
-	  event.preventDefault();
-	  return;
-	}
+    // Проверка окна статуса MQTT авторизации
+    const mqttStatusModal = document.getElementById("mqttAuthStatusModal");
+    if (mqttStatusModal && mqttStatusModal.style.display === "flex") {
+      closeMqttAuthStatusModal();
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
 
     // Проверка окна "Список полезных команд"
     const cheatsheetModal = document.getElementById("commandCheatsheetModal");
@@ -67,17 +67,18 @@ document.addEventListener("keydown", (event) => {
       event.preventDefault();
     } else {
       // Если окно подтверждения не активно, закрывает другие окна
-      closeDeleteModal();				// Для одиночного удаления
-      closeDeleteCheckModal();			// Для массового удаления
-      closeMoveModal();					// Для перемещения клиента в группу
-      closeMoveCheckModal();			// Для массового перемещения клиентов в группу
-      closeAccountsModal();				// Для учётных записей Админов
-      closeMqttAuthModal();				// Для MQTT авторизации
-      closeExecuteCommandModal();		// Для выполнения CMD или PowerShell команды
-      closeInstallProgramModal(); 		// Для установки ПО
-      closeReportModal();				// Для отчётов По установкам и cmd / PowerShell
-      closeAboutModal(); 				// Для окна "О программе"
-      closeUninstallFiReAgentModal();	// Для удаления FiReAgent
+      closeDeleteModal(); // Для одиночного удаления
+      closeDeleteCheckModal(); // Для массового удаления
+      closeMoveModal(); // Для перемещения клиента в группу
+      closeMoveCheckModal(); // Для массового перемещения клиентов в группу
+      closeAccountsModal(); // Для учётных записей Админов
+      closeMqttAuthModal(); // Для MQTT авторизации
+      closeExecuteCommandModal(); // Для выполнения CMD или PowerShell команды
+      closeInstallProgramModal(); // Для установки ПО
+      closeReportModal(); // Для отчётов По установкам и cmd / PowerShell
+      closeAboutModal(); // Для окна "О программе"
+      closeUninstallFiReAgentModal(); // Для удаления FiReAgent
+      closeServerStatsModal(); // Для окна "Статистика сервера"
     }
   }
 });
@@ -265,6 +266,7 @@ document.getElementById("confirmDeleteButton").addEventListener("click", confirm
 
 
 
+
 // МОДАЛЬНОЕ ОКНО МАССОВОГО УДАЛЕНИЯ КЛИЕНТОВ
 
 // Удаление выделенных клиентов
@@ -368,7 +370,8 @@ document.getElementById("deleteCheckClientsModal").addEventListener("keydown", f
 
 
 
-// МОДАЛЬНОЕ ОКНО ПЕРЕМЕЩЕНИЕ КЛИЕНТА
+
+// МОДАЛЬНОЕ ОКНО "Перемещение клиента"
 
 document.addEventListener("DOMContentLoaded", function() {
   const moveClientModal = document.getElementById("moveClientModal");
@@ -536,7 +539,7 @@ function closeMoveModal() {
 
 
 
-// МОДАЛЬНОЕ ОКНО ДЛЯ МАССОВОЕ ПЕРЕМЕЩЕНИЯ КЛИЕНТОВ В ДРУГУЮ ПОДГРУППУ
+// МОДАЛЬНОЕ ОКНО ДЛЯ "Массовое перемещение клиентов"
 
 // Открытие модального окна массового перемещения клиентов
 function moveClientCheckClient() {
@@ -737,7 +740,7 @@ document.getElementById("moveCheckClientsForm").addEventListener("keydown", func
 
 
 
-// МОДАЛЬНОЕ ОКНО УЧЁТНЫЕ ЗАПИСИ АДМИНОВ
+// МОДАЛЬНОЕ ОКНО "Учётные записи Админов"
 
 // Данные для модального окна подтверждения изменения разрешения
 let pendingPermissionChange = null;
@@ -1765,7 +1768,7 @@ document.getElementById('confirmPermissionBtn')?.addEventListener('click', confi
 
 
 
-// УНИВЕРСАЛЬНОЕ МОДАЛЬНОЕ ОКНО ВЫБОРА ПРАВ С РАЗРЕШЁННЫМИ ГРУППАМИ
+// МОДАЛЬНОЕ ОКНО ВЫБОРА ПРАВ С РАЗРЕШЁННЫМИ ГРУППАМИ
 
 // Конфигурация для разных типов разрешений
 const groupsSelectConfig = {
@@ -2155,12 +2158,12 @@ function updateReserveAccountStatus(allow) {
     })
 
     .then(async (response) => {
-          const data = await response.json();
-          if (response.ok && data.success) {
-            showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
-            // Сначала обновляет UI, затем сбрасывает кнопку (порядок важен)
-            refreshReserveAccountUI(allow);
-            resetReserveAccountButtonState();
+      const data = await response.json();
+      if (response.ok && data.success) {
+        showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
+        // Сначала обновляет UI, затем сбрасывает кнопку (порядок важен)
+        refreshReserveAccountUI(allow);
+        resetReserveAccountButtonState();
       } else if (response.status === 403) {
         // Показывает сообщение от сервера при ошибке прав доступа
         showPush(data.message || "У вас нет прав на это действие", "#ff4d4d"); // Красный
@@ -2241,13 +2244,13 @@ function saveMqttAuth() {
         showPush(data, "#2196F3"); // Голубой
 
         // Разблокирует и очищает поля ввода после успешного сохранения
-		const usernameInput = document.getElementById("mqttUsername");
-		const passwordInput = document.getElementById("mqttPassword");
-		usernameInput.value = "";
-		passwordInput.value = "";
+        const usernameInput = document.getElementById("mqttUsername");
+        const passwordInput = document.getElementById("mqttPassword");
+        usernameInput.value = "";
+        passwordInput.value = "";
 
-		// Сбрасывает состояние кнопки "Сохранить" (снимет блокировку полей и обработчики confirm)
-		resetSaveMqttButtonState();
+        // Сбрасывает состояние кнопки "Сохранить" (снимет блокировку полей и обработчики confirm)
+        resetSaveMqttButtonState();
 
         // Обновляет отображение текущего логина
         document.getElementById("currentMqttUsername").value = username;
@@ -2362,7 +2365,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-// МОДАЛЬНОЕ ОКНО СТАТУС MQTT ЛОГИНА/ПАРОЛЯ
+// МОДАЛЬНОЕ ОКНО "Статус смены MQTT логина/пароля"
 
 // Интервал автообновления статусов
 let mqttStatusRefreshInterval = null;
@@ -2375,37 +2378,37 @@ let mqttStatusClientsCache = {};
 
 // Показ модального окна статуса MQTT авторизации
 function showMqttAuthStatusModal() {
-	const modal = document.getElementById("mqttAuthStatusModal");
-	modal.style.display = "flex";
+  const modal = document.getElementById("mqttAuthStatusModal");
+  modal.style.display = "flex";
 
-	// Сбрасывает фильтр при открытии
-	mqttStatusCurrentFilter = "all";
-	updateFilterButtonsState();
+  // Сбрасывает фильтр при открытии
+  mqttStatusCurrentFilter = "all";
+  updateFilterButtonsState();
 
-	// Загружает статусы при открытии
-	loadMqttAuthStatus();
+  // Загружает статусы при открытии
+  loadMqttAuthStatus();
 
-	// Запускает автообновление каждые 5 секунд
-	mqttStatusRefreshInterval = setInterval(loadMqttAuthStatus, 5000);
+  // Запускает автообновление каждые 5 секунд
+  mqttStatusRefreshInterval = setInterval(loadMqttAuthStatus, 5000);
 }
 
 // Закрытие модального окна статуса MQTT авторизации
 function closeMqttAuthStatusModal() {
-	const modal = document.getElementById("mqttAuthStatusModal");
-	modal.style.display = "none";
+  const modal = document.getElementById("mqttAuthStatusModal");
+  modal.style.display = "none";
 
-	// Останавливает автообновление
-	if (mqttStatusRefreshInterval) {
-		clearInterval(mqttStatusRefreshInterval);
-		mqttStatusRefreshInterval = null;
-	}
+  // Останавливает автообновление
+  if (mqttStatusRefreshInterval) {
+    clearInterval(mqttStatusRefreshInterval);
+    mqttStatusRefreshInterval = null;
+  }
 
-	// Сбрасывает состояние кнопки очистки
-	resetClearSessionButton();
+  // Сбрасывает состояние кнопки очистки
+  resetClearSessionButton();
 
-	// Сбрасывает фильтр и кэш
-	mqttStatusCurrentFilter = "all";
-	mqttStatusClientsCache = {};
+  // Сбрасывает фильтр и кэш
+  mqttStatusCurrentFilter = "all";
+  mqttStatusClientsCache = {};
 }
 
 // Загрузка статусов клиентов с сервера
@@ -2448,17 +2451,17 @@ function updateMqttStatusUI(data) {
   const clearBtn = document.getElementById("mqttClearSessionBtn");
 
   if (!data.active) {
-	// Нет активной рассылки
-	document.getElementById("mqttStatusCreatedAt").textContent = "";
-	document.getElementById("mqttStatusUsername").textContent = "";
-	clientsList.innerHTML = '<div class="mqtt-status-empty">Рассылка не запущена</div>';
-	resendBtn.disabled = true;
-	clearBtn.disabled = true; // Отключает кнопку очистки
-	mqttStatusClientsCache = {};
-	return;
+    // Нет активной рассылки
+    document.getElementById("mqttStatusCreatedAt").textContent = "";
+    document.getElementById("mqttStatusUsername").textContent = "";
+    clientsList.innerHTML = '<div class="mqtt-status-empty">Рассылка не запущена</div>';
+    resendBtn.disabled = true;
+    clearBtn.disabled = true; // Отключает кнопку очистки
+    mqttStatusClientsCache = {};
+    return;
   }
 
-	clearBtn.disabled = false; // Включает кнопку очистки, если сессия есть
+  clearBtn.disabled = false; // Включает кнопку очистки, если сессия есть
 
   // Обновляет информацию о сессии
   document.getElementById("mqttStatusCreatedAt").textContent = `Создано: ${data.created_at || "—"}`;
@@ -2716,13 +2719,13 @@ function performClearSession() {
     .then(async response => {
       const data = await response.json();
       if (response.ok && data.success) {
-	  showPush(data.message || "Сессия очищена", "#2196F3"); // Голубой
-	  // Немедленно обновляет статусы в текущем окне
-	  loadMqttAuthStatus();
-	  // Обновляет состояние резервного аккаунта в родительском окне (сервер мог выключить его)
-	  refreshReserveAccountFromServer();
-	} else {
-	    showPush(data.message || "Ошибка очистки", "#ff4d4d"); // Красный
+        showPush(data.message || "Сессия очищена", "#2196F3"); // Голубой
+        // Немедленно обновляет статусы в текущем окне
+        loadMqttAuthStatus();
+        // Обновляет состояние резервного аккаунта в родительском окне (сервер мог выключить его)
+        refreshReserveAccountFromServer();
+      } else {
+        showPush(data.message || "Ошибка очистки", "#ff4d4d"); // Красный
       }
     })
     .catch(error => {
@@ -2754,7 +2757,7 @@ document.querySelector(".mqtt-status-stats")?.addEventListener("click", handleSt
 
 
 
-/* МОДАЛЬНОЕ ОКНО ВЫПОЛНИТЬ КОМАНДУ */
+/* МОДАЛЬНОЕ ОКНО "Выполнить команду" */
 
 // Инициализация состояния при загрузке
 document.addEventListener("DOMContentLoaded", function() {
@@ -3074,7 +3077,7 @@ function runCommand() {
 
 
 
-/* МОДАЛЬНОЕ ОКНО УСТАНОВКА ПО */
+/* МОДАЛЬНОЕ ОКНО "Установка ПО" */
 
 // Глобальные переменные
 let uploadXHR = null; // Для отмены загрузки
@@ -4518,13 +4521,13 @@ function displayCmdClients(clients, dateCreationParam) {
   const tbody = document.getElementById('clientsTableBody');
   tbody.innerHTML = '';
   const selectedDate = dateCreationParam || document.getElementById('cmdDateSelect').value;
-    for (const [clientId, clientData] of Object.entries(clients)) {
-      const row = document.createElement('tr');
-      // Добавляет data-атрибут для идентификации строки по clientId
-      row.setAttribute('data-client-id', clientId);
+  for (const [clientId, clientData] of Object.entries(clients)) {
+    const row = document.createElement('tr');
+    // Добавляет data-атрибут для идентификации строки по clientId
+    row.setAttribute('data-client-id', clientId);
 
-      const statusHTML = buildCmdStatusHTML(clientData);
-      row.innerHTML = `
+    const statusHTML = buildCmdStatusHTML(clientData);
+    row.innerHTML = `
             <td>${clientData.ClientName}</td>
             <td>${statusHTML}</td>
             <td>
@@ -4534,40 +4537,40 @@ function displayCmdClients(clients, dateCreationParam) {
             </td>
         `;
 
-      // Сохраняет сигнатуру в ячейке "Выполнено"
-      const doneCell = row.cells[1];
-      if (doneCell) {
-        doneCell.setAttribute('data-sig', getCmdStatusSig(clientData));
-      }
-
-      tbody.appendChild(row);
+    // Сохраняет сигнатуру в ячейке "Выполнено"
+    const doneCell = row.cells[1];
+    if (doneCell) {
+      doneCell.setAttribute('data-sig', getCmdStatusSig(clientData));
     }
 
-	tbody.querySelectorAll('.action-button').forEach(button => {
-	  button.addEventListener('click', function() {
-		const clientId = this.dataset.clientId;
-		const dateCreation = document.getElementById('cmdDateSelect').value;
+    tbody.appendChild(row);
+  }
 
-		// Логика для кнопки просмотра
-		if (this.classList.contains('view')) {
-		  viewTerminalOutput(clientId, dateCreation);
-		  return;
-		}
+  tbody.querySelectorAll('.action-button').forEach(button => {
+    button.addEventListener('click', function() {
+      const clientId = this.dataset.clientId;
+      const dateCreation = document.getElementById('cmdDateSelect').value;
 
-		// Логика для удаления и перезапуска
-		if (this.classList.contains('delete')) {
-		  sendActionRequest("/delete-client-terminal-report", {
-			client_id: clientId,
-			Date_Of_Creation: dateCreation
-		  });
-		} else if (this.classList.contains('restart')) {
-		  sendActionRequest("/resend-terminal-report", {
-			client_id: clientId,
-			Date_Of_Creation: dateCreation
-		  });
-		}
-	  });
-	});
+      // Логика для кнопки просмотра
+      if (this.classList.contains('view')) {
+        viewTerminalOutput(clientId, dateCreation);
+        return;
+      }
+
+      // Логика для удаления и перезапуска
+      if (this.classList.contains('delete')) {
+        sendActionRequest("/delete-client-terminal-report", {
+          client_id: clientId,
+          Date_Of_Creation: dateCreation
+        });
+      } else if (this.classList.contains('restart')) {
+        sendActionRequest("/resend-terminal-report", {
+          client_id: clientId,
+          Date_Of_Creation: dateCreation
+        });
+      }
+    });
+  });
 
   // Применяет сохранённую сортировку
   applyReportSort('cmd');
@@ -4758,7 +4761,7 @@ function highlightTerminalSyntax(text) {
     }
 
     // Токенизация и подсветка остатка строки (первое слово подсвечивается как команда только для строк с prompt)
-	let renderedRest = tokenizeAndHighlight(rest, shellKind, hasPrompt);
+    let renderedRest = tokenizeAndHighlight(rest, shellKind, hasPrompt);
 
     // Сборка строки
     if (hasPrompt) {
@@ -5015,7 +5018,7 @@ function tokenizeAndHighlight(text, shellKind, isCommandLine) {
 
         // Проверяет, похоже ли на путь
         if (/^[a-zA-Z]:\\/.test(t) || /^\\\\/.test(t)) {
-		  firstWordFound = true;
+          firstWordFound = true;
           return `<span class="term-path">${escapeHTML(t)}</span>`;
         }
 
@@ -5024,7 +5027,7 @@ function tokenizeAndHighlight(text, shellKind, isCommandLine) {
           firstWordFound = true;
           const cmdClass = shellKind === 'ps' ? 'term-ps-command' : 'term-cmd-command';
           return `<span class="${cmdClass}">${escapeHTML(t)}</span>`;
-         }
+        }
         firstWordFound = true;
 
         // Проверяет, содержит ли слово числа в конце (например, "...10")
@@ -5171,22 +5174,22 @@ const CmdAutoUpdater = (function() {
         if (!selectedCommand) return;
         const clients = selectedCommand.ClientID_Command;
         Object.keys(clients).forEach((clientId) => {
-            const clientData = clients[clientId];
-            const row = document.querySelector(`#clientsTableBody tr[data-client-id="${clientId}"]`);
-            if (!row) return;
+          const clientData = clients[clientId];
+          const row = document.querySelector(`#clientsTableBody tr[data-client-id="${clientId}"]`);
+          if (!row) return;
 
-            const doneCell = row.cells[1];
-            if (!doneCell) return;
+          const doneCell = row.cells[1];
+          if (!doneCell) return;
 
-            const newSig = getCmdStatusSig(clientData);
-            const oldSig = doneCell.getAttribute('data-sig') || '';
+          const newSig = getCmdStatusSig(clientData);
+          const oldSig = doneCell.getAttribute('data-sig') || '';
 
-            // Ничего не меняет, если данные идентичны — тултип не моргает
-            if (newSig === oldSig) return;
+          // Ничего не меняет, если данные идентичны — тултип не моргает
+          if (newSig === oldSig) return;
 
-            // Данные изменились — обновляет ячейку и сигнатуру
-            doneCell.innerHTML = buildCmdStatusHTML(clientData);
-            doneCell.setAttribute('data-sig', newSig);
+          // Данные изменились — обновляет ячейку и сигнатуру
+          doneCell.innerHTML = buildCmdStatusHTML(clientData);
+          doneCell.setAttribute('data-sig', newSig);
         });
 
         // Пересортировка, если активна сортировка по столбцу "Выполнено"
@@ -5688,7 +5691,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
-// МОДАЛЬНОЕ ОКНО ПОЛНОЕ УДАЛЕНИЕ FiReAgent
+// МОДАЛЬНОЕ ОКНО "Полное удаление FiReAgent"
 
 // Вспомогательный нормализатор статусов
 function isSuccessStatus(status) {
@@ -5995,5 +5998,482 @@ document.getElementById("uninstallFiReAgentModal")?.addEventListener("keydown", 
     if (input.value.trim().toLowerCase() === "удаляем!") {
       document.getElementById("confirmUninstallButton").click();
     }
+  }
+});
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО "Статистика сервера" */
+
+document.addEventListener("DOMContentLoaded", function() {
+  const ssModal = document.getElementById("serverStatsModal");
+  const ssBody = document.getElementById("serverStatsBody");
+  const ssCloseBtn = document.getElementById("closeServerStatsModal");
+  const ssOpenBtn = document.getElementById("servStatic");
+  let ssTimer = null;
+  let ssFirstLoad = true; // Флаг первой загрузки (для полного рендеринга структуры)
+
+  // Открытие модального окна
+  if (ssOpenBtn) {
+    ssOpenBtn.addEventListener("click", function() {
+      ssModal.style.display = "flex";
+      ssBody.innerHTML = '<div class="ss-loading">Загрузка данных...</div>';
+      ssFirstLoad = true;
+      ssLoadData();
+      ssTimer = setInterval(ssLoadData, 3000);
+    });
+  }
+
+  // Закрытие модального окна
+  window.closeServerStatsModal = function() {
+    ssModal.style.display = "none";
+    if (ssTimer) {
+      clearInterval(ssTimer);
+      ssTimer = null;
+    }
+  };
+
+  if (ssCloseBtn) {
+    ssCloseBtn.addEventListener("click", closeServerStatsModal);
+  }
+
+  // Загрузка данных с сервера
+  async function ssLoadData() {
+    try {
+      const resp = await apiPostJson("/get-linux-info", {});
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const data = await resp.json();
+
+      if (ssFirstLoad) {
+        ssRenderFull(data);
+        ssFirstLoad = false;
+      } else {
+        ssUpdateValues(data);
+      }
+    } catch (e) {
+      if (ssFirstLoad) {
+        ssBody.innerHTML = '<div class="ss-error">Ошибка загрузки: ' + ssEsc(e.message) + '</div>';
+      }
+    }
+  }
+
+  // Полный рендеринг (первый запуск)
+
+  function ssRenderFull(data) {
+    if (!data.available) {
+      ssBody.innerHTML = '<div class="ss-unavailable">' + ssEsc(data.message || "Недоступно") + '</div>';
+      return;
+    }
+
+    var h = "";
+
+    // [СЕРВЕР]
+    if (data.server) {
+      var s = data.server;
+      h += '<div class="ss-section">';
+      h += ssHeader("СЕРВЕР");
+      h += '<div class="ss-grid">';
+      if (s.os) h += ssRow("Дистрибутив", s.os, "ss-srv-dist");
+      if (s.kernel) h += ssRow("Ядро", s.kernel, "ss-srv-kernel");
+      if (s.hardware) h += ssRow("Модель сервера", s.hardware, "ss-srv-hw");
+      if (s.cpu) h += ssRow("CPU", s.cpu, "ss-srv-cpu");
+      if (s.total_ram) h += ssRow("Память", s.total_ram, "ss-srv-ram");
+      if (s.server_time) h += ssRow("Серверное время", s.server_time, "ss-srv-time");
+      if (s.uptime) h += ssRow("Время работы", s.uptime, "ss-srv-uptime");
+      h += '</div></div>';
+    }
+
+    // [ТЕМПЕРАТУРА]
+    if (data.temperature && data.temperature.length) {
+      h += '<div class="ss-section">';
+      h += ssHeader("ТЕМПЕРАТУРА");
+      h += '<div class="ss-grid" id="ss-temp-grid">';
+      data.temperature.forEach(function(t, i) {
+        h += '<span class="ss-label">' + ssEsc(t.label) + ':</span>';
+        h += '<span class="ss-value ' + ssTempClass(t.temperature) + '" id="ss-temp-' + i + '">' + ssEsc(t.temperature) + '</span>';
+      });
+      h += '</div></div>';
+    }
+
+    //[НАГРУЗКА]
+    if (data.load) {
+      var l = data.load;
+      h += '<div class="ss-section">';
+      h += ssHeader("НАГРУЗКА");
+      if (l.load_1min) h += '<div class="ss-load-line"><span class="ss-label">За последнюю минуту: </span><span id="ss-load1">' + ssEsc(l.load_1min) + '</span></div>';
+      if (l.load_5min) h += '<div class="ss-load-line"><span class="ss-label">За последние 5 минут: </span><span id="ss-load5">' + ssEsc(l.load_5min) + '</span></div>';
+      if (l.load_15min) h += '<div class="ss-load-line"><span class="ss-label">За последние 15 минут: </span><span id="ss-load15">' + ssEsc(l.load_15min) + '</span></div>';
+      if (l.cpu_status1 || l.cpu_status5 || l.cpu_status15) {
+        h += '<div class="ss-load-divider"></div>';
+        if (l.cpu_status1) h += ssStatusLine("Кратковременная за 1 минуту", l.cpu_status1, "ss-cpust1");
+        if (l.cpu_status5) h += ssStatusLine("Среднесрочная за 5 минут", l.cpu_status5, "ss-cpust5");
+        if (l.cpu_status15) h += ssStatusLine("Долговременная за 15 минут", l.cpu_status15, "ss-cpust15");
+      }
+      h += '</div>';
+    }
+
+    // [ПАМЯТЬ]
+    if (data.memory) {
+      var m = data.memory;
+      h += '<div class="ss-section">';
+      h += ssHeader("ПАМЯТЬ");
+      h += ssMemBar("RAM", m.ram_total, m.ram_used, m.ram_free, "ss-mem-ram");
+      h += ssMemBar("SWAP", m.swap_total, m.swap_used, m.swap_free, "ss-mem-swap");
+      h += '</div>';
+    }
+
+    // [ДИСКИ]
+    if (data.disks && data.disks.length) {
+      h += '<div class="ss-section">';
+      h += ssHeader("ДИСКИ");
+      data.disks.forEach(function(d, i) {
+        h += ssDiskCard(d, i);
+      });
+      h += '</div>';
+    }
+
+    // [СЕТЬ]
+    if (data.network) {
+      var n = data.network;
+      h += '<div class="ss-section">';
+      h += ssHeader("СЕТЬ");
+      h += '<div class="ss-grid">';
+      if (n.hostname) h += ssRow("Хост", n.hostname, "ss-net-host");
+      if (n.gateway) h += ssRow("Шлюз", n.gateway, "ss-net-gw");
+      if (n.dns && n.dns.length) h += ssRow("DNS", n.dns.join(", "), "ss-net-dns");
+      h += '</div>';
+      if (n.interfaces && n.interfaces.length) {
+        n.interfaces.forEach(function(iface, i) {
+          h += ssIfaceCard(iface, i);
+        });
+      }
+      h += '</div>';
+    }
+
+    // [FiReMQ]
+    if (data.firemq) {
+      var f = data.firemq;
+      h += '<div class="ss-section">';
+      h += ssHeader("FiReMQ");
+
+      // Процесс
+      if (f.process_FiReMQ) {
+        var p = f.process_FiReMQ;
+        h += '<div class="ss-subsection-title">Процесс</div>';
+        h += '<div class="ss-grid">';
+        if (p.pid !== undefined) h += ssRow("PID", p.pid, "ss-proc-pid");
+        if (p.owner) h += ssRow("Владелец", p.owner, "ss-proc-owner");
+        if (p.group) h += ssRow("Группа", p.group, "ss-proc-group");
+        if (p.memory) h += ssRow("Память", p.memory, "ss-proc-mem");
+        if (p.cpu) h += ssRow("CPU", p.cpu, "ss-proc-cpu");
+        if (p.priority) h += ssRow("Приоритет", p.priority, "ss-proc-prio");
+        if (p.uptime) h += ssRow("Время работы", p.uptime, "ss-proc-uptime");
+        h += '</div>';
+      }
+
+      // Каталоги
+      if (f.directories && f.directories.length) {
+        h += '<div class="ss-subsection-title">Каталоги</div>';
+        h += '<table class="ss-dir-table">';
+        h += '<tr><th>Название</th><th>Размер</th><th>Путь</th></tr>';
+        f.directories.forEach(function(d, i) {
+          h += '<tr>';
+          h += '<td>' + ssEsc(d.name) + '</td>';
+          h += '<td id="ss-dir-size-' + i + '">' + ssEsc(d.size) + '</td>';
+          h += '<td class="ss-path">' + ssEsc(d.path) + '</td>';
+          h += '</tr>';
+        });
+        h += '</table>';
+      }
+
+      h += '</div>';
+    }
+
+    ssBody.innerHTML = h;
+
+    // Устанавливает ширину прогресс-баров через JS
+    ssApplyProgressBars(data);
+  }
+
+  //очечное обновление значений (последующие запросы)
+  function ssUpdateValues(data) {
+    if (!data.available) return;
+
+    // Сервер
+    if (data.server) {
+      ssSetText("ss-srv-time", data.server.server_time);
+      ssSetText("ss-srv-uptime", data.server.uptime);
+    }
+
+    // Температура
+    if (data.temperature) {
+      data.temperature.forEach(function(t, i) {
+        var el = document.getElementById("ss-temp-" + i);
+        if (el) {
+          el.textContent = t.temperature;
+          ssSetClass(el, ssTempClass(t.temperature), ["ss-temp-ok", "ss-temp-warm", "ss-temp-hot", "ss-temp-crit"]);
+        }
+      });
+    }
+
+    // Нагрузка
+    if (data.load) {
+      ssSetText("ss-load1", data.load.load_1min);
+      ssSetText("ss-load5", data.load.load_5min);
+      ssSetText("ss-load15", data.load.load_15min);
+      ssSetStatusClass("ss-cpust1", data.load.cpu_status1);
+      ssSetStatusClass("ss-cpust5", data.load.cpu_status5);
+      ssSetStatusClass("ss-cpust15", data.load.cpu_status15);
+    }
+
+    // Память
+    if (data.memory) {
+      ssUpdateMemValues("ss-mem-ram", data.memory.ram_total, data.memory.ram_used, data.memory.ram_free);
+      ssUpdateMemValues("ss-mem-swap", data.memory.swap_total, data.memory.swap_used, data.memory.swap_free);
+    }
+
+    // Диски
+    if (data.disks) {
+      data.disks.forEach(function(d, i) {
+        ssSetText("ss-disk-avail-" + i, d.available);
+        var usedEl = document.getElementById("ss-disk-used-" + i);
+        if (usedEl) usedEl.textContent = d.used_percent + " (" + d.used + ")";
+        ssUpdateProgress("ss-disk-prog-" + i, ssParsePercent(d.used_percent));
+      });
+    }
+
+    // Сеть - DNS
+    if (data.network && data.network.dns) {
+      ssSetText("ss-net-dns", data.network.dns.join(", "));
+    }
+
+    // Сеть - интерфейсы
+    if (data.network && data.network.interfaces) {
+      data.network.interfaces.forEach(function(iface, i) {
+        var statusEl = document.getElementById("ss-iface-status-" + i);
+        if (statusEl) {
+          var dotEl = statusEl.querySelector(".ss-dot");
+          if (dotEl) {
+            ssSetClass(dotEl, iface.status === "Включён" ? "ss-dot-up" : "ss-dot-down", ["ss-dot-up", "ss-dot-down"]);
+          }
+          // Обновляет текст статуса (без пересоздания точки)
+          var textNode = statusEl.lastChild;
+          if (textNode && textNode.nodeType === 3) {
+            textNode.textContent = iface.status;
+          }
+        }
+        ssSetText("ss-iface-speed-" + i, iface.speed + " (Дуплекс: " + iface.duplex + ")");
+        if (iface.ipv4) ssSetText("ss-iface-ipv4-" + i, iface.ipv4);
+        if (iface.ipv6) ssSetText("ss-iface-ipv6-" + i, iface.ipv6);
+      });
+    }
+
+    // FiReMQ процесс
+    if (data.firemq && data.firemq.process_FiReMQ) {
+      var p = data.firemq.process_FiReMQ;
+      ssSetText("ss-proc-mem", p.memory);
+      ssSetText("ss-proc-cpu", p.cpu);
+      ssSetText("ss-proc-uptime", p.uptime);
+    }
+
+    // FiReMQ каталоги (обновляет только размеры)
+    if (data.firemq && data.firemq.directories) {
+      data.firemq.directories.forEach(function(d, i) {
+        ssSetText("ss-dir-size-" + i, d.size);
+      });
+    }
+  }
+
+  // Устанавливает ширину и класс цвета всех прогресс-баров после вставки HTML в DOM
+  function ssApplyProgressBars(data) {
+    // Память
+    if (data.memory) {
+      ssUpdateProgress("ss-mem-ram-prog", ssCalcMemPct(data.memory.ram_total, data.memory.ram_used));
+      ssUpdateProgress("ss-mem-swap-prog", ssCalcMemPct(data.memory.swap_total, data.memory.swap_used));
+    }
+
+    // Диски
+    if (data.disks) {
+      data.disks.forEach(function(d, i) {
+        ssUpdateProgress("ss-disk-prog-" + i, ssParsePercent(d.used_percent));
+      });
+    }
+  }
+
+  // Вычисляет процент использования памяти
+  function ssCalcMemPct(total, used) {
+    var totalB = ssParseSize(total);
+    var usedB = ssParseSize(used);
+    return totalB > 0 ? (usedB / totalB * 100) : 0;
+  }
+
+  // Вспомогательные функции обновления DOM:
+
+  // Устанавливает текст элемента по id
+  function ssSetText(id, text) {
+    var el = document.getElementById(id);
+    if (el && text !== undefined) el.textContent = text;
+  }
+
+  // Устанавливает CSS-класс, убирая предыдущие из списка
+  function ssSetClass(el, newClass, allClasses) {
+    allClasses.forEach(function(c) {
+      el.classList.remove(c);
+    });
+    el.classList.add(newClass);
+  }
+
+  // Обновляет строку статуса нагрузки (текст + класс цвета)
+  function ssSetStatusClass(id, status) {
+    var el = document.getElementById(id);
+    if (el && status) {
+      el.textContent = status;
+      ssSetClass(el, ssLoadClass(status), ["ss-load-ok", "ss-load-norm", "ss-load-high", "ss-load-crit"]);
+    }
+  }
+
+  // Обновляет только значения памяти (без перерисовки статических слов)
+  function ssUpdateMemValues(id, total, used, free) {
+    ssSetText(id + "-total", total);
+    ssSetText(id + "-used", used);
+    ssSetText(id + "-free", free);
+
+    var totalB = ssParseSize(total);
+    var usedB = ssParseSize(used);
+    var pct = totalB > 0 ? (usedB / totalB * 100) : 0;
+    ssUpdateProgress(id + "-prog", pct);
+  }
+
+  // Обновляет прогресс-бар (ширину и класс цвета)
+  function ssUpdateProgress(id, pct) {
+    var fill = document.getElementById(id);
+    if (fill) {
+      fill.style.width = pct.toFixed(1) + "%";
+      ssSetClass(fill, ssProgClass(pct), ["ss-prog-ok", "ss-prog-warn", "ss-prog-high", "ss-prog-crit"]);
+    }
+  }
+
+  // Вспомогательные функции рендеринга:
+
+  // Экранирование HTML
+  function ssEsc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Заголовок секции
+  function ssHeader(title) {
+    return '<div class="ss-section-title">' + ssEsc(title) + '</div>';
+  }
+
+  // Строка ключ-значение с id для обновления
+  function ssRow(label, value, id) {
+    var idAttr = id ? ' id="' + id + '"' : '';
+    return '<span class="ss-label">' + ssEsc(label) + ':</span><span class="ss-value"' + idAttr + '>' + ssEsc(value) + '</span>';
+  }
+
+  // Строка статуса нагрузки с id и CSS-классом цвета
+  function ssStatusLine(prefix, status, id) {
+    var cls = ssLoadClass(status);
+    return '<div class="ss-status-line"><span class="ss-status-prefix">' + ssEsc(prefix) + ': </span><span id="' + id + '" class="' + cls + '">' + ssEsc(status) + '</span></div>';
+  }
+
+  // Блок памяти с отдельными id для значений (статические слова не обновляются)
+  function ssMemBar(name, total, used, free, id) {
+    var h = '<div class="ss-mem-block">';
+    h += '<div class="ss-mem-header">';
+    h += '<strong>' + ssEsc(name) + '</strong>: ';
+    h += 'Всего: <span id="' + id + '-total">' + ssEsc(total) + '</span>';
+    h += ' / Использовано: <span id="' + id + '-used">' + ssEsc(used) + '</span>';
+    h += ' / Свободно: <span id="' + id + '-free">' + ssEsc(free) + '</span>';
+    h += '</div>';
+    h += '<div class="ss-progress"><div class="ss-progress-fill" id="' + id + '-prog"></div></div>';
+    h += '</div>';
+    return h;
+  }
+
+  // Карточка диска с прогресс-баром
+  function ssDiskCard(d, index) {
+    var h = '<div class="ss-card">';
+    h += '<div class="ss-card-title">' + ssEsc(d.device) + '</div>';
+    h += '<div class="ss-grid">';
+    h += ssRow("Точка монтирования", d.mount_point);
+    h += ssRow("Файловая система", d.fs_type);
+    h += ssRow("Размер", d.total);
+    h += ssRow("Доступно", d.available, "ss-disk-avail-" + index);
+    h += '<span class="ss-label">Используется:</span><span class="ss-value" id="ss-disk-used-' + index + '">' + ssEsc(d.used_percent) + ' (' + ssEsc(d.used) + ')</span>';
+    h += '</div>';
+    h += '<div class="ss-progress"><div class="ss-progress-fill" id="ss-disk-prog-' + index + '"></div></div>';
+    h += '</div>';
+    return h;
+  }
+
+  // Карточка сетевого интерфейса
+  function ssIfaceCard(iface, index) {
+    var dotCls = iface.status === "Включён" ? "ss-dot-up" : "ss-dot-down";
+
+    var h = '<div class="ss-card">';
+    h += '<div class="ss-card-title">' + ssEsc(iface.name) + '</div>';
+    h += '<div class="ss-grid">';
+    h += '<span class="ss-label">Статус:</span>';
+    h += '<span class="ss-value" id="ss-iface-status-' + index + '"><span class="ss-dot ' + dotCls + '"></span>' + ssEsc(iface.status) + '</span>';
+    h += '<span class="ss-label">Скорость:</span>';
+    h += '<span class="ss-value" id="ss-iface-speed-' + index + '">' + ssEsc(iface.speed) + ' (Дуплекс: ' + ssEsc(iface.duplex) + ')</span>';
+    if (iface.mac) h += ssRow("MAC", iface.mac, "ss-iface-mac-" + index);
+    if (iface.ipv4) h += ssRow("IPv4", iface.ipv4, "ss-iface-ipv4-" + index);
+    if (iface.ipv6) h += ssRow("IPv6", iface.ipv6, "ss-iface-ipv6-" + index);
+    h += '</div></div>';
+    return h;
+  }
+
+  // Вспомогательные функции расчёта:
+
+  // Парсинг размера из строки "5.70 ГБ" → байты
+  function ssParseSize(s) {
+    var m = String(s).match(/([\d.]+)\s*(Б|КБ|МБ|ГБ|ТБ)/);
+    if (!m) return 0;
+    var num = parseFloat(m[1]);
+    var mul = {
+      "Б": 1,
+      "КБ": 1024,
+      "МБ": 1048576,
+      "ГБ": 1073741824,
+      "ТБ": 1099511627776
+    };
+    return num * (mul[m[2]] || 1);
+  }
+
+  // Парсинг процента из строки "5.0%"
+  function ssParsePercent(s) {
+    var m = String(s).match(/([\d.]+)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+
+  // CSS-класс прогресс-бара по проценту
+  function ssProgClass(pct) {
+    if (pct < 60) return "ss-prog-ok";
+    if (pct < 80) return "ss-prog-warn";
+    if (pct < 90) return "ss-prog-high";
+    return "ss-prog-crit";
+  }
+
+  // CSS-класс температуры
+  function ssTempClass(tempStr) {
+    var m = String(tempStr).match(/(\d+)/);
+    if (!m) return "ss-temp-ok";
+    var t = parseInt(m[1], 10);
+    if (t < 50) return "ss-temp-ok";
+    if (t < 70) return "ss-temp-warm";
+    if (t < 85) return "ss-temp-hot";
+    return "ss-temp-crit";
+  }
+
+  // CSS-класс статуса нагрузки
+  function ssLoadClass(status) {
+    if (status.indexOf("Низкая") === 0) return "ss-load-ok";
+    if (status.indexOf("Нормальная") === 0) return "ss-load-norm";
+    if (status.indexOf("Высокая") === 0) return "ss-load-high";
+    if (status.indexOf("Критическая") === 0) return "ss-load-crit";
+    return "ss-load-ok";
   }
 });
