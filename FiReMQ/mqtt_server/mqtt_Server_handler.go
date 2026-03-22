@@ -10,6 +10,9 @@ import (
 	"FiReMQ/logging" // Локальный пакет с логированием в HTML файл
 )
 
+// HandleUpdateVersionsMessage обработчик входящих сообщений с версиями модулей от клиентов
+var HandleUpdateVersionsMessage func(clientID string, payload []byte)
+
 // GetTopicData настраивает обработчик входящих MQTT-публикаций
 func GetTopicData() {
 	Server.SetOnPublishHandler(func(clientID, topic string, clientIP string, payload []byte) {
@@ -94,6 +97,14 @@ func GetTopicData() {
 			if len(parts) >= 4 {
 				clientID := parts[1]
 				HandleMQTTAuthAnswer(clientID, payload)
+			}
+			return
+		}
+
+		// Обрабатывает ответы с версиями модулей от клиентов (обновления FiReAgent)
+		if strings.HasPrefix(topic, "Client/") && strings.HasSuffix(topic, "/UpdateVersions") {
+			if HandleUpdateVersionsMessage != nil {
+				HandleUpdateVersionsMessage(clientID, payload)
 			}
 			return
 		}

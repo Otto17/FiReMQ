@@ -21,6 +21,15 @@ document.addEventListener("keydown", (event) => {
       return;
     }
 
+    // Проверка окна "Обновление FiReAgent"
+    const updateAgentModal = document.getElementById("updateAgentModal");
+    if (updateAgentModal && updateAgentModal.style.display === "flex") {
+        closeUpdateAgentModal();
+        event.stopPropagation();
+        event.preventDefault();
+        return;
+    }
+
     // Проверка окна "Список полезных команд"
     const cheatsheetModal = document.getElementById("commandCheatsheetModal");
     if (cheatsheetModal && cheatsheetModal.style.display === "flex") {
@@ -67,18 +76,19 @@ document.addEventListener("keydown", (event) => {
       event.preventDefault();
     } else {
       // Если окно подтверждения не активно, закрывает другие окна
-      closeDeleteModal(); // Для одиночного удаления
-      closeDeleteCheckModal(); // Для массового удаления
-      closeMoveModal(); // Для перемещения клиента в группу
-      closeMoveCheckModal(); // Для массового перемещения клиентов в группу
-      closeAccountsModal(); // Для учётных записей Админов
-      closeMqttAuthModal(); // Для MQTT авторизации
-      closeExecuteCommandModal(); // Для выполнения CMD или PowerShell команды
-      closeInstallProgramModal(); // Для установки ПО
-      closeReportModal(); // Для отчётов По установкам и cmd / PowerShell
-      closeAboutModal(); // Для окна "О программе"
-      closeUninstallFiReAgentModal(); // Для удаления FiReAgent
-      closeServerStatsModal(); // Для окна "Статистика сервера"
+      closeDeleteModal(); 				// Для одиночного удаления
+      closeDeleteCheckModal(); 			// Для массового удаления
+      closeMoveModal(); 				// Для перемещения клиента в группу
+      closeMoveCheckModal(); 			// Для массового перемещения клиентов в группу
+      closeAccountsModal(); 			// Для учётных записей Админов
+      closeMqttAuthModal(); 			// Для MQTT авторизации
+      closeExecuteCommandModal(); 		// Для выполнения CMD или PowerShell команды
+      closeInstallProgramModal(); 		// Для установки ПО
+      closeReportModal(); 				// Для отчётов По установкам и cmd / PowerShell
+      closeAboutModal();				// Для окна "О программе"
+      closeUninstallFiReAgentModal();	// Для удаления FiReAgent
+      closeServerStatsModal(); 			// Для окна "Статистика сервера"
+	  closeUpdateAgentModal();     		// Для окна "Обновление FiReAgent"
     }
   }
 });
@@ -441,11 +451,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
       // Проверка на разрешённые символы (true = разрешить пробелы)
       if (!validateInput(newGroupID, true)) {
-        showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+        showPush("Имя группы содержит запрещённые символы.", "#ff4d4d"); // Красный
         return;
       }
       if (!validateInput(newSubgroupID, true)) {
-        showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
+        showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d"); // Красный
         return;
       }
     }
@@ -628,11 +638,11 @@ document.getElementById("confirmMoveCheckClientsButton").addEventListener("click
 
     // Проверка на разрешённые символы (true = разрешить пробелы)
     if (!validateInput(newGroupID, true)) {
-      showPush("Имя группы содержит запрещённые символы.", "#ff4d4d");
+      showPush("Имя группы содержит запрещённые символы.", "#ff4d4d"); // Красный
       return;
     }
     if (!validateInput(newSubgroupID, true)) {
-      showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d");
+      showPush("Имя подгруппы содержит запрещённые символы.", "#ff4d4d"); // Красный
       return;
     }
   }
@@ -1214,7 +1224,7 @@ function updateUser(login) {
 
     .then((response) => response.text())
     .then((message) => {
-      showPush(message, "#2196F3");
+      showPush(message, "#2196F3"); // Голубой
       loadAccounts();
 
       if (newName.trim() !== '') {
@@ -1965,7 +1975,7 @@ async function confirmGroupsSelection() {
       }
     } catch (error) {
       console.error('Ошибка изменения групп:', error);
-      showPush('Ошибка при изменении разрешённых групп', '#ff4d4d');
+      showPush('Ошибка при изменении разрешённых групп', '#ff4d4d'); // Красный
     }
 
     closeGroupsSelectModal();
@@ -2158,6 +2168,12 @@ function updateReserveAccountStatus(allow) {
     })
 
     .then(async (response) => {
+	  // Обработка ошибки превышения лимита запросов
+	  if (response.status === 429) {
+		const text = await response.text().catch(() => "Слишком много запросов");
+		showPush(text, "#ff4d4d"); // Красный
+	  	return;
+	  }
       const data = await response.json();
       if (response.ok && data.success) {
         showPush("Статус резервного аккаунта обновлён", "#2196F3"); // Голубой
@@ -2239,6 +2255,12 @@ function saveMqttAuth() {
     })
 
     .then(async (response) => {
+	  // Обработка ошибки превышения лимита запросов
+	  if (response.status === 429) {
+		const text = await response.text().catch(() => "Слишком много запросов");
+		showPush(text, "#ff4d4d"); // Красный
+		return;
+	  }
       const data = await response.text();
       if (response.ok) {
         showPush(data, "#2196F3"); // Голубой
@@ -2269,7 +2291,7 @@ function saveMqttAuth() {
     })
     .catch((error) => {
       console.error("Ошибка сохранения данных:", error);
-      showPush("Ошибка соединения с сервером", "#ff4081");
+      showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
     });
 }
 
@@ -2665,6 +2687,12 @@ function resendMqttAuthToErrors() {
 
   apiPostJson("/mqtt-auth-resend", {})
     .then(async response => {
+	  // Обработка ошибки превышения лимита запросов
+	  if (response.status === 429) {
+		const text = await response.text().catch(() => "Слишком много запросов");
+		showPush(text, "#ff4d4d"); // Красный
+		return;
+	  }
       const data = await response.json();
       if (response.ok && data.success) {
         showPush(data.message || "Команды отправлены", "#2196F3"); // Голубой
@@ -2676,7 +2704,7 @@ function resendMqttAuthToErrors() {
     })
     .catch(error => {
       console.error("Ошибка повторной отправки:", error);
-      showPush("Ошибка соединения с сервером", "#ff4081");
+      showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
     })
     .finally(() => {
       resendBtn.textContent = "Повторить для ошибок";
@@ -2717,6 +2745,12 @@ function performClearSession() {
 
   apiPostJson("/mqtt-auth-clear", {})
     .then(async response => {
+	  // Обработка ошибки превышения лимита запросов
+	  if (response.status === 429) {
+		const text = await response.text().catch(() => "Слишком много запросов");
+		showPush(text, "#ff4d4d"); // Красный
+		return;
+	  }
       const data = await response.json();
       if (response.ok && data.success) {
         showPush(data.message || "Сессия очищена", "#2196F3"); // Голубой
@@ -3916,7 +3950,7 @@ function deleteSelectedRequest(url, selectId, reportType) {
   const selectElement = document.getElementById(selectId);
   const selectedDate = selectElement.value;
   if (!selectedDate) {
-    showPush("Выберите запрос для удаления!", "#ff4081");
+    showPush("Выберите запрос для удаления!", "#ff4081"); // Розовый
     return;
   }
   const selectedOptionText = selectElement.options[selectElement.selectedIndex].text;
@@ -5477,7 +5511,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Розовый PUSH — только когда репозиторий старее
         if (repoState === "older") {
-          showPush(`В репозитории доступна более старая версия, чем установлена (${current}).`, "#ff4081");
+          showPush(`В репозитории доступна более старая версия, чем установлена (${current}).`, "#ff4081"); // Розовый
         }
       }
 
@@ -6475,5 +6509,404 @@ document.addEventListener("DOMContentLoaded", function() {
     if (status.indexOf("Высокая") === 0) return "ss-load-high";
     if (status.indexOf("Критическая") === 0) return "ss-load-crit";
     return "ss-load-ok";
+  }
+});
+
+
+
+
+// МОДАЛЬНОЕ ОКНО "Обновление FiReAgent"
+
+// Состояние модального окна
+let uaRefreshInterval = null; 		// Интервал автообновления
+let uaClientsCache = []; 			// Кэш данных клиентов
+let uaExpandedClients = new Set();	// Раскрытые секции модулей (хранит client_id)
+let uaCurrentFilter = "all";		// Текущий фильтр (all, online, offline)
+let uaFirstLoad = true;				// Флаг первой загрузки (полный рендеринг)
+
+// Открытие модального окна
+function openUpdateAgentModal() {
+  const modal = document.getElementById("updateAgentModal");
+  modal.style.display = "flex";
+
+  // Сбрасывает состояние при открытии
+  uaFirstLoad = true;
+  uaCurrentFilter = "all";
+  uaExpandedClients.clear();
+  uaUpdateFilterState();
+
+  // Загружает данные при открытии
+  uaLoadClients();
+
+  // Запускает автообновление каждые 5 секунд
+  uaRefreshInterval = setInterval(uaLoadClients, 5000);
+}
+
+// Закрытие модального окна
+function closeUpdateAgentModal() {
+  const modal = document.getElementById("updateAgentModal");
+  modal.style.display = "none";
+
+  // Останавливает автообновление
+  if (uaRefreshInterval) {
+    clearInterval(uaRefreshInterval);
+    uaRefreshInterval = null;
+  }
+
+  // Сбрасывает состояние
+  uaClientsCache = [];
+  uaFirstLoad = true;
+}
+
+// Загрузка данных с сервера
+function uaLoadClients() {
+  fetch("/get-update-clients")
+    .then(function(r) {
+      return r.json();
+    })
+    .then(function(clients) {
+      if (!Array.isArray(clients)) clients = [];
+
+      // Обновляет статистику
+      uaUpdateStats(clients);
+
+      if (uaFirstLoad) {
+        uaRenderFull(clients);
+        uaFirstLoad = false;
+      } else {
+        uaUpdateDiff(clients);
+      }
+
+      uaClientsCache = clients;
+    })
+    .catch(function(err) {
+      console.error("Ошибка загрузки данных обновлений:", err);
+      if (uaFirstLoad) {
+        document.getElementById("uaClientsList").innerHTML =
+          '<div class="ua-empty">Ошибка загрузки данных</div>';
+      }
+    });
+}
+
+// Обновление статистики
+function uaUpdateStats(clients) {
+  var total = clients.length;
+  var online = 0;
+  for (var i = 0; i < clients.length; i++) {
+    if (clients[i].status === "On") online++;
+  }
+  var offline = total - online;
+
+  document.getElementById("uaStatTotal").textContent = total;
+  document.getElementById("uaStatOnline").textContent = online;
+  document.getElementById("uaStatOffline").textContent = offline;
+}
+
+// Фильтрация клиентов по текущему фильтру
+function uaFilterClients(clients) {
+  if (uaCurrentFilter === "all") return clients;
+  if (uaCurrentFilter === "online") return clients.filter(function(c) {
+    return c.status === "On";
+  });
+  if (uaCurrentFilter === "offline") return clients.filter(function(c) {
+    return c.status !== "On";
+  });
+  return clients;
+}
+
+// Сортировка клиентов (алфавитный порядок по имени)
+function uaSortClients(clients) {
+  return clients.slice().sort(function(a, b) {
+    var nameA = (a.name || a.client_id).toLowerCase();
+    var nameB = (b.name || b.client_id).toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+
+// Поиск карточки клиента в DOM по ID
+function uaFindCard(clientId) {
+  var cards = document.getElementById("uaClientsList").querySelectorAll(".ua-client-card");
+  for (var i = 0; i < cards.length; i++) {
+    if (cards[i].dataset.clientId === clientId) return cards[i];
+  }
+  return null;
+}
+
+// Сравнение модулей двух клиентов
+function uaModulesEqual(a, b) {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  var keysA = Object.keys(a).sort();
+  var keysB = Object.keys(b).sort();
+  if (keysA.length !== keysB.length) return false;
+  for (var i = 0; i < keysA.length; i++) {
+    if (keysA[i] !== keysB[i] || a[keysA[i]] !== b[keysB[i]]) return false;
+  }
+  return true;
+}
+
+// Полный рендеринг списка клиентов (первый запуск или структурные изменения)
+function uaRenderFull(clients) {
+  var list = document.getElementById("uaClientsList");
+  var filtered = uaSortClients(uaFilterClients(clients));
+
+  if (filtered.length === 0) {
+    list.innerHTML = clients.length === 0 ?
+      '<div class="ua-empty">Нет клиентов в базе данных</div>' :
+      '<div class="ua-empty">Нет клиентов с данным статусом</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(uaCreateCardHTML).join("");
+
+  // Синхронизирует uaExpandedClients с фактическим состоянием карточек
+  filtered.forEach(function(c) {
+    var hasModules = c.modules && Object.keys(c.modules).length > 0;
+    if (hasModules) {
+      uaExpandedClients.add(c.client_id);
+    }
+  });
+
+  // Восстанавливает раскрытые секции модулей (для ранее раскрытых вручную)
+  uaExpandedClients.forEach(function(id) {
+    var card = uaFindCard(id);
+    if (card) {
+      var body = card.querySelector(".ua-modules-body");
+      var arrow = card.querySelector(".ua-arrow");
+      if (body) body.classList.remove("ua-collapsed");
+      if (arrow) arrow.textContent = "▾";
+    }
+  });
+}
+
+// Точечное обновление изменённых элементов (последующие запросы)
+function uaUpdateDiff(newClients) {
+  var filteredNew = uaSortClients(uaFilterClients(newClients));
+  var filteredOld = uaSortClients(uaFilterClients(uaClientsCache));
+
+  // Собирает массивы ID
+  var newIDs = filteredNew.map(function(c) {
+    return c.client_id;
+  });
+  var oldIDs = filteredOld.map(function(c) {
+    return c.client_id;
+  });
+
+  // Если структура изменилась (добавлены/удалены/переупорядочены клиенты), перестраивает полностью
+  var structureChanged = newIDs.length !== oldIDs.length;
+  if (!structureChanged) {
+    for (var i = 0; i < newIDs.length; i++) {
+      if (newIDs[i] !== oldIDs[i]) {
+        structureChanged = true;
+        break;
+      }
+    }
+  }
+
+  if (structureChanged) {
+    uaRenderFull(newClients);
+    return;
+  }
+
+  // Если пустой список - ничего обновлять
+  if (filteredNew.length === 0) return;
+
+  // Карта старых данных для быстрого сравнения
+  var oldMap = {};
+  filteredOld.forEach(function(c) {
+    oldMap[c.client_id] = c;
+  });
+
+  // Точечное обновление каждой карточки
+  filteredNew.forEach(function(c) {
+    var card = uaFindCard(c.client_id);
+    if (!card) return;
+
+    var old = oldMap[c.client_id];
+
+    // Обновляет статус (класс карточки и цвет точки)
+    if (!old || old.status !== c.status) {
+      card.className = "ua-client-card " + (c.status === "On" ? "ua-status-on" : "ua-status-off");
+    }
+
+    // Обновляет имя
+    if (!old || old.name !== c.name) {
+      var nameEl = card.querySelector(".ua-name");
+      if (nameEl) nameEl.textContent = c.name || c.client_id;
+    }
+
+    // Обновляет дату последней проверки
+    if (!old || old.last_check !== c.last_check) {
+      var checkEl = card.querySelector(".ua-check-val");
+      if (checkEl) checkEl.textContent = c.last_check || "—";
+    }
+
+    // Обновляет версию FiReAgent
+    if (!old || old.FiReAgent !== c.FiReAgent) {
+      var verEl = card.querySelector(".ua-ver-val");
+      if (verEl) verEl.textContent = c.FiReAgent || "—";
+    }
+
+    // Обновляет модули (только если изменились)
+    if (!uaModulesEqual(old ? old.modules : null, c.modules)) {
+      var modCount = c.modules ? Object.keys(c.modules).length : 0;
+      var countEl = card.querySelector(".ua-mod-count");
+      if (countEl) countEl.textContent = "Модули (" + modCount + ")";
+
+      var bodyEl = card.querySelector(".ua-modules-body");
+      if (bodyEl) bodyEl.innerHTML = uaRenderModulesHTML(c.modules);
+    }
+  });
+}
+
+// Создание HTML карточки клиента
+function uaCreateCardHTML(c) {
+  var isOn = c.status === "On";
+  var statusClass = isOn ? "ua-status-on" : "ua-status-off";
+  var lastCheck = c.last_check || "—";
+  var agentVer = c.FiReAgent || "—";
+  var modCount = c.modules ? Object.keys(c.modules).length : 0;
+  var name = c.name || c.client_id;
+
+     var expanded = modCount > 0;
+
+    return '<div class="ua-client-card ' + statusClass + '" data-client-id="' + escapeHtml(c.client_id) + '">' +
+        '<div class="ua-card-header">' +
+            '<div class="ua-card-left">' +
+                '<div class="ua-name-row">' +
+                    '<span class="ua-dot"></span>' +
+                    '<span class="ua-name">' + escapeHtml(name) + '</span>' +
+                '</div>' +
+                '<span class="ua-id">' + escapeHtml(c.client_id) + '</span>' +
+            '</div>' +
+            '<div class="ua-card-right">' +
+                '<span class="ua-check"><span class="ua-check-label">Проверка: </span><span class="ua-check-val">' + escapeHtml(lastCheck) + '</span></span>' +
+                '<span class="ua-ver"><span class="ua-ver-label">FiReAgent: </span><span class="ua-ver-val">' + escapeHtml(agentVer) + '</span></span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="ua-modules-toggle">' +
+            '<span class="ua-arrow">' + (expanded ? '▾' : '▸') + '</span>' +
+			'<span class="ua-mod-count">Модули (' + modCount + ')</span>' +
+		'</div>' +
+		'<div class="ua-modules-body' + (modCount > 0 ? '' : ' ua-collapsed') + '">' +
+    uaRenderModulesHTML(c.modules) +
+    '</div>' +
+    '</div>';
+}
+
+// Рендеринг HTML для списка модулей
+function uaRenderModulesHTML(modules) {
+  if (!modules || Object.keys(modules).length === 0) {
+    return '<div class="ua-mod-empty">Нет данных о модулях</div>';
+  }
+
+  var sorted = Object.keys(modules).sort();
+  var html = '<div class="ua-mod-grid">';
+  for (var i = 0; i < sorted.length; i++) {
+    var name = sorted[i];
+    html += '<span class="ua-mod-item">' +
+      '<span class="ua-mod-name">' + escapeHtml(name) + ':</span> ' +
+      '<span class="ua-mod-ver">' + escapeHtml(modules[name]) + '</span>' +
+      '</span>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// Переключение раскрытия секции модулей
+function uaToggleModules(clientId) {
+  var card = uaFindCard(clientId);
+  if (!card) return;
+
+  var body = card.querySelector(".ua-modules-body");
+  var arrow = card.querySelector(".ua-arrow");
+  if (!body) return;
+
+  if (body.classList.contains("ua-collapsed")) {
+    body.classList.remove("ua-collapsed");
+    if (arrow) arrow.textContent = "▾";
+    uaExpandedClients.add(clientId);
+  } else {
+    body.classList.add("ua-collapsed");
+    if (arrow) arrow.textContent = "▸";
+    uaExpandedClients.delete(clientId);
+  }
+}
+
+// Обработчик клика по статистике для фильтрации
+function uaHandleFilterClick(e) {
+  var target = e.target.closest(".ua-stat-item");
+  if (!target) return;
+
+  var filter = target.dataset.filter;
+  if (!filter) return;
+
+  // Повторный клик по активному фильтру — сброс на "all"
+  if (uaCurrentFilter === filter && filter !== "all") {
+    uaCurrentFilter = "all";
+  } else {
+    uaCurrentFilter = filter;
+  }
+
+  uaUpdateFilterState();
+  uaRenderFull(uaClientsCache);
+}
+
+// Обновление визуального состояния кнопок фильтра
+function uaUpdateFilterState() {
+  var items = document.querySelectorAll(".ua-stats .ua-stat-item");
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].dataset.filter === uaCurrentFilter) {
+      items[i].classList.add("active");
+    } else {
+      items[i].classList.remove("active");
+    }
+  }
+}
+
+// Отправка запроса принудительной проверки обновлений
+function uaSendUpdateCheck() {
+  var btn = document.getElementById("uaSendUpdateBtn");
+  btn.disabled = true;
+  btn.textContent = "Отправка...";
+
+  apiPostJson("/send-update-check", {})
+    .then(function(response) {
+      // Обрабатывает не-JSON ответы (от DoS)
+      if (!response.ok) {
+        return response.text().then(function(text) {
+          showPush(text || "Ошибка отправки запроса", "#ff4d4d"); // Красный
+        });
+      }
+      return response.json().then(function(data) {
+        if (data.sent > 0) {
+          showPush("Запрос отправлен! Отправлено: " + data.sent + ", пропущено (офлайн): " + data.skipped, "#4caf50"); // Зелёный
+        } else {
+          showPush("Нет онлайн-клиентов для отправки запроса", "#ff4081"); // Розовый
+        }
+      });
+    })
+    .catch(function(error) {
+      console.error("Ошибка отправки запроса обновлений:", error);
+      showPush("Ошибка соединения с сервером", "#ff4081"); // Розовый
+    })
+    .then(function() {
+      btn.disabled = false;
+      btn.textContent = "Запросить обновления";
+    });
+}
+
+// Привязка событий модального окна "Обновление FiReAgent"
+document.getElementById("updateFiReAgent")?.addEventListener("click", openUpdateAgentModal);
+document.getElementById("closeUpdateAgentModal")?.addEventListener("click", closeUpdateAgentModal);
+document.getElementById("uaSendUpdateBtn")?.addEventListener("click", uaSendUpdateCheck);
+document.querySelector(".ua-stats")?.addEventListener("click", uaHandleFilterClick);
+
+// Делегирование клика по переключателю модулей (обработчик на родительском контейнере)
+document.getElementById("uaClientsList")?.addEventListener("click", function(e) {
+  var toggle = e.target.closest(".ua-modules-toggle");
+  if (toggle) {
+    var card = toggle.closest(".ua-client-card");
+    if (card) uaToggleModules(card.dataset.clientId);
   }
 });

@@ -12,10 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
-	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
-	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
-	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
+	"FiReMQ/db"            // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"       // Локальный пакет с логированием в HTML файл
+	"FiReMQ/mqtt_server"   // Локальный пакет MQTT клиента Mocho-MQTT
+	"FiReMQ/pathsOS"       // Локальный пакет с путями для разных платформ
+	"FiReMQ/update_client" // Локальный пакет для обновлений клиентов
 
 	"github.com/dgraph-io/badger/v4"
 )
@@ -660,13 +661,21 @@ func fullyRemoveClientAndData(clientIDs []string, authInfo *AuthInfo) error {
 		}
 	}
 
-	// Очищает все отчёты
+	// Очищает отчёты cmd/PowerShel
 	if err := removeClientIDsFromCommandRecords(clientIDs); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов CMD/PowerShell: %v", err)
 	}
 
+	// Очищает отчёты QUIC
 	if err := removeClientIDsFromQUICRecords(clientIDs, authInfo); err != nil {
 		logging.LogError("Клиенты: Ошибка удаления клиентов из отчётов Установки ПО: %v", err)
+	}
+
+	// Удаляет данные обновлений клиентов
+	for _, clientID := range clientIDs {
+		if err := update_client.DeleteUpdateInfo(clientID); err != nil {
+			logging.LogError("Клиенты: Ошибка удаления данных обновлений клиента %s: %v", clientID, err)
+		}
 	}
 
 	// Удаляет клиентов из активной сессии смены MQTT авторизации (если есть)

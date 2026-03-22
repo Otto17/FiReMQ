@@ -1687,10 +1687,10 @@ input[type="text"]::placeholder {
 
 /* Кнопка "Список полезных команд" */
 #executeCommandModal .command-help-button {
-  background-color: #444345;
+  background-color: #5a6a78;
   color: #ffffff;
-  padding: 9px 10px;
   border: none;
+  padding: 9px 10px;
   border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
@@ -1700,7 +1700,7 @@ input[type="text"]::placeholder {
 }
 
 #executeCommandModal .command-help-button:hover {
-  background-color: #403f41; /* чуть темнее */
+  background-color: #4e5e6c;
 }
 
 /* fieldset для кнопки "Список полезных команд" */
@@ -3603,4 +3603,398 @@ outline-offset: 0;
 }
 .ss-dot-down {
   background: #f44336;
+}
+
+
+
+
+/* МОДАЛЬНОЕ ОКНО "Обновление FiReAgent" */
+
+.ua-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  justify-content: center;
+  align-items: center;
+}
+
+.ua-modal-content {
+  background-color: #2a2a2a;
+  border-radius: 10px;
+  color: #e0e0e0;
+  position: relative;
+  width: 900px;
+  max-width: 92%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  border: 1px solid #3a3a3a;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.ua-modal-content .close {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 28px;
+  color: #888;
+  cursor: pointer;
+  z-index: 1;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.ua-modal-content .close:hover {
+  color: #fff;
+}
+
+/* Заголовок */
+.ua-title {
+  margin: 8px 0 18px;
+  font-size: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Панель статистики и кнопка */
+.ua-info-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #3e3e3e;
+  border-radius: 6px;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ua-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ua-stat-item {
+  font-size: 14px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  background-color: #4a4a4a;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.ua-stat-item:hover {
+  background-color: #555;
+  transform: translateY(-1px);
+}
+
+.ua-stat-item.active {
+  box-shadow: 0 0 0 2px currentColor;
+  background-color: #505050;
+}
+
+.ua-stat-item strong {
+  font-weight: bold;
+}
+
+.ua-stat-total {
+  color: #81d4fa;
+}
+
+.ua-stat-total strong {
+  color: #81d4fa;
+}
+
+.ua-stat-online {
+  color: #81c784;
+}
+
+.ua-stat-online strong {
+  color: #81c784;
+}
+
+.ua-stat-offline {
+  color: #999;
+}
+
+.ua-stat-offline strong {
+  color: #aaa;
+}
+
+/* Кнопка "Запросить обновления" */
+.ua-send-btn {
+  background-color: #43a047;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.ua-send-btn:hover:not(:disabled) {
+  background-color: #388e3c;
+}
+
+.ua-send-btn:disabled {
+  background-color: #4a4a4a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* Список клиентов */
+.ua-clients-list {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #353535;
+  border-radius: 6px;
+  padding: 10px;
+  min-height: 200px;
+}
+
+.ua-empty {
+  text-align: center;
+  color: #888;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+/* Скроллбар для списка клиентов */
+.ua-clients-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ua-clients-list::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.ua-clients-list::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+.ua-clients-list::-webkit-scrollbar-thumb:hover {
+  background-color: #666;
+}
+
+/* Карточка клиента */
+.ua-client-card {
+  padding: 12px;
+  margin-bottom: 8px;
+  background-color: #424242;
+  border-radius: 6px;
+  border-left: 4px solid #555;
+  transition: background-color 0.2s ease;
+}
+
+.ua-client-card:last-child {
+  margin-bottom: 0;
+}
+
+.ua-client-card:hover {
+  background-color: #4a4a4a;
+}
+
+.ua-client-card.ua-status-on {
+  border-left-color: #81c784;
+}
+
+.ua-client-card.ua-status-off {
+  border-left-color: #666;
+}
+
+/* Заголовок карточки */
+.ua-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ua-card-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.ua-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ua-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ua-status-on .ua-dot {
+  background-color: #81c784;
+}
+
+.ua-status-off .ua-dot {
+  background-color: #666;
+}
+
+.ua-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ua-id {
+  font-size: 12px;
+  color: #888;
+  margin-left: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ua-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+/* Дата последней проверки */
+.ua-check {
+  font-size: 12px;
+}
+
+.ua-check-label {
+  color: #777;
+}
+
+.ua-check-val {
+  color: #ccc;
+}
+
+/* Версия FiReAgent */
+.ua-ver {
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.ua-ver-label {
+  color: #777;
+}
+
+.ua-ver-val {
+  color: #81d4fa;
+  font-weight: 500;
+}
+
+/* Переключатель модулей */
+.ua-modules-toggle {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  transition: color 0.15s;
+}
+
+.ua-modules-toggle:hover {
+  color: #e0e0e0;
+}
+
+.ua-arrow {
+  font-size: 10px;
+  display: inline-block;
+  width: 12px;
+  text-align: center;
+}
+
+/* Тело секции модулей */
+.ua-modules-body {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #363636;
+  border-radius: 4px;
+}
+
+.ua-mod-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 24px;
+}
+
+.ua-mod-item {
+  font-size: 12px;
+  padding: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ua-mod-name {
+  color: #999;
+}
+
+.ua-mod-ver {
+  color: #ccc;
+  margin-left: 4px;
+}
+
+.ua-mod-empty {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* Скрытие секции модулей */
+.ua-collapsed {
+  display: none;
+}
+
+/* Адаптивность */
+@media (max-width: 600px) {
+  .ua-card-header {
+    flex-direction: column;
+  }
+
+  .ua-card-right {
+    align-items: flex-start;
+    margin-left: 16px;
+    margin-top: 6px;
+  }
+
+  .ua-mod-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ua-info-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ua-send-btn {
+    width: 100%;
+  }
 }

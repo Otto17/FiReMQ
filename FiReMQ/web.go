@@ -11,13 +11,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"FiReMQ/LinuxInfo"   // Локальный пакет с информацией о Linux сервере
-	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
-	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
-	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
-	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
-	"FiReMQ/protection"  // Локальный пакет с функциями базовой защиты
-	"FiReMQ/update"      // Локальный пакет для обновления FiReMQ
+	"FiReMQ/LinuxInfo"     // Локальный пакет с информацией о Linux сервере
+	"FiReMQ/logging"       // Локальный пакет с логированием в HTML файл
+	"FiReMQ/mqtt_client"   // Локальный пакет MQTT клиента AutoPaho
+	"FiReMQ/mqtt_server"   // Локальный пакет MQTT клиента Mocho-MQTT
+	"FiReMQ/pathsOS"       // Локальный пакет с путями для разных платформ
+	"FiReMQ/protection"    // Локальный пакет с функциями базовой защиты
+	"FiReMQ/update"        // Локальный пакет для обновления FiReMQ
+	"FiReMQ/update_client" // Локальный пакет для обновлений клиентов
 
 	"github.com/corazawaf/coraza/v3"
 	"golang.org/x/time/rate"
@@ -220,81 +221,85 @@ func StartWebServer(getWAF func() coraza.WAF) {
 	protectedMux.HandleFunc("/", renderWebPage)                         // Путь для главной страницы
 	protectedMux.HandleFunc("/csrf-token", protection.CSRFTokenHandler) // GET команда для выдачи CSRF токена в JSON
 
-	protectedMux.HandleFunc("/set-name-client", SetNameHandler)                       // POST команда для изменения имени клиента
-	protectedMux.HandleFunc("/delete-client", DeleteClientHandler)                    // POST команда для удаления клиента
-	protectedMux.HandleFunc("/delete-selected-clients", DeleteSelectedClientsHandler) // POST команда для массового удаления клиентов
-	protectedMux.HandleFunc("/move-client", MoveClientHandler)                        // POST команда для перемещения клиента в другую подгруппу
-	protectedMux.HandleFunc("/move-selected-clients", MoveSelectedClientsHandler)     // POST команда для массового перемещения клиентов
-	protectedMux.HandleFunc("/get-clients-by-group", FetchClientsByGroupHandler)      // GET команда для формирования сортировки отображаемых клиентов
+	protectedMux.HandleFunc("/get-clients-by-group", FetchClientsByGroupHandler)                                                                    // GET команда для формирования сортировки отображаемых клиентов
+	protectedMux.HandleFunc("/set-name-client", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(SetNameHandler))                       // POST команда для изменения имени клиента (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/delete-client", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(DeleteClientHandler))                    // POST команда для удаления клиента (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/move-client", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(MoveClientHandler))                        // POST команда для перемещения клиента в другую подгруппу (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/delete-selected-clients", protection.RateLimitMiddleware(rate.Every(3*time.Second), 2)(DeleteSelectedClientsHandler)) // POST команда для массового удаления клиентов (1 запрос каждые 3 секунды = 20 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/move-selected-clients", protection.RateLimitMiddleware(rate.Every(3*time.Second), 2)(MoveSelectedClientsHandler))     // POST команда для массового перемещения клиентов (1 запрос каждые 3 секунды = 20 запросов в минуту, до 2 подряд)
 
 	// Маршруты для "Учётные записи админов"
-	protectedMux.HandleFunc("/add-admin", AddAdminHandler)                                           // POST команда для добавления новой учетной записи
-	protectedMux.HandleFunc("/delete-admin", DeleteAdminHandler)                                     // POST команда для удаления учетной записи
-	protectedMux.HandleFunc("/update-admin", UpdateAdminHandler)                                     // POST команда для обновления учетной записи
-	protectedMux.HandleFunc("/get-admin-names", GetAdminsNamesHandler)                               // GET команда для получения списка имён
-	protectedMux.HandleFunc("/get-authname", GetAuthNameHandler)                                     // GET команда для получения имени авторизованного админа в WEB админке
-	protectedMux.HandleFunc("/get-current-permissions", GetCurrentAdminPermissionsHandler)           // GET команда для получения прав текущего авторизованного админа
-	protectedMux.HandleFunc("/toggle-admin-permission", ToggleAdminPermissionHandler)                // POST команда для изменения конкретного разрешения учётной записи
-	protectedMux.HandleFunc("/update-rename-clients-groups", UpdateRenameClientsGroupsHandler)       // POST команда для изменения списка разрешённых групп для переименования клиентов
-	protectedMux.HandleFunc("/update-delete-clients-groups", UpdateDeleteClientsGroupsHandler)       // POST команда для изменения списка разрешённых групп для удаления клиентов
-	protectedMux.HandleFunc("/update-move-clients-groups", UpdateMoveClientsGroupsHandler)           // POST команда для изменения списка разрешённых групп для перемещения
-	protectedMux.HandleFunc("/update-terminal-commands-groups", UpdateTerminalCommandsGroupsHandler) // POST команда для изменения списка разрешённых групп для cmd/PowerShell команд
-	protectedMux.HandleFunc("/update-install-programs-groups", UpdateInstallProgramsGroupsHandler)   // POST команда для изменения списка разрешённых групп для установки ПО через QUIC
+	protectedMux.HandleFunc("/get-admin-names", GetAdminsNamesHandler)                                                                                             // GET команда для получения списка имён
+	protectedMux.HandleFunc("/get-authname", GetAuthNameHandler)                                                                                                   // GET команда для получения имени авторизованного админа в WEB админке
+	protectedMux.HandleFunc("/get-current-permissions", GetCurrentAdminPermissionsHandler)                                                                         // GET команда для получения прав текущего авторизованного админа
+	protectedMux.HandleFunc("/add-admin", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(AddAdminHandler))                                           // POST команда для добавления новой учетной записи (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/delete-admin", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(DeleteAdminHandler))                                     // POST команда для удаления учетной записи (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/update-admin", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(UpdateAdminHandler))                                     // POST команда для обновления учетной записи (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/toggle-admin-permission", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(ToggleAdminPermissionHandler))                // POST команда для изменения конкретного разрешения учётной записи (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/update-rename-clients-groups", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(UpdateRenameClientsGroupsHandler))       // POST команда для изменения списка разрешённых групп для переименования клиентов (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/update-delete-clients-groups", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(UpdateDeleteClientsGroupsHandler))       // POST команда для изменения списка разрешённых групп для удаления клиентов (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/update-move-clients-groups", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(UpdateMoveClientsGroupsHandler))           // POST команда для изменения списка разрешённых групп для перемещения (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/update-terminal-commands-groups", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(UpdateTerminalCommandsGroupsHandler)) // POST команда для изменения списка разрешённых групп для cmd/PowerShell команд (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
+	protectedMux.HandleFunc("/update-install-programs-groups", protection.RateLimitMiddleware(rate.Every(1*time.Second), 5)(UpdateInstallProgramsGroupsHandler))   // POST команда для изменения списка разрешённых групп для установки ПО через QUIC (1 запрос каждую секунду = 60 запросов в минуту, до 5 подряд)
 
 	// Маршруты MQTT сервера
-	protectedMux.HandleFunc("/get-accounts-mqtt", mqtt_server.GetAccountsHandler)        // GET команда для получения данных учетных записей
-	protectedMux.HandleFunc("/update-account-mqtt", mqtt_server.UpdateAccountHandler)    // POST команда для обновления данных учетной записи
-	protectedMux.HandleFunc("/update-allow-mqtt", mqtt_server.UpdateAllowHandler)        // POST команда разрешает или запрещает подключение через учётную запись в конфиге "mqtt_config.json" с низким приоритетом "1"
-	protectedMux.HandleFunc("/mqtt-auth-status", mqtt_server.GetMQTTAuthStatusHandler)   // GET команда для получения статуса смены MQTT авторизации клиентов
-	protectedMux.HandleFunc("/mqtt-auth-resend", mqtt_server.ResendMQTTAuthHandler)      // POST команда для повторной отправки запроса клиентам с ошибками смены пароля
-	protectedMux.HandleFunc("/mqtt-auth-clear", mqtt_server.ClearMQTTAuthSessionHandler) // POST команда для очистки сессии смены авторизации
+	protectedMux.HandleFunc("/get-accounts-mqtt", mqtt_server.GetAccountsHandler)                                                                      // GET команда для получения данных учетных записей
+	protectedMux.HandleFunc("/mqtt-auth-status", mqtt_server.GetMQTTAuthStatusHandler)                                                                 // GET команда для получения статуса смены MQTT авторизации клиентов
+	protectedMux.HandleFunc("/update-account-mqtt", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(mqtt_server.UpdateAccountHandler))    // POST команда для обновления данных учетной записи (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/update-allow-mqtt", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(mqtt_server.UpdateAllowHandler))        // POST команда разрешает или запрещает подключение через учётную запись в конфиге "mqtt_config.json" с низким приоритетом "1" (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/mqtt-auth-resend", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(mqtt_server.ResendMQTTAuthHandler))      // POST команда для повторной отправки запроса клиентам с ошибками смены пароля (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/mqtt-auth-clear", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(mqtt_server.ClearMQTTAuthSessionHandler)) // POST команда для очистки сессии смены авторизации (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
 
 	// Маршрут для формирования и отправки команд в "cmd/PowerShell"
-	protectedMux.HandleFunc("/send-terminal-command", SendCommandHandler) // POST команда для отправки cmd или PowerShell команды
+	protectedMux.HandleFunc("/send-terminal-command", protection.RateLimitMiddleware(rate.Every(3*time.Second), 2)(SendCommandHandler)) // POST команда для отправки cmd или PowerShell команды (1 запрос каждые 3 секунды = 20 запросов в минуту, до 2 подряд)
 
 	// Маршруты для отчёта по "cmd/PowerShell"
-	protectedMux.HandleFunc("/get-terminal-report", GetCommandsHandler)                             // GET команда для получения списка записей (без полного вывода скриптов)
-	protectedMux.HandleFunc("/get-terminal-client-info", GetTerminalClientInfoHandler)              // GET команда с детальной информацией по клиенту (для открытия отдельного окна)
-	protectedMux.HandleFunc("/resend-terminal-report", ResendCommandHandler)                        // POST команда для повторной отправки команды конкретному клиенту
-	protectedMux.HandleFunc("/delete-by-date-terminal-report", DeleteCommandsByDateHandler)         // POST команда для удаления всех записей в БД по дате создания
-	protectedMux.HandleFunc("/delete-client-terminal-report", DeleteClientFromCommandByDateHandler) // POST команда для удаления конкретной записи ClientID из БД по дате создания
+	protectedMux.HandleFunc("/get-terminal-report", GetCommandsHandler)                                                                                                   // GET команда для получения списка записей (без полного вывода скриптов)
+	protectedMux.HandleFunc("/get-terminal-client-info", GetTerminalClientInfoHandler)                                                                                    // GET команда с детальной информацией по клиенту (для открытия отдельного окна)
+	protectedMux.HandleFunc("/resend-terminal-report", protection.RateLimitMiddleware(rate.Every(500*time.Millisecond), 10)(ResendCommandHandler))                        // POST команда для повторной отправки команды конкретному клиенту (1 запрос каждые 0,5 секунды = 120 запросов в минуту, до 10 подряд)
+	protectedMux.HandleFunc("/delete-client-terminal-report", protection.RateLimitMiddleware(rate.Every(500*time.Millisecond), 10)(DeleteClientFromCommandByDateHandler)) // POST команда для удаления конкретной записи ClientID из БД по дате создания (1 запрос каждые 0,5 секунды = 120 запросов в минуту, до 10 подряд)
+	protectedMux.HandleFunc("/delete-by-date-terminal-report", protection.RateLimitMiddleware(rate.Every(3*time.Second), 2)(DeleteCommandsByDateHandler))                 // POST команда для удаления всех записей в БД по дате создания (1 запрос каждые 3 секунды = 20 запросов в минуту, до 2 подряд)
+
+	// Маршруты для формирования и отправки команд и загрузки файла в "Установка ПО"
+	protectedMux.HandleFunc("/upload-file-QUIC", protection.RateLimitMiddleware(rate.Every(6*time.Second), 1)(UploadFileHandler))              // POST команда для загрузки исполняемого файла на сервер (1 запрос каждые 6 секунд = 10 запросов в минуту)
+	protectedMux.HandleFunc("/delete-file-QUIC", protection.RateLimitMiddleware(rate.Every(6*time.Second), 1)(DeleteFileHandler))              // POST команда для удаления файла с сервера при отмене загрузки в WEB админке (1 запрос каждые 6 секунд = 10 запросов в минуту)
+	protectedMux.HandleFunc("/send-install-QUIC-program", protection.RateLimitMiddleware(rate.Every(6*time.Second), 1)(InstallProgramHandler)) // POST команда для отправки JSON команд QUIC-клиентам (1 запрос каждые 6 секунд = 10 запросов в минуту)
+
+	// Маршруты для отчёта по "Установка ПО"
+	protectedMux.HandleFunc("/get-QUIC-report", GetQUICReportHandler)                                                                                              // GET команда для получения всех записей QUIC
+	protectedMux.HandleFunc("/resend-QUIC-report", protection.RateLimitMiddleware(rate.Every(500*time.Millisecond), 10)(ResendQUICReportHandler))                  // POST команда для повторной отправки команды конкретному QUIC-клиенту (1 запрос каждые 0,5 секунды = 120 запросов в минуту, до 10 подряд)
+	protectedMux.HandleFunc("/delete-client-QUIC-report", protection.RateLimitMiddleware(rate.Every(500*time.Millisecond), 10)(DeleteClientFromQUICByDateHandler)) // POST команда для удаления конкретной QUIC записи ClientID по дате создания (1 запрос каждые 0,5 секунды = 120 запросов в минуту, до 10 подряд)
+	protectedMux.HandleFunc("/delete-by-date-QUIC-report", protection.RateLimitMiddleware(rate.Every(3*time.Second), 2)(DeleteQUICByDateHandler))                  // POST команда для удаления всех QUIC записей по дате создания (1 запрос каждые 3 секунды = 20 запросов в минуту, до 2 подряд)
 
 	// Маршруты для получения информации о системе клиента
 	protectedMux.HandleFunc("/getFile-info", protection.RateLimitMiddleware(rate.Every(1500*time.Millisecond), 1)(mqtt_client.HandleClientInfoFileRequest)) // POST команда для создания одноразовой ссылки на просмотр или скачивание файла отчёта (1 запрос каждые 1,5 секунды = 40 запросов в минуту)
 	protectedMux.HandleFunc("/report-view/", mqtt_client.ReportViewHandler)                                                                                 // GET команда от открытия страницы отчёта по одноразовой ссылке
 
-	// Маршруты для формирования и отправки команд и загрузки файла в "Установка ПО"
-	protectedMux.HandleFunc("/upload-file-QUIC", UploadFileHandler)              // POST команда для загрузки исполняемого файла на сервер
-	protectedMux.HandleFunc("/delete-file-QUIC", DeleteFileHandler)              // POST команда для удаления файла с сервера при отмене загрузки в WEB админке
-	protectedMux.HandleFunc("/send-install-QUIC-program", InstallProgramHandler) // POST команда для отправки JSON команд QUIC-клиентам
-
-	// Маршруты для отчёта по "Установка ПО"
-	protectedMux.HandleFunc("/get-QUIC-report", GetQUICReportHandler)                        // GET команда для получения всех записей QUIC
-	protectedMux.HandleFunc("/resend-QUIC-report", ResendQUICReportHandler)                  // POST команда для повторной отправки команды конкретному QUIC-клиенту
-	protectedMux.HandleFunc("/delete-by-date-QUIC-report", DeleteQUICByDateHandler)          // POST команда для удаления всех QUIC записей по дате создания
-	protectedMux.HandleFunc("/delete-client-QUIC-report", DeleteClientFromQUICByDateHandler) // POST команда для удаления конкретной QUIC записи ClientID по дате создания
-
 	// Маршруты для обновления или отката правил OWASP CRS для Coraza WAF с GitHub (О проекте)
-	protectedMux.HandleFunc("/check-OWASP-CRS", protection.CheckOWASPHandler)                    // GET команда проверяет наличие новой версии правил
-	protectedMux.HandleFunc("/update-OWASP-CRS", protection.UpdateOWASPHandler)                  // POST команда обновляет правила
-	protectedMux.HandleFunc("/rollback-backup-OWASP-CRS", protection.RollbackBackupOWASPHandler) // POST команда для отката правил из бэкапа
+	protectedMux.HandleFunc("/check-OWASP-CRS", protection.CheckOWASPHandler)                                                                                   // GET команда проверяет наличие новой версии правил
+	protectedMux.HandleFunc("/update-OWASP-CRS", protection.RateLimitMiddleware(rate.Every(10*time.Second), 1)(protection.UpdateOWASPHandler))                  // POST команда обновляет правила (1 запрос каждые 10 секунд = 6 запросов в минуту)
+	protectedMux.HandleFunc("/rollback-backup-OWASP-CRS", protection.RateLimitMiddleware(rate.Every(10*time.Second), 1)(protection.RollbackBackupOWASPHandler)) // POST команда для отката правил из бэкапа (1 запрос каждые 10 секунд = 6 запросов в минуту)
 
 	// Маршруты для обновления или отката серверной части FiReMQ с GitHub/GitFlic (О проекте)
-	protectedMux.HandleFunc("/check-FiReMQ", update.CheckHandler)              // GET команда проверяет наличие новой версии FiReMQ
-	protectedMux.HandleFunc("/update-FiReMQ", update.UpdateHandler)            // POST команда скачивает, проверяет, запускает утилиту "ServerUpdater" и корректно завершает работу FiReMQ
-	protectedMux.HandleFunc("/rollback-backup-FiReMQ", update.RollbackHandler) // POST команда для отката версии FiReMQ на предыдущий релиз (через утилиту ServerUpdater)
+	protectedMux.HandleFunc("/check-FiReMQ", update.CheckHandler)                                                                             // GET команда проверяет наличие новой версии FiReMQ
+	protectedMux.HandleFunc("/update-FiReMQ", protection.RateLimitMiddleware(rate.Every(10*time.Second), 1)(update.UpdateHandler))            // POST команда скачивает, проверяет, запускает утилиту "ServerUpdater" и корректно завершает работу FiReMQ (1 запрос каждые 10 секунд = 6 запросов в минуту)
+	protectedMux.HandleFunc("/rollback-backup-FiReMQ", protection.RateLimitMiddleware(rate.Every(10*time.Second), 1)(update.RollbackHandler)) // POST команда для отката версии FiReMQ на предыдущий релиз через утилиту ServerUpdater (1 запрос каждые 10 секунд = 6 запросов в минуту)
 
 	// Маршруты для отправки команды самоудаления клиентам "FiReAgent"
-	protectedMux.HandleFunc("/uninstall-fireagent", UninstallFiReAgentHandler)    // POST команда на запроса самоудаления конкретных клиентов по их ID
-	protectedMux.HandleFunc("/uninstall-pending", GetPendingUninstallListHandler) // GET команда показывает список ID, находящихся в офлайне и ожидающих удаления
-	protectedMux.HandleFunc("/uninstall-cancel", CancelPendingUninstallHandler)   // POST команда отменяет удаление конкретного офлайн ID (если клиент ещё не был в онлайне, при запросе удаления, удаление можно отменить)
+	protectedMux.HandleFunc("/uninstall-pending", GetPendingUninstallListHandler)                                                                     // GET команда показывает список ID, находящихся в офлайне и ожидающих удаления
+	protectedMux.HandleFunc("/uninstall-fireagent", protection.RateLimitMiddleware(rate.Every(5*time.Second), 2)(UninstallFiReAgentHandler))          // POST команда на запроса самоудаления конкретных клиентов по их ID (1 запрос каждые 5 секунд = 12 запросов в минуту, до 2 подряд)
+	protectedMux.HandleFunc("/uninstall-cancel", protection.RateLimitMiddleware(rate.Every(500*time.Millisecond), 10)(CancelPendingUninstallHandler)) // POST команда отменяет удаление конкретного офлайн ID (1 запрос каждые 0,5 секунды = 120 запросов в минуту, до 10 подряд)
 
 	// Маршруты для просмотра и/или скачивания HTML лога сервера
 	protectedMux.HandleFunc("/getServer-log", protection.RateLimitMiddleware(rate.Every(1500*time.Millisecond), 1)(logging.HandleLogFileRequest)) // POST команда для создания одноразовой ссылки на просмотр или скачивание файла лога (1 запрос каждые 1,5 секунды = 40 запросов в минуту)
 	protectedMux.HandleFunc("/log-view/", logging.LogViewHandler)                                                                                 // GET команда от открытия страницы лога по одноразовой ссылке
 
 	// Маршрут для получения информации о Linux сервере
-	protectedMux.HandleFunc("/get-linux-info", LinuxInfo.LinuxInfoHandler) // POST команда для получения JSON информации о сервере Linux
+	protectedMux.HandleFunc("/get-linux-info", protection.RateLimitMiddleware(rate.Every(2*time.Second), 2)(LinuxInfo.LinuxInfoHandler)) // POST команда для получения JSON информации о Linux сервере (1 запрос каждые 2 секунды = 30 запросов в минуту, до 2 подряд)
+
+	// Маршруты для проверки обновлений клиентов (FiReAgent)
+	protectedMux.HandleFunc("/get-update-clients", update_client.GetUpdateClientsHandler)                                                             // GET команда для получения списка всех клиентов с версиями модулей и датой последней проверки обновлений
+	protectedMux.HandleFunc("/send-update-check", protection.RateLimitMiddleware(rate.Every(8*time.Second), 1)(update_client.SendCheckUpdateHandler)) // POST команда для отправки принудительной проверки обновлений всем онлайн-клиентам (1 запрос каждые 8 секунд = 7 запросов в минуту)
 
 	/* * * * * * * * * * * * * * * * * * * * * */
 	// ДЛЯ ТЕСТА!!! Временный обход проверок Coraza WAF для тестирования запроса с пропуском CSRF

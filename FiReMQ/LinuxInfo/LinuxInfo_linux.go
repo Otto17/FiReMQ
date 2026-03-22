@@ -20,7 +20,7 @@ import (
 	"time"
 	"unsafe"
 
-	"FiReMQ/pathsOS"
+	"FiReMQ/pathsOS" // Локальный пакет с путями для разных платформ
 )
 
 // GetServerInfo собирает полную информацию о Linux сервере

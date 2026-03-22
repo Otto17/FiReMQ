@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"FiReMQ/protection"
+	"FiReMQ/protection" // Локальный пакет с функциями базовой защиты
 )
 
 // ServerInfo основная структура с информацией о сервере

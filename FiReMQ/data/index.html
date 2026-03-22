@@ -928,6 +928,27 @@
   </div>
 </div>
 
+<!-- Модальное окно "Обновление FiReAgent" -->
+<div id="updateAgentModal" class="ua-modal">
+  <div class="ua-modal-content">
+    <span class="close" id="closeUpdateAgentModal" aria-label="Закрыть">&times;</span>
+    <h2 class="ua-title">Обновление FiReAgent</h2>
+    <!-- Панель статистики и кнопка -->
+    <div class="ua-info-panel">
+      <div class="ua-stats">
+        <span class="ua-stat-item ua-stat-total" data-filter="all" title="Показать всех">Всего: <strong id="uaStatTotal">0</strong></span>
+        <span class="ua-stat-item ua-stat-online" data-filter="online" title="Показать онлайн">Онлайн: <strong id="uaStatOnline">0</strong></span>
+        <span class="ua-stat-item ua-stat-offline" data-filter="offline" title="Показать офлайн">Офлайн: <strong id="uaStatOffline">0</strong></span>
+      </div>
+      <button type="button" id="uaSendUpdateBtn" class="ua-send-btn">Запросить обновления</button>
+    </div>
+    <!-- Список клиентов -->
+    <div id="uaClientsList" class="ua-clients-list">
+      <div class="ua-empty">Загрузка данных...</div>
+    </div>
+  </div>
+</div>
+
   <!-- Панель меню -->
   <div class="top-bar">
     <div class="dropdown">
@@ -936,6 +957,7 @@
         <a id="logsLink" class="menu-item-with-icon"><img src="../icon/Logging.svg" alt="Логи" class="menu-icon"><span>Логи</span></a>
         <a id="accountsMQTT" class="menu-item-with-icon removeFiReAgent-button"><img src="../icon/Mqtt.svg" alt="MQTT авторизация" class="menu-icon"><span>MQTT авторизация</span></a>
         <a id="removeFiReAgent" class="menu-item-with-icon removeFiReAgent-disabled"><img src="../icon/Del_FiReAgent.svg" alt="Удаление FiReAgent" class="menu-icon"><span>Удаление "FiReAgent"</span></a>
+		<a id="updateFiReAgent" class="menu-item-with-icon"><img src="../icon/Update_FiReAgent.svg" alt="Обновление FiReAgent" class="menu-icon"><span>Обновление FiReAgent</span></a>
         <a id="accountsLink" class="menu-item-with-icon"><img src="../icon/AccountsAdmin.svg" alt="Учётные записи Админов" class="menu-icon"><span>Учётные записи Админов</span></a>
         <hr>
 		<a id="servStatic" class="menu-item-with-icon"><img src="../icon/ServStatistics.svg" alt="Статистика сервера" class="menu-icon"><span>Статистика сервера</span></a>

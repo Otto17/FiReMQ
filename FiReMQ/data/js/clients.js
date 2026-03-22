@@ -345,7 +345,9 @@ function sortTable(field, forceDirectionChange = true) {
       const s = row.querySelector(`[data-field="${field}"] .status-text`)?.textContent || "";
       val = s === "Off" ? 1 : 0;
     } else if (field === "timestamp") {
-      val = parseDate(row.querySelector(`[data-field="${field}"]`)?.textContent || "");
+        val = parseDate(row.querySelector(`[data-field="${field}"]`)?.textContent || "");
+    } else if (field === "windows") {
+        val = parseWinVersion((row.querySelector(`[data-field="${field}"]`)?.textContent || "").trim());
     } else {
       val = (row.querySelector(`[data-field="${field}"]`)?.textContent || "").trim();
     }
@@ -360,10 +362,12 @@ function sortTable(field, forceDirectionChange = true) {
     if (field === "status") {
       return dir * (valA - valB);
     } else if (field === "timestamp") {
-      // null (если не распарсилось) отправляет вниз при возрастании
+      // null (если не распар��илось) отправляет вниз при возрастании
       if (!valA && !valB) return 0;
       if (!valA) return dir;
       if (!valB) return -dir;
+      return dir * (valA - valB);
+    } else if (field === "windows") {
       return dir * (valA - valB);
     } else {
       return dir * ruCollator.compare(valA, valB);
@@ -416,6 +420,13 @@ function parseDate(dateStr) {
   return new Date(`20${year}`, month - 1, day, hours, minutes);
 }
 
+// Конвертация версии Windows (столбец Win) в число для корректной сортировки
+function parseWinVersion(val) {
+  if (val === "") return -2;
+  if (val === "?") return -1;
+  const num = parseFloat(val);
+  return isNaN(num) ? -1 : num;
+}
 
 
 // ГАЛОЧКИ ДЛЯ ВЫБОРА КЛИЕНТОВ
@@ -603,7 +614,10 @@ async function openClientInfoInNewTab(clientID, prefix) {
     if (!response.ok) {
       if (response.status === 404) {
         showPush(`Архив ${prefix}${clientID} не найден`, '#ff4d4d'); // Красный
-      } else {
+      } else if (response.status === 429) {
+		const text = await response.text().catch(() => 'Слишком много запросов');
+		showPush(text, '#ff4d4d'); // Красный
+	  } else {
         const text = await response.text().catch(() => '');
         showPush(`Ошибка ${response.status}: ${response.statusText}${text ? ' — ' + text : ''}`, '#ff4d4d'); // Красный
       }
@@ -769,6 +783,9 @@ function sortClientData(data, field, isAsc) {
       if (!tA) return dir;
       if (!tB) return -dir;
       return dir * (tA - tB);
+    }
+    if (field === "windows") {
+      return dir * (parseWinVersion((a.Windows || "").trim()) - parseWinVersion((b.Windows || "").trim()));
     }
     const key = SORT_FIELD_TO_KEY[field] || "Name";
     return dir * ruCollator.compare((a[key] || "").trim(), (b[key] || "").trim());

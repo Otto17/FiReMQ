@@ -20,14 +20,15 @@ import (
 	"syscall"
 	"time"
 
-	"FiReMQ/db"          // Локальный пакет с БД BadgerDB
-	"FiReMQ/logging"     // Локальный пакет с логированием в HTML файл
-	"FiReMQ/mqtt_client" // Локальный пакет MQTT клиента AutoPaho
-	"FiReMQ/mqtt_server" // Локальный пакет MQTT клиента Mocho-MQTT
-	"FiReMQ/new_cert"    // Локальный пакет для проверки и создания mTLS сертификатов
-	"FiReMQ/pathsOS"     // Локальный пакет с путями для разных платформ
-	"FiReMQ/protection"  // Локальный пакет с функциями базовой защиты
-	"FiReMQ/update"      // Локальный пакет для обновления FiReMQ
+	"FiReMQ/db"            // Локальный пакет с БД BadgerDB
+	"FiReMQ/logging"       // Локальный пакет с логированием в HTML файл
+	"FiReMQ/mqtt_client"   // Локальный пакет MQTT клиента AutoPaho
+	"FiReMQ/mqtt_server"   // Локальный пакет MQTT клиента Mocho-MQTT
+	"FiReMQ/new_cert"      // Локальный пакет для проверки и создания mTLS сертификатов
+	"FiReMQ/pathsOS"       // Локальный пакет с путями для разных платформ
+	"FiReMQ/protection"    // Локальный пакет с функциями базовой защиты
+	"FiReMQ/update"        // Локальный пакет для обновления FiReMQ
+	"FiReMQ/update_client" // Локальный пакет для обновлений клиентов
 
 	"github.com/dgraph-io/badger/v4"
 )
@@ -207,6 +208,13 @@ func main() {
 	mqtt_server.HandleQUICAnswerMessage = HandleQUICAnswerMessage // Для Установки ПО (QUIC)
 	mqtt_server.GetAuthInfo = getAuthInfoFunc                     // Для получения информации об авторизованном админе
 	mqtt_server.CheckPermSystemSettings = checkPermSystemSettings // Для проверки права на системные настройки
+
+	// Инъекция обработчика версий модулей клиентов в пакет "mqtt_server"
+	mqtt_server.HandleUpdateVersionsMessage = update_client.HandleUpdateVersions
+
+	// Инъекция функций в пакет "update_client"
+	update_client.PublishMQTTMessage = mqtt_client.Publish
+	update_client.GetAuthInfo = getAuthInfoFunc
 
 	// Инициализация БД
 	if err := db.InitDB(); err != nil {
